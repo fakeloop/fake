@@ -451,6 +451,41 @@ namespace fake::tuple
 	template<fake::tuple_c _Tuple>
 	constexpr auto pop_back_v = fake::pack_v<pop_back_t<_Tuple>>;
 	
+	template<fake::tuple_c _Tuple, std::size_t _Index, std::size_t _Length>
+	struct subtuple final{
+	private:
+		static consteval auto impl(){
+			static_assert(
+				_Index + _Length <= std::tuple_size_v<_Tuple>,
+				"\n-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-\n"
+				"\nerror<fake::tuple::subtuple>: index out of range.\n"
+				"\n-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-\n"
+			);
+			
+			if constexpr(_Index + _Length <= std::tuple_size_v<_Tuple>)
+				return []<std::size_t... _SubIndex>(std::index_sequence<_SubIndex...>){
+					return fake::pack_v<
+						decltype(
+							std::tuple_cat(
+								std::declval<std::tuple<std::tuple_element_t<_Index + _SubIndex, _Tuple>>>()...
+							)
+						)
+					>;
+				}(std::make_index_sequence<_Length>());
+			else
+				return fake::pack_v<std::tuple<>>;
+		}
+		
+	public:
+		using type = typename decltype(impl())::type;
+	};
+	
+	template<fake::tuple_c _Tuple, std::size_t _Index, std::size_t _Length>
+	using subtuple_t = typename subtuple<_Tuple, _Index, _Length>::type;
+	
+	template<fake::tuple_c _Tuple, std::size_t _Index, std::size_t _Length>
+	constexpr auto subtuple_v = fake::pack_v<subtuple_t<_Tuple, _Index, _Length>>;
+	
 	template<typename = void>
 	struct make{};
 	

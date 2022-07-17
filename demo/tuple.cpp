@@ -112,5 +112,7 @@ int main(int _argc, char* _argv[])
 	using zoo = tool::zoo<owl, lion, crocodile, kiwi>;
 	std::cout << fake::symbol::string_view<fake::tuple::make_t<zoo>>() << std::endl;
 	
+	std::cout << fake::symbol::string_view<fake::tuple::subtuple_t<animals, 1, 2>>() << std::endl;
+	
 	return 0;
 }
