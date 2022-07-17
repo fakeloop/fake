@@ -464,13 +464,7 @@ namespace fake::tuple
 			
 			if constexpr(_Index + _Length <= std::tuple_size_v<_Tuple>)
 				return []<std::size_t... _SubIndex>(std::index_sequence<_SubIndex...>){
-					return fake::pack_v<
-						decltype(
-							std::tuple_cat(
-								std::declval<std::tuple<std::tuple_element_t<_Index + _SubIndex, _Tuple>>>()...
-							)
-						)
-					>;
+					return fake::pack_v<std::tuple<std::tuple_element_t<_Index + _SubIndex, _Tuple>...>>;
 				}(std::make_index_sequence<_Length>());
 			else
 				return fake::pack_v<std::tuple<>>;
