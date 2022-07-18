@@ -22,6 +22,8 @@ namespace tool
 	
 }
 
+void monkey_sort(fake::pack_c auto _pack, fake::mezz_c auto _mezz);
+
 int main(int _argc, char* _argv[])
 {
 	struct lion{
@@ -114,5 +116,87 @@ int main(int _argc, char* _argv[])
 	
 	std::cout << fake::symbol::string_view<fake::tuple::subtuple_t<animals, 1, 2>>() << std::endl;
 	
+	std::cout << fake::symbol::string_view<fake::tuple::swap_t<animals, 3, 2>>() << std::endl;
+	
+	constexpr auto less = []<typename _Tx, typename _Ty>(fake::type_package<std::tuple<_Tx, _Ty>>){
+		constexpr auto svx = fake::symbol::string_view<_Tx>();
+		constexpr auto svy = fake::symbol::string_view<_Ty>();
+		return svx < svy;
+	};
+	
+	constexpr auto greater = []<typename _Tx, typename _Ty>(fake::type_package<std::tuple<_Tx, _Ty>>){
+		constexpr auto svx = fake::symbol::string_view<_Tx>();
+		constexpr auto svy = fake::symbol::string_view<_Ty>();
+		return svx > svy;
+	};
+	
+	constexpr auto shorter = []<typename _Tx, typename _Ty>(fake::type_package<std::tuple<_Tx, _Ty>>){
+		constexpr auto svx = fake::symbol::string_view<_Tx>();
+		constexpr auto svy = fake::symbol::string_view<_Ty>();
+		return svx.length() == svy.length() ? svx < svy : svx.length() < svy.length();
+	};
+	
+	monkey_sort(fake::pack_v<animals>, fake::mezz_v<less>);
+	monkey_sort(fake::pack_v<animals>, fake::mezz_v<greater>);
+	monkey_sort(fake::pack_v<animals>, fake::mezz_v<shorter>);
+	
 	return 0;
+}
+
+namespace demo
+{
+	
+	template<auto _step, auto _halt, fake::tuple_c _State>
+	constexpr auto run(fake::type_package<_State>) noexcept{
+		constexpr auto current = _step(fake::pack_v<_State>);
+		if constexpr(_halt(current))
+			return current;
+		else
+			return run<_step, _halt>(current);
+	}
+	
+}
+
+void monkey_sort(fake::pack_c auto _pack, fake::mezz_c auto _mezz){
+	using animals = fake::take_t<_pack>;
+	
+	static constexpr auto compare = _mezz.value;
+	
+	static constexpr auto done = []<fake::tuple_c _Tuple>(auto &&_self, fake::type_package<_Tuple>){
+		constexpr std::size_t size = std::tuple_size_v<_Tuple>;
+		if constexpr(size < 2)
+			return true;
+		else if constexpr(compare(fake::pack_v<fake::tuple::subtuple_t<_Tuple, 0, 2>>))
+			return _self(_self, fake::pack_v<fake::tuple::subtuple_t<_Tuple, 1, size - 1>>);
+		else
+			return false;
+	};
+	
+	constexpr auto step = []<fake::tuple_c _Tuple>(fake::type_package<_Tuple>){
+		constexpr std::size_t size = std::tuple_size_v<_Tuple>;
+		if constexpr(fake::mezz_c<std::tuple_element_t<0, _Tuple>> == false){
+			return fake::pack_v<fake::tuple::concat_t<std::tuple<fake::mezz_t<14695981039346656037ull>>, _Tuple>>;
+		}
+		else{
+			using state = std::tuple_element_t<0, _Tuple>;
+			using data = fake::tuple::subtuple_t<_Tuple, 1, size - 1>;
+			constexpr std::size_t length = size - 1;
+			constexpr auto hash = state::value;
+			constexpr auto rand_src = (hash / 114514ull) % length;
+			constexpr auto rand_dst = (hash / length / 114514ull) % length;
+			using element = std::tuple_element_t<rand_src, data>;
+			using removed = fake::tuple::erase_t<data, rand_src>;
+			using current = fake::tuple::emplace_t<removed, rand_dst, element>;
+			if constexpr(done(done, fake::pack_v<current>))
+				return fake::pack_v<current>;
+			else
+				return fake::pack_v<fake::tuple::concat_t<std::tuple<fake::mezz_t<hash * 1099511628211ull>>, current>>;
+		}
+	};
+	
+	constexpr auto halt = []<fake::tuple_c _Tuple>(fake::type_package<_Tuple>){
+		return fake::mezz_c<std::tuple_element_t<0, _Tuple>> == false;
+	};
+	
+	std::cout << fake::symbol::string_view<fake::take_t<demo::run<step, halt>(fake::pack_v<animals>)>>() << std::endl;
 }

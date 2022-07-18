@@ -195,7 +195,7 @@ namespace fake::tuple
 	
 	template<fake::tuple_c _Tuple, auto _functor>
 	struct erase_if final{
-		private:
+	private:
 		static consteval auto impl(){
 			return []<std::size_t... _Index>(std::index_sequence<_Index...>){
 				return fake::pack_v<
@@ -243,7 +243,7 @@ namespace fake::tuple
 	
 	template<fake::tuple_c _Tuple>
 	struct shrink final{
-		private:
+	private:
 		static consteval auto impl(){
 			return []<typename... _Type, std::size_t... _Indices>(
 				fake::type_package<std::tuple<_Type...>>,
@@ -479,6 +479,42 @@ namespace fake::tuple
 	
 	template<fake::tuple_c _Tuple, std::size_t _Index, std::size_t _Length>
 	constexpr auto subtuple_v = fake::pack_v<subtuple_t<_Tuple, _Index, _Length>>;
+	
+	template<fake::tuple_c _Tuple, std::size_t _Lhs, std::size_t _Rhs>
+	struct swap final{
+	private:
+		static consteval auto impl(){
+			constexpr std::size_t size = std::tuple_size_v<_Tuple>;
+			
+			static_assert(
+				_Lhs < size && _Rhs < size,
+				"\n-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-\n"
+				"\nerror<fake::tuple::swap>: index out of range.\n"
+				"\n-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-\n"
+			);
+			
+			if constexpr(_Lhs < size && _Rhs < size)
+				return []<std::size_t... _Index>(std::index_sequence<_Index...>){
+					return fake::pack_v<
+						std::tuple<
+							std::tuple_element_t<(_Index ^ _Lhs && _Index ^ _Rhs) - 1 & (_Lhs ^ _Rhs) ^ _Index, _Tuple>
+							...
+						>
+					>;
+				}(std::make_index_sequence<size>());
+			else
+				return fake::pack_v<std::tuple<>>;
+		}
+		
+	public:
+		using type = typename decltype(impl())::type;
+	};
+	
+	template<fake::tuple_c _Tuple, std::size_t _Lhs, std::size_t _Rhs>
+	using swap_t = typename swap<_Tuple, _Lhs, _Rhs>::type;
+	
+	template<fake::tuple_c _Tuple, std::size_t _Lhs, std::size_t _Rhs>
+	constexpr auto swap_v = fake::pack_v<swap_t<_Tuple, _Lhs, _Rhs>>;
 	
 	template<typename = void>
 	struct make{};
