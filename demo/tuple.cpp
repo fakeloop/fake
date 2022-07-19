@@ -175,22 +175,21 @@ void monkey_sort(fake::pack_c auto _pack, fake::mezz_c auto _mezz){
 	constexpr auto step = []<fake::tuple_c _Tuple>(fake::type_package<_Tuple>){
 		constexpr std::size_t size = std::tuple_size_v<_Tuple>;
 		if constexpr(fake::mezz_c<std::tuple_element_t<0, _Tuple>> == false){
-			return fake::pack_v<fake::tuple::concat_t<std::tuple<fake::mezz_t<14695981039346656037ull>>, _Tuple>>;
+			return fake::pack_v<fake::tuple::emplace_front_t<_Tuple, fake::mezz_t<14695981039346656037ull>>>;
 		}
 		else{
 			using state = std::tuple_element_t<0, _Tuple>;
 			using data = fake::tuple::subtuple_t<_Tuple, 1, size - 1>;
 			constexpr std::size_t length = size - 1;
 			constexpr auto hash = state::value;
-			constexpr auto rand_src = (hash / 114514ull) % length;
-			constexpr auto rand_dst = (hash / length / 114514ull) % length;
-			using element = std::tuple_element_t<rand_src, data>;
-			using removed = fake::tuple::erase_t<data, rand_src>;
-			using current = fake::tuple::emplace_t<removed, rand_dst, element>;
+			constexpr auto rand_lhs = (hash / 114514ull) % length;
+			constexpr auto rand_rhs = (hash / length / 114514ull) % length;
+			// shuffle. 
+			using current = fake::tuple::swap_t<data, rand_lhs, rand_rhs>;
 			if constexpr(done(done, fake::pack_v<current>))
 				return fake::pack_v<current>;
 			else
-				return fake::pack_v<fake::tuple::concat_t<std::tuple<fake::mezz_t<hash * 1099511628211ull>>, current>>;
+				return fake::pack_v<fake::tuple::emplace_front_t<current, fake::mezz_t<hash * 1099511628211ull>>>;
 		}
 	};
 	
