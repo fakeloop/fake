@@ -121,9 +121,11 @@ the `meta-programming` subsystem of `fake` is interface-stable currently.
 ### `"symbol.h"`
 
 ***brief:***
+
 compile time convert `type` to `constexpr std::string_view` or `constexpr fake::symbol::view`
 
 ***简介:***
+
 编译期将 `类型` 转换为 `constexpr std::string_view` 或 `constexpr fake::symbol::view`
 
 ***usage:***
@@ -161,9 +163,11 @@ int(int, char**)
 ### `"tuple.h"`
 
 ***brief:***
+
 compile time `lambda` functor algorithm tool kit for `std::tuple`
 
 ***简介:***
+
 用于 `std::tuple` 的 `lambda` 算子编译期算法工具集
 
 ***usage:***
