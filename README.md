@@ -63,9 +63,9 @@ all codes compiled with `gcc-11.2.0`.
 
 #### ***example:***
 
-#### ***示例:***
-
 `compile and launch the "demo/tuple.cpp"`
+
+#### ***示例:***
 
 `编译并运行 "demo/tuple.cpp"`
 
@@ -82,9 +82,9 @@ g++ tuple.cpp -std=c++20 -iquote "../include/" -o tuple.out
 <!---- >
 ***warning:***
 
-***警告:***
-
 the `stateful meta-programming` is some sort of **black magic**, which has always been ***controversial***.
+
+***警告:***
 
 `有状态元编程` 是一种 **黑魔法**, 一直以来都存在 ***争议***。
 
@@ -98,9 +98,9 @@ the `stateful meta-programming` is some sort of **black magic**, which has alway
 
 ***version:***
 
-***版本:***
-
 the `meta-programming` subsystem of `fake` is interface-stable currently.
+
+***版本:***
 
 `fake` `元编程` 子系统目前接口稳定。
 
@@ -180,9 +180,9 @@ compile time `lambda` functor algorithm tool kit for `std::tuple`
 
 ***example:***
 
-***示例:***
-
 *demo see `"demo/tuple.cpp"`*
+
+***示例:***
 
 *示例见 `"demo/tuple.cpp"`*
 
@@ -204,8 +204,8 @@ compile time `lambda` functor algorithm tool kit for `std::tuple`
 
 ***version:***
 
-***版本:***
-
 the `concurrency adapter` subsystem of `fake` is **NOT** interface-stable yet.
+
+***版本:***
 
 `fake` `并发适配器` 子系统目前接口 **尚未** 稳定。
