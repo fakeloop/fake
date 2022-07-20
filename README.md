@@ -25,6 +25,7 @@ all codes compiled with `gcc-11.2.0`.
 ### 额外的 `g++` 参数
 
 **`always` required:**
+
 **`必需` 参数:**
 
 ```sh
@@ -39,6 +40,7 @@ all codes compiled with `gcc-11.2.0`.
 <!---- >
 
 **parameter for the `stateful meta-programming`:**
+
 **`有状态元编程` 所需参数:**
 
 ```sh
@@ -50,6 +52,7 @@ all codes compiled with `gcc-11.2.0`.
 <!---->
 
 **parameter for the `concurrency adapter`:**
+
 **`并发适配器` 所需参数:**
 
 ```sh
@@ -63,6 +66,7 @@ all codes compiled with `gcc-11.2.0`.
 #### ***示例:***
 
 `compile and launch the "demo/tuple.cpp"`
+
 `编译并运行 "demo/tuple.cpp"`
 
 ```sh
@@ -77,9 +81,11 @@ g++ tuple.cpp -std=c++20 -iquote "../include/" -o tuple.out
 
 <!---- >
 ***warning:***
+
 ***警告:***
 
 the `stateful meta-programming` is some sort of **black magic**, which has always been ***controversial***.
+
 `有状态元编程` 是一种 **黑魔法**, 一直以来都存在 ***争议***。
 
 <!---->
@@ -91,9 +97,11 @@ the `stateful meta-programming` is some sort of **black magic**, which has alway
 ## `元编程`
 
 ***version:***
+
 ***版本:***
 
 the `meta-programming` subsystem of `fake` is interface-stable currently.
+
 `fake` `元编程` 子系统目前接口稳定。
 
 ---
@@ -119,6 +127,7 @@ compile time convert `type` to `constexpr std::string_view` or `constexpr fake::
 编译期将 `类型` 转换为 `constexpr std::string_view` 或 `constexpr fake::symbol::view`
 
 ***usage:***
+
 ***使用方法:***
 
 ```c++
@@ -132,6 +141,7 @@ int main(int, char*[]){
 ```
 
 ***output:***
+
 ***输出:***
 
 ```plain
@@ -157,6 +167,7 @@ compile time `lambda` functor algorithm tool kit for `std::tuple`
 用于 `std::tuple` 的 `lambda` 算子编译期算法工具集
 
 ***usage:***
+
 ***使用方法:***
 
 ```c++
@@ -164,9 +175,11 @@ compile time `lambda` functor algorithm tool kit for `std::tuple`
 ```
 
 ***example:***
+
 ***示例:***
 
 *demo see `"demo/tuple.cpp"`*
+
 *示例见 `"demo/tuple.cpp"`*
 
 ---
@@ -186,7 +199,9 @@ compile time `lambda` functor algorithm tool kit for `std::tuple`
 ## `并发适配器`
 
 ***version:***
+
 ***版本:***
 
 the `concurrency adapter` subsystem of `fake` is **NOT** interface-stable yet.
+
 `fake` `并发适配器` 子系统目前接口 **尚未** 稳定。
