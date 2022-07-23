@@ -4,9 +4,13 @@
 
 `fake` offers a set of tools of `meta-programming`<!--, `stateful meta-programming`--> and `concurrency adapter`
 
+`fake` is a header-only library
+
 ## ***简介:***
 
 `fake` 提供了一套 `元编程`<!--, `有状态元编程`--> 和 `并发适配器` 工具
+
+`fake` 是一个纯头文件库
 
 ---
 
@@ -209,3 +213,37 @@ the `concurrency adapter` subsystem of `fake` is **NOT** interface-stable yet.
 ***版本:***
 
 `fake` `并发适配器` 子系统目前接口 **尚未** 稳定。
+
+---
+
+### `"acyclic.h"`
+
+***brief:***
+
+compile time `directed acyclic graph` execution flow adapter, adapting delegations by `compile time type representation`
+
+***简介:***
+
+编译期 `有向无环图` 执行流适配器, 依照 `编译期类型表示` 适配委托过程
+
+***usage:***
+
+***使用方法:***
+
+```c++
+#include "acyclic.h"
+```
+
+<!---- >
+
+***example:***
+
+*demo see `"demo/acyclic.cpp"`*
+
+***示例:***
+
+*示例见 `"demo/acyclic.cpp"`*
+
+---
+
+<!---->
