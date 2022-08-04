@@ -2,7 +2,7 @@
 
 ## ***brief:***
 
-`fake` offers a set of tools of `meta-programming`<!--, `stateful meta-programming`--> and `concurrency adapter`
+`fake` provides a set of tools of `meta-programming`<!--, `stateful meta-programming`--> and `concurrency adapter`
 
 `fake` is a header-only library
 
