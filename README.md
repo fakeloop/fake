@@ -67,19 +67,19 @@ all codes compiled with `gcc-11.2.0`.
 
 #### ***example:***
 
-`compile and launch the "demo/tuple.cpp"`
+`compile and launch the "demo/tuple/tuple.cpp"`
 
 #### ***示例:***
 
-`编译并运行 "demo/tuple.cpp"`
+`编译并运行 "demo/tuple/tuple.cpp"`
 
 ```sh
 cd ~
 mkdir my_workspace
 cd my_workspace
 git clone https://github.com/fakeloop/fake
-cd fake/demo
-g++ tuple.cpp -std=c++20 -iquote "../include/" -o tuple.out
+cd fake/demo/tuple
+g++ tuple.cpp -std=c++20 -iquote "../../include/" -o tuple.out
 ./tuple.out
 ```
 
