@@ -22,15 +22,15 @@ namespace fake
 	struct functor_info;
 	
 	template<class _Lambda>
-	struct functor_info<_Lambda, std::void_t<decltype(_Lambda::operator())>>
+	struct functor_info<_Lambda, std::void_t<decltype(&_Lambda::operator())>>
 	{
 		static constexpr const char* name = "functor_object";
-		using retn = typename functor_info<decltype(_Lambda::operator())>::retn;
-		using func = typename functor_info<decltype(_Lambda::operator())>::func;
+		using retn = typename functor_info<decltype(&_Lambda::operator())>::retn;
+		using func = typename functor_info<decltype(&_Lambda::operator())>::func;
 		template<std::size_t _Index>
-		using args = typename functor_info<decltype(_Lambda::operator())>::args<_Index>;
-		using tuple = typename functor_info<decltype(_Lambda::operator())>::tuple;
-		static constexpr std::size_t size = functor_info<decltype(_Lambda::operator())>::size;
+		using args = typename functor_info<decltype(&_Lambda::operator())>::args<_Index>;
+		using tuple = typename functor_info<decltype(&_Lambda::operator())>::tuple;
+		static constexpr std::size_t size = functor_info<decltype(&_Lambda::operator())>::size;
 	};
 	
 	template<typename _Functor, typename... _Args, template<typename, typename...> class _Bind>

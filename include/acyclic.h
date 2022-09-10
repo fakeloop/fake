@@ -622,7 +622,7 @@ namespace fake
 				guard_t(_Guard &&_guard): handle(_guard.handle), work(_guard.work), atomic(_guard.atomic){
 					static_assert(
 						std::is_rvalue_reference_v<decltype(_guard)>,
-						"\e[33;40merror<fake::acyclic::guard_t>: copy constructor instantiated.\e[0m"
+						"\e[33;48merror<fake::acyclic::guard_t>: copy constructor instantiated.\e[0m"
 					);
 					_guard.valid = false;
 					valid = true;
@@ -759,7 +759,7 @@ namespace fake
 					return [&vars = callee.vars]<typename... _Vars>(
 						fake::type_package<std::tuple<_Vars...>>
 					)->decltype(auto){
-						return std::forward_as_tuple(std::move(std::get<_Vars>(vars).storage.value())...);
+						return std::make_tuple(std::move(std::get<_Vars>(vars).storage.value())...);
 					}(fake::pack_v<resume_t>);
 				}
 				
@@ -866,7 +866,7 @@ namespace fake
 					
 					static_assert(
 						private_size || default_size,
-						"\e[33;40merror<fake::acyclic>: selecting scheduler failed.\e[0m"
+						"\e[33;48merror<fake::acyclic>: selecting scheduler failed.\e[0m"
 					);
 					
 					if constexpr(private_size){
@@ -883,14 +883,14 @@ namespace fake
 						
 						static_assert(
 							std::is_same_v<select_t, void> == false,
-							"\e[33;40merror<fake::acyclic>: the selection result of scheduler is ambiguous.\e[0m"
+							"\e[33;48merror<fake::acyclic>: the selection result of scheduler is ambiguous.\e[0m"
 						);
 						
 						using expr_t = typename std::remove_cvref_t<decltype(std::get<select_t>(_storage))>::value_t;
 						
 						static_assert(
 							fake::acyclic::concepts::scheduler_expr_c<expr_t, typename select_t::token_t>,
-							"\e[33;40merror<fake::acyclic>: 'scheduler_expr_c<expr, token>' is NOT satisfaction.\e[0m"
+							"\e[33;48merror<fake::acyclic>: 'scheduler_expr_c<expr, token>' is NOT satisfaction.\e[0m"
 						);
 						
 						return std::get<select_t>(_storage);
@@ -898,7 +898,7 @@ namespace fake
 					else if constexpr(default_size){
 						static_assert(
 							default_size < 2,
-							"\e[33;40merror<fake::acyclic>: the selection result of scheduler is ambiguous.\e[0m"
+							"\e[33;48merror<fake::acyclic>: the selection result of scheduler is ambiguous.\e[0m"
 						);
 						
 						using select_t = std::tuple_element_t<0, default_sched_t>;
@@ -906,7 +906,7 @@ namespace fake
 						
 						static_assert(
 							fake::acyclic::concepts::scheduler_expr_c<expr_t, typename select_t::token_t>,
-							"\e[33;40merror<fake::acyclic>: 'scheduler_expr_c<expr, token>' is NOT satisfaction.\e[0m"
+							"\e[33;48merror<fake::acyclic>: 'scheduler_expr_c<expr, token>' is NOT satisfaction.\e[0m"
 						);
 						
 						return std::get<select_t>(_storage);
@@ -966,7 +966,7 @@ namespace fake
 						
 						static_assert(
 							std::is_same_v<select_t, void> == false,
-							"\e[33;40merror<fake::acyclic>: "
+							"\e[33;48merror<fake::acyclic>: "
 							"the selection result of exception handler is ambiguous.\e[0m"
 						);
 						
@@ -975,7 +975,7 @@ namespace fake
 					else if constexpr(default_size == 1){
 						static_assert(
 							default_size < 2,
-							"\e[33;40merror<fake::acyclic>: "
+							"\e[33;48merror<fake::acyclic>: "
 							"the selection result of exception handler is ambiguous.\e[0m"
 						);
 						
@@ -1164,7 +1164,7 @@ namespace fake
 								requires(awaiter_t &_awaiter, tool::acyclic::executor_t &_executor){
 									_awaiter.await_inject(_executor);
 								},
-								"\e[33;40merror<fake::acyclic>: 'scheduler_inject' token, awaiter without method.\e[0m"
+								"\e[33;48merror<fake::acyclic>: 'scheduler_inject' token, awaiter without method.\e[0m"
 							);
 					
 					return awaiter_info<awaiter_t, decltype(std::declval<awaiter_t>().await_resume())>{};
@@ -1279,7 +1279,7 @@ namespace fake
 						
 						static_assert(
 							applicable,
-							"\e[33;40merror<fake::acyclic>: aspect node functor invocation failed.\e[0m"
+							"\e[33;48merror<fake::acyclic>: aspect node functor invocation failed.\e[0m"
 						);
 						
 						if constexpr(applicable){
@@ -1353,12 +1353,20 @@ namespace fake
 								// parse type of 'awaiter->await_resume()'. 
 								using param_t = fake::take_t<
 									[]{
-										if constexpr(std::derived_from<arg_node_t, fake::acyclic::token::await>)
+										if constexpr(std::derived_from<arg_node_t, fake::acyclic::token::await>){
+											static_assert(
+												requires{deduce_await<arg_result_t, arg_node_t>();},
+												"\e[33;48merror<fake::acyclic>: "
+												"node with 'token::await' does NOT return an 'await_expr'.\e[0m"
+											);
+											
 											return fake::pack_v<
 												typename decltype(deduce_await<arg_result_t, arg_node_t>())::result_t
 											>;
-										else
+										}
+										else{
 											return fake::pack_v<arg_result_t>;
+										}
 									}()
 								>;
 								
@@ -1379,13 +1387,13 @@ namespace fake
 								else{
 									constexpr std::size_t size = fake::element_size_v<typename _Func::meta::results>;
 									static_assert(
-										size == std::tuple_size_v<param_t>,
-										"\e[33;40merror<fake::acyclic>: "
+										size == std::tuple_size_v<std::remove_reference_t<param_t>>,
+										"\e[33;48merror<fake::acyclic>: "
 										"distributed results do NOT match the number of subsequent nodes.\e[0m"
 									);
 									
 									constexpr std::size_t index = deduce_distribute_index<_Graph, arg_node_t, node_t>();
-									using param_t = std::tuple_element_t<index, param_t>;
+									using param_t = std::tuple_element_t<index, std::remove_reference_t<param_t>>;
 									
 									if constexpr(std::is_same_v<tuple_top, _Graph>){
 										constexpr auto aspects = deduce_aspect<arg_node_t, node_t, param_t>();
@@ -1444,7 +1452,7 @@ namespace fake
 								
 								static_assert(
 									applicable,
-									"\e[33;40merror<fake::acyclic>: node functor invocation failed.\e[0m"
+									"\e[33;48merror<fake::acyclic>: node functor invocation failed.\e[0m"
 								);
 								
 								if constexpr(applicable){
@@ -1539,7 +1547,7 @@ namespace fake
 					
 					static_assert(
 						std::tuple_size_v<addition_t> || std::is_same_v<tuple_dec, _Graph>,
-						"\e[33;40merror<fake::acyclic>: node functor does NOT exist.\e[0m"
+						"\e[33;48merror<fake::acyclic>: node functor does NOT exist.\e[0m"
 					);
 					
 					constexpr auto trans = []<typename _Functor>(fake::type_package<_Functor>){
@@ -1554,7 +1562,7 @@ namespace fake
 					static_assert(
 						std::tuple_size_v<fake::take_t<remain>> < std::tuple_size_v<pending_t> ||
 						std::is_same_v<tuple_dec, _Graph>,
-						"\e[33;40merror<fake::acyclic>: logic error, nothing reduced.\e[0m"
+						"\e[33;48merror<fake::acyclic>: logic error, nothing reduced.\e[0m"
 					);
 					
 					if constexpr(
@@ -1585,7 +1593,7 @@ namespace fake
 						
 						static_assert(
 							fake::deducible_c<fake::functor_info, functor_t>,
-							"\e[33;40merror<fake::acyclic>: "
+							"\e[33;48merror<fake::acyclic>: "
 							"lambda functor of entry node is NOT deducible.\e[0m"
 						);
 						
@@ -1621,6 +1629,12 @@ namespace fake
 							
 							if constexpr(std::is_same_v<node_t, _Token>){
 								if constexpr(std::derived_from<node_t, fake::acyclic::token::await>){
+									static_assert(
+										requires{deduce_await<result_t, node_t>();},
+										"\e[33;48merror<fake::acyclic>: "
+										"node with 'token::await' does NOT return an 'await_expr'.\e[0m"
+									);
+									
 									using origin_t = typename decltype(deduce_await<result_t, node_t>())::result_t;
 									using type_t = fake::remove_rvalue_reference_t<origin_t>;
 									
@@ -1779,7 +1793,7 @@ namespace fake
 						
 						static_assert(
 							std::is_same_v<var_t, fake::null_t> == false,
-							"\e[33;40merror<fake::acyclic>: logic error, invoke result does NOT exist.\e[0m"
+							"\e[33;48merror<fake::acyclic>: logic error, invoke result does NOT exist.\e[0m"
 						);
 						
 						if constexpr(std::is_same_v<var_t, fake::null_t> == false){
@@ -1995,7 +2009,7 @@ namespace fake
 					[](auto _b){
 						static_assert(
 							_b,
-							"\e[33;40merror<fake::acyclic>: there are topology metas with invalid enum.\e[0m"
+							"\e[33;48merror<fake::acyclic>: there are topology metas with invalid enum.\e[0m"
 						);
 					}
 				> &&
@@ -2004,7 +2018,7 @@ namespace fake
 					[](auto _b){
 						static_assert(
 							_b,
-							"\e[33;40merror<fake::acyclic>: the topology tokens are NOT unique.\e[0m"
+							"\e[33;48merror<fake::acyclic>: the topology tokens are NOT unique.\e[0m"
 						);
 					}
 				> &&
@@ -2013,7 +2027,7 @@ namespace fake
 					[](auto _b){
 						static_assert(
 							_b,
-							"\e[33;40merror<fake::acyclic>: "
+							"\e[33;48merror<fake::acyclic>: "
 							"the 'arguments' do NOT match against the 'results' in topology.\e[0m"
 						);
 					}
@@ -2023,7 +2037,7 @@ namespace fake
 					[](auto _b){
 						static_assert(
 							_b,
-							"\e[33;40merror<fake::acyclic>: there are some loops in the topology.\e[0m"
+							"\e[33;48merror<fake::acyclic>: there are some loops in the topology.\e[0m"
 						);
 					}
 				>
@@ -2287,12 +2301,20 @@ namespace fake
 						// parse type of 'awaiter->await_resume()'. 
 						using result_t = fake::take_t<
 							[]{
-								if constexpr(std::derived_from<_Arg, fake::acyclic::token::await>)
+								if constexpr(std::derived_from<_Arg, fake::acyclic::token::await>){
+									static_assert(
+										requires{deduce_await<retn_t, _Arg>();},
+										"\e[33;48merror<fake::acyclic>: "
+										"node with 'token::await' does NOT return an 'await_expr'.\e[0m"
+									);
+									
 									return fake::pack_v<
 										typename decltype(deduce_await<retn_t, _Arg>())::result_t
 									>;
-								else
+								}
+								else{
 									return fake::pack_v<retn_t>;
+								}
 							}()
 						>;
 						
@@ -2807,7 +2829,7 @@ namespace fake
 							
 							static_assert(
 								fake::element_size_v<results_t> == 1,
-								"\e[33;40merror<fake::acyclic>: "
+								"\e[33;48merror<fake::acyclic>: "
 								"logic error, unexpected inlined results number.\e[0m"
 							);
 							
@@ -3032,7 +3054,8 @@ namespace fake
 									callback = std::move(callback),
 									guard = tool::acyclic::guard_t{_handle, _work, _atomic}
 								]() mutable{
-									callback();
+									try{callback();}
+									catch(const fake::exception::detail::acyclic::recur&){}
 								}
 							);
 						}
@@ -3062,7 +3085,8 @@ namespace fake
 									callback = std::move(callback),
 									guard = tool::acyclic::guard_t{_handle, _work, _atomic}
 								]() mutable{
-									callback();
+									try{callback();}
+									catch(const fake::exception::detail::acyclic::recur&){}
 								}
 							);
 						}
@@ -3097,7 +3121,7 @@ namespace fake
 					
 					static_assert(
 						std::is_same_v<current_t, fake::null_t> == false,
-						"\e[33;40merror<fake::acyclic>: logic error, node NOT found in 'propagete()'.\e[0m"
+						"\e[33;48merror<fake::acyclic>: logic error, node NOT found in 'propagete()'.\e[0m"
 					);
 					
 					constexpr auto iterate = []<typename... _Results>(
@@ -3135,7 +3159,13 @@ namespace fake
 								return fake::pack_v<std::tuple<_Args...>>;
 							};
 							
-							using raw_tuple = fake::take_t<arg_tuple(raw_t{})>;
+							// make gcc happy. 
+							// gcc would only be unhappy when acyclic deduction occurred in the second compile phase. 
+							// some version may delay the deduction of 'raw_t' until 'arg_tuple()' invocation occurs. 
+							// so a work around is to force the deduction to happen by forming an instance here. 
+							constexpr auto raw_v = raw_t{};
+							
+							using raw_tuple = fake::take_t<arg_tuple(raw_v)>;
 							
 							constexpr auto remove = []<typename _Arg>(fake::type_package<_Arg>){
 								constexpr auto find_relay = []<typename _Relay>(fake::type_package<_Relay>){
@@ -3389,7 +3419,8 @@ namespace fake
 												callback = std::move(callback),
 												guard = tool::acyclic::guard_t{_handle, _work, _atomic}
 											]() mutable{
-												callback();
+												try{callback();}
+												catch(const fake::exception::detail::acyclic::recur&){}
 											}
 										);
 									}
@@ -3419,7 +3450,8 @@ namespace fake
 												callback = std::move(callback),
 												guard = tool::acyclic::guard_t{_handle, _work, _atomic}
 											]() mutable{
-												callback();
+												try{callback();}
+												catch(const fake::exception::detail::acyclic::recur&){}
 											}
 										);
 									}
@@ -3522,7 +3554,7 @@ namespace fake
 					[](auto _b){
 						static_assert(
 							_b,
-							"\e[33;40merror<fake::acyclic::operator()>: the tokens of arguments are NOT unique.\e[0m"
+							"\e[33;48merror<fake::acyclic::operator()>: the tokens of arguments are NOT unique.\e[0m"
 						);
 					}
 				> &&
@@ -3531,7 +3563,7 @@ namespace fake
 					[](auto _b){
 						static_assert(
 							_b,
-							"\e[33;40merror<fake::acyclic::operator()>: "
+							"\e[33;48merror<fake::acyclic::operator()>: "
 							"arguments do NOT match against the entries.\e[0m"
 						);
 					}
@@ -3541,7 +3573,7 @@ namespace fake
 					[](auto _b){
 						static_assert(
 							_b,
-							"\e[33;40merror<fake::acyclic::operator()>: "
+							"\e[33;48merror<fake::acyclic::operator()>: "
 							"arguments are NOT invocable by the implementations.\e[0m"
 						);
 					}
@@ -3556,7 +3588,7 @@ namespace fake
 					[](auto _b){
 						static_assert(
 							_b,
-							"\e[33;40merror<fake::acyclic::operator()>: the tokens of arguments are NOT unique.\e[0m"
+							"\e[33;48merror<fake::acyclic::operator()>: the tokens of arguments are NOT unique.\e[0m"
 						);
 					}
 				> &&
@@ -3565,7 +3597,7 @@ namespace fake
 					[](auto _b){
 						static_assert(
 							_b,
-							"\e[33;40merror<fake::acyclic::operator()>: "
+							"\e[33;48merror<fake::acyclic::operator()>: "
 							"arguments do NOT match against the entries.\e[0m"
 						);
 					}
@@ -3575,7 +3607,7 @@ namespace fake
 					[](auto _b){
 						static_assert(
 							_b,
-							"\e[33;40merror<fake::acyclic::operator()>: "
+							"\e[33;48merror<fake::acyclic::operator()>: "
 							"arguments are NOT invocable by the implementations.\e[0m"
 						);
 					}
@@ -3618,6 +3650,31 @@ namespace fake
 				return fake::tuple::contains_v<metas_t, miss> == false;
 			}
 			
+			template<pass_c... _Params>
+			static consteval bool strict_bind_entries_deducible(fake::type_package<std::tuple<_Params...>>) noexcept{
+				using metas_t = fake::tuple::make_t<_Topology>;
+				using passes_t = std::tuple<_Params...>;
+				
+				constexpr auto miss_or_undeducible = []<execution::topology::meta_c _Meta>(fake::type_package<_Meta>){
+					constexpr auto query = []<pass_c _Pass>(fake::type_package<_Pass>){
+						return std::is_same_v<typename _Meta::token, typename _Pass::token_t>;
+					};
+					
+					using pass_t = fake::tuple::find_if_t<passes_t, query>;
+					constexpr bool exist = std::is_same_v<pass_t, fake::null_t> == false;
+					
+					if constexpr(exist && _Meta::mode == execution::topology::meta_e::meta_top){
+						if constexpr(fake::element_size_v<typename _Meta::args> == 0)
+							return requires{fake::functor_info<typename pass_t::value_t>::name;} == false;
+						return false;
+					}
+					
+					return true;
+				};
+				
+				return fake::tuple::contains_v<metas_t, miss_or_undeducible> == false;
+			}
+			
 		public:
 			template<pack_c _C, pack_c _A = decltype(fake::deliver())>
 			requires fake::clamour_c<
@@ -3625,7 +3682,7 @@ namespace fake
 				[](auto _b){
 					static_assert(
 						_b,
-						"\e[33;40merror<fake::acyclic::bind()>: "
+						"\e[33;48merror<fake::acyclic::bind()>: "
 						"the tokens of the acyclic implementations are NOT unique.\e[0m"
 					);
 				}
@@ -3635,7 +3692,7 @@ namespace fake
 				[](auto _b){
 					static_assert(
 						_b,
-						"\e[33;40merror<fake::acyclic::bind()>: the tokens of the aspects packs are NOT unique.\e[0m"
+						"\e[33;48merror<fake::acyclic::bind()>: the tokens of the aspects packs are NOT unique.\e[0m"
 					);
 				}
 			> &&
@@ -3649,7 +3706,17 @@ namespace fake
 				[](auto _b){
 					static_assert(
 						_b,
-						"\e[33;40merror<fake::acyclic::bind()>: some tokens are bound without implementation.\e[0m"
+						"\e[33;48merror<fake::acyclic::bind()>: some tokens are bound without implementation.\e[0m"
+					);
+				}
+			> &&
+			fake::clamour_c<
+				strict_bind_entries_deducible(fake::pack_v<typename std::remove_cvref_t<_C>::storage_t>),
+				[](auto _b){
+					static_assert(
+						_b,
+						"\e[33;48merror<fake::acyclic::bind()>: some entris are NOT deducible. "
+						"check if the entry node is NOT a functor, or being with 'auto' or 'template' parameters.\e[0m"
 					);
 				}
 			>

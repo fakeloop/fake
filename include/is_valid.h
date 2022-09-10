@@ -84,6 +84,40 @@ namespace fake
 	template<typename _Type>
 	concept mezz_c = trait_auto_v<value_mezzanine, std::remove_cvref_t<_Type>>;
 	
+	template<template<typename...> typename _Template>
+	struct generic_form
+	{
+		template<typename... _Parameters>
+		using type = _Template<_Parameters...>;
+	};
+	
+	template<typename>
+	struct is_generic_form : std::false_type{};
+	
+	template<template<typename...> typename _Template>
+	struct is_generic_form<generic_form<_Template>> : std::true_type{};
+	
+	template<typename _Type>
+	constexpr bool is_generic_form_v = is_generic_form<std::remove_cvref_t<_Type>>::value;
+	
+	template<typename _Type>
+	concept gene_c = is_generic_form_v<_Type>;
+	
+	template<typename _Type>
+	struct pattern
+	{
+		using type = _Type;
+	};
+	
+	template<template<typename...> typename _Template, typename... _Parameters>
+	struct pattern<_Template<_Parameters...>>
+	{
+		using type = generic_form<_Template>;
+	};
+	
+	template<typename _Type>
+	using pattern_t = typename pattern<std::remove_cvref_t<_Type>>::type;
+	
 	template<typename _T>
 	constexpr auto type_extract(const _T &_t) noexcept
 		->std::add_lvalue_reference_t<typename _T::type>;

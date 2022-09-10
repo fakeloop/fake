@@ -34,12 +34,12 @@ namespace fake::atomic
 				!mutex.compare_exchange_weak(
 					origin,
 					desire,
-					std::memory_order_release,
+					std::memory_order_acquire,
 					std::memory_order_relaxed
 				)
 			);
 			
-			while(mutex.load(std::memory_order_acquire).read);
+			while(mutex.load(std::memory_order_relaxed).read);
 		}
 		
 		inline void write_unlock() noexcept{
@@ -57,7 +57,7 @@ namespace fake::atomic
 				!mutex.compare_exchange_weak(
 					origin,
 					desire,
-					std::memory_order_release,
+					std::memory_order_acquire,
 					std::memory_order_relaxed
 				)
 			);
@@ -73,7 +73,7 @@ namespace fake::atomic
 				!mutex.compare_exchange_weak(
 					origin,
 					desire,
-					std::memory_order_release,
+					std::memory_order_relaxed,
 					std::memory_order_relaxed
 				)
 			);
@@ -93,8 +93,8 @@ namespace fake::atomic
 	
 	struct write
 	{
-		write(guard &_ref) noexcept: ref(_ref){ref.write_lock();}
-		~write() noexcept{ref.write_unlock();}
+		[[nodiscard]] inline write(guard &_ref) noexcept: ref(_ref){ref.write_lock();}
+		inline ~write() noexcept{ref.write_unlock();}
 		
 	private:
 		guard& ref;
@@ -102,8 +102,8 @@ namespace fake::atomic
 	
 	struct read
 	{
-		read(guard &_ref) noexcept: ref(_ref){ref.read_lock();}
-		~read() noexcept{ref.read_unlock();}
+		[[nodiscard]] inline read(guard &_ref) noexcept: ref(_ref){ref.read_lock();}
+		inline ~read() noexcept{ref.read_unlock();}
 		
 	private:
 		guard& ref;
@@ -133,7 +133,7 @@ namespace fake::atomic
 				!condition.compare_exchange_weak(
 					origin,
 					desire,
-					std::memory_order_release,
+					desire ? std::memory_order_release : std::memory_order_acquire,
 					std::memory_order_relaxed
 				)
 			);
