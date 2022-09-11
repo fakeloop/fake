@@ -121,7 +121,7 @@ namespace fake::atomic
 		}
 		
 		inline signal consume() noexcept{
-			value_type origin = condition.load(std::memory_order_acquire);
+			value_type origin = condition.load(std::memory_order_relaxed);
 			value_type desire = 0;
 			
 			do{
