@@ -137,10 +137,10 @@ compile time convert `type` to `constexpr std::string_view` or `constexpr fake::
 ***使用方法:***
 
 ```c++
-#include <iostrem>
+#include <iostream>
 #include "symbol.h"
 
-int main(int, char*[]){
+int main(int _argc, char* _argv[]){
     std::cout << fake::symbol::string_view<decltype(main)>() << std::endl;
     return 0;
 }
@@ -184,11 +184,58 @@ compile time `lambda` functor algorithm tool kit for `std::tuple`
 
 ***example:***
 
-*demo see `"demo/tuple.cpp"`*
+*demo see `"demo/tuple/tuple.cpp"`*
 
 ***示例:***
 
-*示例见 `"demo/tuple.cpp"`*
+*示例见 `"demo/tuple/tuple.cpp"`*
+
+---
+
+### `"view.h"`
+
+***brief:***
+
+`std::view` provides a pure compile time string template implementation with literals
+
+***简介:***
+
+`std::view` 提供了一个带字面量的纯编译期字符串模板实现
+
+***usage:***
+
+***使用方法:***
+
+```c++
+#include <iostream>
+#include "view.h"
+
+int main(int _argc, char* _argv[]){
+    using namespace fake::literals;
+    constexpr fake::view v = "hello view"_v;
+    constexpr auto dupli = decltype(origin){}; // make a new copy just from the type. 
+    constexpr auto& data = dupli.substr<6>().data();
+    static_assert(std::same_as<const char(&)[5], decltype(data)>);
+    std::cout << data << std::endl;
+    return 0;
+}
+```
+
+***output:***
+
+***输出:***
+
+```plain
+view
+```
+
+***example:***
+
+*demo see `"demo/view/view.cpp"`*
+
+***示例:***
+
+*示例见 `"demo/view/view.cpp"`*
 
 ---
 
@@ -234,16 +281,10 @@ compile time `directed acyclic graph` execution flow adapter, adapting delegatio
 #include "acyclic.h"
 ```
 
-<!---- >
-
 ***example:***
 
-*demo see `"demo/acyclic.cpp"`*
+*demo see `"demo/acyclic/"`*
 
 ***示例:***
 
-*示例见 `"demo/acyclic.cpp"`*
-
----
-
-<!---->
+*示例见 `"demo/acyclic/"`*

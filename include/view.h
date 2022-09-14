@@ -51,6 +51,8 @@ namespace fake
 		static constexpr std::size_t size() noexcept{return sizeof...(_Chars);}
 		static constexpr std::size_t length() noexcept{return sizeof...(_Chars);}
 		
+		static constexpr std::size_t npos = std::string_view::npos;
+		
 		template<std::size_t _Index>
 		requires (_Index <= sizeof...(_Chars))
 		static constexpr char at() noexcept{
@@ -58,7 +60,164 @@ namespace fake
 			return local[_Index];
 		}
 		
-		template<std::size_t _Index, std::size_t _Size>
+		static constexpr char front() noexcept{
+			return at<0>();
+		}
+		
+		static constexpr char back() noexcept{
+			return at<sizeof...(_Chars) + !sizeof...(_Chars) - 1>();
+		}
+		
+		static constexpr bool empty() noexcept{
+			return sizeof...(_Chars) == 0;
+		}
+		
+	private:
+		template<fake::detail::view::string _Value>
+		requires (_Value.size() > 0)
+		static constexpr auto make_view() noexcept{
+			return []<std::size_t... _Index>(std::index_sequence<_Index...>){
+				return fake::view<_Value.template at<_Index>()...>{};
+			}(std::make_index_sequence<_Value.size() - 1>{});
+		}
+		
+	public:
+		template<fake::view _Value>
+		static constexpr bool starts_with() noexcept{
+			constexpr auto prefix_v = _Value;
+			constexpr std::string_view self{data()};
+			constexpr std::string_view prefix{prefix_v.data()};
+			
+			return self.starts_with(prefix);
+		}
+		
+		template<fake::detail::view::string _Value>
+		requires requires{make_view<_Value>();}
+		static constexpr bool starts_with() noexcept{
+			return starts_with<make_view<_Value>()>();
+		}
+		
+		template<fake::view _Value>
+		static constexpr bool ends_with() noexcept{
+			constexpr auto suffix_v = _Value;
+			constexpr std::string_view self{data()};
+			constexpr std::string_view suffix{suffix_v.data()};
+			
+			return self.ends_with(suffix);
+		}
+		
+		template<fake::detail::view::string _Value>
+		requires requires{make_view<_Value>();}
+		static constexpr bool ends_with() noexcept{
+			return ends_with<make_view<_Value>()>();
+		}
+		
+		template<fake::view _Value>
+		static constexpr bool contains() noexcept{
+			constexpr auto element_v = _Value;
+			constexpr std::string_view self{data()};
+			constexpr std::string_view element{element_v.data()};
+			
+			return self.find(element) != npos;
+		}
+		
+		template<fake::detail::view::string _Value>
+		requires requires{make_view<_Value>();}
+		static constexpr bool contains() noexcept{
+			return contains<make_view<_Value>()>();
+		}
+		
+		template<fake::view _Value, std::size_t _Index = 0>
+		static constexpr std::size_t find() noexcept{
+			constexpr auto element_v = _Value;
+			constexpr std::string_view self{data()};
+			constexpr std::string_view element{element_v.data()};
+			
+			return self.find(element, _Index);
+		}
+		
+		template<fake::detail::view::string _Value, std::size_t _Index = 0>
+		requires requires{make_view<_Value>();}
+		static constexpr std::size_t find() noexcept{
+			return find<make_view<_Value>(), _Index>();
+		}
+		
+		template<fake::view _Value, std::size_t _Index = npos>
+		static constexpr std::size_t rfind() noexcept{
+			constexpr auto element_v = _Value;
+			constexpr std::string_view self{data()};
+			constexpr std::string_view element{element_v.data()};
+			
+			return self.rfind(element, _Index);
+		}
+		
+		template<fake::detail::view::string _Value, std::size_t _Index = npos>
+		requires requires{make_view<_Value>();}
+		static constexpr std::size_t rfind() noexcept{
+			return rfind<make_view<_Value>(), _Index>();
+		}
+		
+		template<fake::view _Value, std::size_t _Index = 0>
+		static constexpr std::size_t find_first_of() noexcept{
+			constexpr auto element_v = _Value;
+			constexpr std::string_view self{data()};
+			constexpr std::string_view element{element_v.data()};
+			
+			return self.find_first_of(element, _Index);
+		}
+		
+		template<fake::detail::view::string _Value, std::size_t _Index = 0>
+		requires requires{make_view<_Value>();}
+		static constexpr std::size_t find_first_of() noexcept{
+			return find_first_of<make_view<_Value>(), _Index>();
+		}
+		
+		template<fake::view _Value, std::size_t _Index = npos>
+		static constexpr std::size_t find_last_of() noexcept{
+			constexpr auto element_v = _Value;
+			constexpr std::string_view self{data()};
+			constexpr std::string_view element{element_v.data()};
+			
+			return self.find_last_of(element, _Index);
+		}
+		
+		template<fake::detail::view::string _Value, std::size_t _Index = npos>
+		requires requires{make_view<_Value>();}
+		static constexpr std::size_t find_last_of() noexcept{
+			return find_last_of<make_view<_Value>(), _Index>();
+		}
+		
+		template<fake::view _Value, std::size_t _Index = 0>
+		static constexpr std::size_t find_first_not_of() noexcept{
+			constexpr auto element_v = _Value;
+			constexpr std::string_view self{data()};
+			constexpr std::string_view element{element_v.data()};
+			
+			return self.find_first_not_of(element, _Index);
+		}
+		
+		template<fake::detail::view::string _Value, std::size_t _Index = 0>
+		requires requires{make_view<_Value>();}
+		static constexpr std::size_t find_first_not_of() noexcept{
+			return find_first_not_of<make_view<_Value>(), _Index>();
+		}
+		
+		template<fake::view _Value, std::size_t _Index = npos>
+		static constexpr std::size_t find_last_not_of() noexcept{
+			constexpr auto element_v = _Value;
+			constexpr std::string_view self{data()};
+			constexpr std::string_view element{element_v.data()};
+			
+			return self.find_last_not_of(element, _Index);
+		}
+		
+		template<fake::detail::view::string _Value, std::size_t _Index = npos>
+		requires requires{make_view<_Value>();}
+		static constexpr std::size_t find_last_not_of() noexcept{
+			return find_last_not_of<make_view<_Value>(), _Index>();
+		}
+		
+		template<std::size_t _Index, std::size_t _Size = npos>
 		requires (_Index <= sizeof...(_Chars))
 		static constexpr auto substr() noexcept{
 			constexpr char local[]{_Chars..., '\0'};
@@ -69,6 +228,8 @@ namespace fake
 		
 		static constexpr decltype(auto) data() noexcept{return (buffer);}
 		
+		static constexpr decltype(auto) c_str() noexcept{return (buffer);}
+		
 	private:
 		static constexpr char buffer[]{_Chars..., '\0'};
 	};
@@ -76,6 +237,30 @@ namespace fake
 	template<char... _Lhs, char... _Rhs>
 	constexpr auto operator+(view<_Lhs...>, view<_Rhs...>) noexcept{
 		return view<_Lhs..., _Rhs...>{};
+	}
+	
+	template<char... _Lhs, char... _Rhs>
+	constexpr bool operator==(view<_Lhs...> _lhs, view<_Rhs...> _rhs) noexcept{
+		constexpr std::string_view lhs{_lhs.data()};
+		constexpr std::string_view rhs{_rhs.data()};
+		
+		return lhs == rhs;
+	}
+	
+	template<char... _Lhs, char... _Rhs>
+	constexpr bool operator!=(view<_Lhs...> _lhs, view<_Rhs...> _rhs) noexcept{
+		constexpr std::string_view lhs{_lhs.data()};
+		constexpr std::string_view rhs{_rhs.data()};
+		
+		return lhs != rhs;
+	}
+	
+	template<char... _Lhs, char... _Rhs>
+	constexpr auto operator<=>(view<_Lhs...> _lhs, view<_Rhs...> _rhs) noexcept{
+		constexpr std::string_view lhs{_lhs.data()};
+		constexpr std::string_view rhs{_rhs.data()};
+		
+		return lhs <=> rhs;
 	}
 	
 	template<typename = void>
