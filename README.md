@@ -212,7 +212,7 @@ compile time `lambda` functor algorithm tool kit for `std::tuple`
 
 int main(int _argc, char* _argv[]){
     using namespace fake::literals;
-    constexpr fake::view v = "hello view"_v;
+    constexpr fake::view origin = "hello view"_v;
     constexpr auto dupli = decltype(origin){}; // make a new copy just from the type. 
     constexpr auto& data = dupli.substr<6>().data();
     static_assert(std::same_as<const char(&)[5], decltype(data)>);
