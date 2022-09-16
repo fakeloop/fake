@@ -63,15 +63,19 @@ namespace fake::acyclic::concepts
 	template<typename _Token, typename _Expr, typename _Promise>
 	concept expr_to_awaitable_via_promise_c = requires(_Promise _p){
 		requires
-			requires(_Expr &_e){awaitable_c<decltype(_p.await_transform(_e))>;} ||
-			requires(_Expr &&_e){awaitable_c<decltype(_p.await_transform(_e))>;} ||
+			requires(_Expr &_e){requires awaitable_c<decltype(_p.await_transform(_e))>;} ||
+			requires(_Expr &&_e){requires awaitable_c<decltype(_p.await_transform(_e))>;} ||
 			requires(_Expr &_e){
 				requires _Token::scheduler_inject;
-				awaitable_c<decltype(_p.await_transform(fake::pass<fake::custom::tool::acyclic::executor_t>(_e)))>;
+				requires awaitable_c<
+					decltype(_p.await_transform(fake::pass<fake::custom::tool::acyclic::executor_t>(_e)))
+				>;
 			} ||
 			requires(_Expr &&_e){
 				requires _Token::scheduler_inject;
-				awaitable_c<decltype(_p.await_transform(fake::pass<fake::custom::tool::acyclic::executor_t>(_e)))>;
+				requires awaitable_c<
+					decltype(_p.await_transform(fake::pass<fake::custom::tool::acyclic::executor_t>(_e)))
+				>;
 			};
 	};
 	
@@ -245,7 +249,7 @@ namespace fake
 	template<typename _Type>
 	concept pass_c = fake::trait_v<pass_t, std::remove_cvref_t<_Type>>;
 	
-	template<typename _Token = fake::null_t>
+	template<typename _Token>
 	constexpr auto pass(auto &&..._type){
 		return pass_t(fake::pack_v<_Token>, std::forward<decltype(_type)>(_type)...);
 	}

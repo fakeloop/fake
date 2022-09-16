@@ -16,11 +16,11 @@
 
 ## ***compile:***
 
-all codes compiled with `gcc-11.2.0`.
+all codes passed the compilation test on `gcc-11.2.0` `gcc-11.2.1` `gcc-12.2.0`.
 
 ## ***编译:***
 
-所有代码通过 `gcc-11.2.0` 编译。
+所有代码已于 `gcc-11.2.0` `gcc-11.2.1` `gcc-12.2.0` 通过编译测试。
 
 ---
 
