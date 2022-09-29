@@ -242,11 +242,11 @@ view
 
 ***version:***
 
-the `meta-programming` subsystem of `fake` is interface-stable currently.
+the `stateful meta-programming` subsystem of `fake` is interface-stable currently.
 
 ***版本:***
 
-`fake` `元编程` 子系统目前接口稳定。
+`fake` `有状态元编程` 子系统目前接口稳定。
 
 ---
 
