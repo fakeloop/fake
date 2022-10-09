@@ -450,6 +450,15 @@ namespace fake
 	template<std::convertible_to<bool> auto _Condition, auto _True, auto _False>
 	constexpr auto conditional_v = conditional<bool(_Condition), _True, _False>::value;
 	
+	template<typename, template<typename...> typename>
+	struct mimic{};
+	
+	template<template<typename...> typename _From, template<typename...> typename _To, typename... _Args>
+	struct mimic<_From<_Args...>, _To>{using type = _To<_Args...>;};
+	
+	template<typename _From, template<typename...> typename _To>
+	using mimic_t = typename mimic<std::remove_cvref_t<_From>, _To>::type;
+	
 }
 
 #endif /*__FAKE_TRAITS_H__*/ 

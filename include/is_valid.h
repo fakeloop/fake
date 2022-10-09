@@ -30,6 +30,9 @@ namespace fake
 	template<template<typename...> typename _Tamplate, typename _Type>
 	constexpr bool trait_v = trait<_Tamplate, _Type>::value;
 	
+	template<typename _Type, template<typename...> typename _Tamplate>
+	concept trait_c = trait_v<_Tamplate, _Type>;
+	
 	template<template<auto...> typename, typename>
 	struct trait_auto : std::false_type{};
 	

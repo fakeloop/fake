@@ -600,6 +600,11 @@ namespace fake::meta
 			return update<std::remove_cvref_t<_Pack>>([]{});
 		}
 		
+		template<auto = refresh(tool::token{}, key{}), typename _Value>
+		constexpr auto assign(_Value&&) const noexcept{
+			return update<fake::type_package<_Value>>([]{});
+		}
+		
 		template<auto = refresh(tool::token{}, key{}), fake::pack_c _Pack>
 		constexpr auto operator=(_Pack&&) const noexcept{
 			return update<std::remove_cvref_t<_Pack>>([]{});
