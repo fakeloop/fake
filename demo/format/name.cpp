@@ -26,7 +26,8 @@ namespace demo::format
 	void name(){
 		using namespace fake::literals;
 		std::cout << fake::format<token::name>("yuh: {float}, {[]}, {upper}."_v, 114.514f, 1919, "yaju") << std::endl;
-		// fake::custom::format::config::formatter<token::name, "{dummy}"_v>([](const auto&){}); // inject after call. 
+		// the following invocation is ill-formed since the register interface has been disabled by the previous call. 
+		// fake::custom::format::config::formatter<[]{}, token::name, "{dummy}"_v>([](const auto&){});
 	}
 	
 }
