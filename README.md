@@ -327,18 +327,30 @@ int main(int _argc, char* _argv[])
 
 ***example:***
 
-*demo see `"demo/meta/"`*
+*demo see `"demo/meta/"` & `"demo/format/"`*
+
+`"demo/format/"` is a comprehensive example to demonstrate the generic techniques of the `stateful meta-programming`
+
+***示例:***
+
+*示例见 `"demo/meta/"` & `"demo/format/"`*
+
+`"demo/format/"` 是用于演示 `有状态元编程` 通用技巧的综合示例
+
+***compile:***
+
+***编译:***
+
+`"demo/meta/":`
 
 ```sh
 g++ meta.cpp -o meta.out -iquote "../../include" -std=c++20 -Wno-non-template-friend
 ```
 
-***示例:***
-
-*示例见 `"demo/meta/"`*
+`"demo/format/":`
 
 ```sh
-g++ meta.cpp -o meta.out -iquote "../../include" -std=c++20 -Wno-non-template-friend
+./make.sh
 ```
 
 ---
