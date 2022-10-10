@@ -17,9 +17,9 @@
 namespace fake
 {
 	
-	enum struct colors : std::size_t{black, red, green, yellow, blue, magenta, cyan, white, transparent};
+	enum struct colors : std::size_t{black, red, green, yellow, blue, magenta, cyan, white};
 	
-	template<colors _front, colors _back = colors::transparent>
+	template<colors _front, colors _back = colors::black>
 	constexpr decltype(auto) color(const fake::view_c auto &_view) noexcept{
 		using namespace fake::literals;
 		
@@ -29,7 +29,7 @@ namespace fake
 		return ("\e[3"_v + fake::view<front>{} + ";4"_v + fake::view<back>{} + "m"_v + _view + "\e[0m"_v).data();
 	}
 	
-	template<colors _front, colors _back = colors::transparent>
+	template<colors _front, colors _back = colors::black>
 	std::string color(const std::string &_str){
 		using namespace fake::literals;
 		
@@ -52,7 +52,7 @@ namespace fake
 		return result;
 	}
 	
-	template<colors _front, colors _back = colors::transparent>
+	template<colors _front, colors _back = colors::black>
 	std::string color(const std::string_view &_sv){return fake::color<_front, _back>(std::string{_sv});}
 	
 	template<typename _Number>
