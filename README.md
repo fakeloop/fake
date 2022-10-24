@@ -85,11 +85,15 @@ the `stateful meta-programming` is some sort of **black magic**, which has alway
 
 The C++ standard may drop support for this feature in the future, although the issue is currently in an open state.
 
+the following headers contain **black magic**: `include/type_map.h` `include/meta.h`.
+
 ***警告:***
 
 `有状态元编程` 是一种 **黑魔法**, 一直以来都存在 ***争议***。
 
 C++ 标准可能会在未来放弃对该特性的支持，虽然目前该议题处于开放状态。
+
+这些头文件包含 **black magic**: `include/type_map.h` `include/meta.h`.
 
 ---
 
@@ -327,15 +331,15 @@ int main(int _argc, char* _argv[])
 
 ***example:***
 
-*demo see `"demo/meta/"` & `"demo/format/"`*
+*demo see `"demo/meta/"` `"demo/format/"` `"demo/print/"`*
 
-`"demo/format/"` is a comprehensive example to demonstrate the generic techniques of the `stateful meta-programming`
+`"demo/format/"` and `"demo/print/"` are comprehensive examples to demonstrate the generic techniques of the `stateful meta-programming`
 
 ***示例:***
 
-*示例见 `"demo/meta/"` & `"demo/format/"`*
+*示例见 `"demo/meta/"` `"demo/format/"` `"demo/print/"`*
 
-`"demo/format/"` 是用于演示 `有状态元编程` 通用技巧的综合示例
+`"demo/format/"` 和 `"demo/print/"` 是用于演示 `有状态元编程` 通用技巧的综合示例
 
 ***compile:***
 
@@ -348,6 +352,12 @@ g++ meta.cpp -o meta.out -iquote "../../include" -std=c++20 -Wno-non-template-fr
 ```
 
 `"demo/format/":`
+
+```sh
+./make.sh
+```
+
+`"demo/print/":`
 
 ```sh
 ./make.sh
