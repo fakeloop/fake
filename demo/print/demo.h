@@ -14,7 +14,7 @@ namespace demo
 		struct tempack{};
 		
 		template<typename>
-		struct tempextr{};
+		struct tempextr{using type = void;};
 		
 		template<template<typename...> typename _Template, typename... _Paramaters>
 		struct tempextr<_Template<_Paramaters...>>{using type = tempack<_Template>;};
@@ -162,16 +162,17 @@ namespace demo
 			
 			static constexpr fake::meta::unordered_map aggr = []{};
 			
-			template<typename _Aggr, std::size_t _index>
+			// using a passed '_refresh' from an evaluated context to make clang happy. 
+			template<typename _Aggr, auto _refresh, std::size_t _index>
 			struct any{
 				template<typename _Type>
-				requires requires{aggr.emplace<[]{}>(fake::pack_v<aggr_t<_Aggr, _index>>, fake::pack_v<_Type>);}
-				consteval operator _Type(){return *(_Type*)nullptr;}
+				requires requires{aggr.emplace<_refresh>(fake::pack_v<aggr_t<_Aggr, _index>>, fake::pack_v<_Type>);}
+				consteval operator _Type();
 			};
 			
 			template<typename _Aggr, std::size_t... _index>
 			static consteval auto iterate(std::index_sequence<_index...>) noexcept{
-				if constexpr(requires{_Aggr{any<_Aggr, _index>{}...};})
+				if constexpr(requires{_Aggr{any<_Aggr, []{}, _index>{}...};})
 					return iterate<_Aggr>(std::make_index_sequence<sizeof...(_index) + 1>());
 			}
 			
@@ -181,8 +182,13 @@ namespace demo
 				using type = std::remove_cvref_t<_Aggr>;
 				return [](auto &&_e, const auto &_f){
 					std::size_t offset = 0;
-					auto impl = [&]<std::size_t _index>(auto &_self, index_t<_index>) requires(
-						!std::same_as<fake::take_t<aggr.at<[]{}>(fake::pack_v<aggr_t<type, _index>>)>, fake::null_t>
+					// using a passed '_refresh' from an evaluated context to make clang happy. 
+					auto impl = [&]<std::size_t _index, auto _refresh>(
+						auto &_self,
+						fake::mezz_t<_refresh>,
+						index_t<_index>
+					) requires(
+						!std::same_as<fake::take_t<aggr.at<_refresh>(fake::pack_v<aggr_t<type, _index>>)>, fake::null_t>
 					){
 						using type = fake::take_t<aggr.at<[]{}>(fake::pack_v<aggr_t<type, _index>>)>;
 						constexpr std::size_t element = alignof(type);
@@ -191,12 +197,12 @@ namespace demo
 						offset = (offset + element - 1 & ~(element - 1)) + bigger;
 						
 						_f(*reinterpret_cast<type*>(reinterpret_cast<char*>(&_e) + offset - bigger));
-						if constexpr(requires{_self(_self, index_t<_index + 1>{});})
-							_self(_self, index_t<_index + 1>{});
+						if constexpr(requires{_self(_self, fake::mezz_v<[]{}>, index_t<_index + 1>{});})
+							_self(_self, fake::mezz_v<[]{}>, index_t<_index + 1>{});
 					};
 					
-					if constexpr(requires{impl(impl, index_t<0>{});})
-						impl(impl, index_t<0>{});
+					if constexpr(requires{impl(impl, fake::mezz_v<[]{}>, index_t<0>{});})
+						impl(impl, fake::mezz_v<[]{}>, index_t<0>{});
 				};
 			}
 			

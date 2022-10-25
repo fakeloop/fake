@@ -116,7 +116,8 @@ int main(int _argc, char* _argv[])
 	};
 	
 	using namespace std::string_literals;
-	bar var{{{114, 514.0d, {1919, 893}, {{"ya", 8}, {"ju", 10}}}, "MGR", "YUH"}, {"SZ", "JOKER"}, "DIYUSI"s, "NEL"s};
+	using bars = bar<std::string>;
+	bars var{{{114, 514.0, {1919, 893}, {{"ya", 8}, {"ju", 10}}}, "MGR", "YUH"}, {"SZ", "JOKER"}, "DIYUSI"s, "NEL"s};
 	coffer lost_owner{};
 	
 	print(var);
