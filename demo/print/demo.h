@@ -254,7 +254,7 @@ namespace demo
 		namespace detail::for_each
 		{
 			
-			template<typename _ConfigToken, fake::meta::array_c auto _footprint, typename _Type, typename _Func>
+			template<typename _ConfigToken, auto _footprint, typename _Type, typename _Func>
 			concept invocable_c = requires(_Type &&_e, const _Func &_f){
 				custom::for_each::method<_ConfigToken, _footprint>(std::forward<_Type>(_e), _f);
 			};
