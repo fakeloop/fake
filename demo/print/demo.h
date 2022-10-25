@@ -181,7 +181,7 @@ namespace demo
 				using type = std::remove_cvref_t<_Aggr>;
 				return [](auto &&_e, const auto &_f){
 					std::size_t offset = 0;
-					auto impl = [&]<std::size_t _index>(auto &_self, index_t<_index>) mutable requires(
+					auto impl = [&]<std::size_t _index>(auto &_self, index_t<_index>) requires(
 						!std::same_as<fake::take_t<aggr.at<[]{}>(fake::pack_v<aggr_t<type, _index>>)>, fake::null_t>
 					){
 						using type = fake::take_t<aggr.at<[]{}>(fake::pack_v<aggr_t<type, _index>>)>;
