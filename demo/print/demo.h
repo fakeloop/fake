@@ -127,6 +127,7 @@ namespace demo
 				}
 				
 				template<auto, typename _ConfigToken, tool::steal_c _Steal>
+				requires (!std::same_as<fake::take_t<configure.at<[]{}>(fake::pack_v<guard<_ConfigToken>>)>, forbid>)
 				static consteval auto emplace_visitor() noexcept{
 					using adaptor_t = typename extract<_Steal>::adaptor;
 					using members_t = typename extract<_Steal>::members;
