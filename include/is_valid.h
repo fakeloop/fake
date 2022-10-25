@@ -218,7 +218,7 @@ namespace fake
 	template<typename... _Types>
 	constexpr std::size_t pack_size_v = sizeof...(_Types);
 	
-	template<std::size_t = {}, typename = void>
+	template<std::size_t = 0, typename = void>
 	struct element{};
 	
 	template<std::size_t _Index, typename... _Types, template<typename...> typename _Type>
@@ -269,7 +269,7 @@ namespace fake
 		return detail::is_valid::wrapper<_Checker>{};
 	}
 	
-	template<mezz_c auto _constraint, typename... _Args>
+	template<auto _constraint, typename... _Args>
 	concept constraint_c = requires(_Args ..._args){requires _constraint.value(_args...);};
 	
 }

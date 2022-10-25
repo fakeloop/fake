@@ -1780,7 +1780,7 @@ namespace fake::meta
 		template<auto = refresh(tool::token{}, adl{}), typename _Key>
 		requires fake::pack_c<_Key>
 		constexpr auto at(_Key) const noexcept{
-			using key_type = _Key::type;
+			using key_type = typename _Key::type;
 			constexpr std::size_t hash = std::size_t(fake::symbol::make_view<key_type>().hash());
 			return at_impl<hash, key_type>([]{});
 		}
@@ -1854,7 +1854,7 @@ namespace fake::meta
 		template<auto = refresh(tool::token{}, adl{}), typename _Key>
 		requires fake::pack_c<_Key>
 		constexpr auto erase(_Key) const noexcept{
-			using key_type = _Key::type;
+			using key_type = typename _Key::type;
 			constexpr std::size_t hash = std::size_t(fake::symbol::make_view<key_type>().hash());
 			return erase_impl<hash, key_type>([]{});
 		}
@@ -1863,7 +1863,7 @@ namespace fake::meta
 		template<auto = refresh(tool::token{}, adl{}), typename _Key>
 		requires fake::pack_c<_Key>
 		constexpr auto contains(_Key) const noexcept{
-			using key_type = _Key::type;
+			using key_type = typename _Key::type;
 			constexpr std::size_t hash = std::size_t(fake::symbol::make_view<key_type>().hash());
 			return contains_impl<hash, key_type>([]{});
 		}
@@ -2328,7 +2328,7 @@ namespace fake::meta
 				_Broker
 			>
 			constexpr auto operator=(const _Broker&) const noexcept{
-				using value_t = _Broker::type;
+				using value_t = typename _Broker::type;
 				if constexpr(std::is_same_v<value_t, origin_t> == false){
 					constexpr container_t map;
 					map.emplace(fake::pack_v<query_t>, fake::pack_v<value_t>);
