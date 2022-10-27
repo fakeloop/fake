@@ -46,11 +46,11 @@ namespace demo
 		template<typename _Type>
 		concept steal_c = is_steal_v<_Type>;
 		
-		template<auto, auto>
+		template<auto>
 		struct name;
 		
 		template<typename _Object, typename _Type, _Type _Object::*_member>
-		struct name<_member, _member>{
+		struct name<_member>{
 		private:
 			template<fake::mezz_c _Mezz, std::size_t _size>
 			static consteval std::string_view shrink() noexcept{
@@ -138,10 +138,7 @@ namespace demo
 								(
 									_f(
 										_e.*std::tuple_element_t<_index, members_t>::value,
-										tool::name<
-											std::tuple_element_t<_index, members_t>::value,
-											std::tuple_element_t<_index, members_t>::value
-										>::member
+										tool::name<std::tuple_element_t<_index, members_t>::value>::member
 									),
 									...
 								);
