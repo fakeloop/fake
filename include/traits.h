@@ -234,7 +234,7 @@ namespace fake
 	concept array_c = is_array_v<_Type>;
 	
 	template<array_c _Array>
-	struct array_value_type_t final{
+	struct array_value final{
 	private:
 		using ref_t = std::add_lvalue_reference_t<std::remove_cvref_t<_Array>>;
 		
@@ -246,7 +246,7 @@ namespace fake
 	};
 	
 	template<array_c _Array>
-	using array_value_type_t_t = typename array_value_type_t<_Array>::type;
+	using array_value_t = typename array_value<_Array>::type;
 	
 	template<array_c _Array>
 	struct array_size final{
