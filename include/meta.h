@@ -166,11 +166,10 @@ namespace fake::meta
 		template<typename _Array, typename _Func, std::size_t... _Index>
 		constexpr auto for_each_impl(_Array &&_array, _Func &&_func, std::index_sequence<_Index...>)
 		{
-			(_func(fake::pack_v<array_element<_Index, _Array>>), ...);
+			(_func(fake::pack_v<array_element_t<_Index, _Array>>), ...);
 		}
 		
-		template<typename _Array, typename _Func>
-		requires fake::meta::array_c<_Array>
+		template<fake::meta::array_c _Array, typename _Func>
 		constexpr auto for_each(_Array &&_array, _Func &&_func)
 		{
 			for_each_impl(
@@ -661,7 +660,7 @@ namespace fake::meta
 		
 		template<typename _Lambda>
 		constexpr vector(_Lambda &&_lambda) noexcept{
-			update<storage<std::tuple<>>>([]{});
+			update<storage<meta::array<>>>([]{});
 		}
 		
 	private:
@@ -780,8 +779,8 @@ namespace fake::meta
 		template<typename _Lambda>
 		constexpr auto data(_Lambda &&_lambda) const noexcept{
 			constexpr auto result = read_impl([]{});
-			using tuple = typename decltype(result)::type::tuple_t;
-			return to_array<tuple>(std::make_index_sequence<std::tuple_size_v<tuple>>{});
+			using array = typename decltype(result)::type::array_t;
+			return array{};
 		}
 		
 		// capacity. 
@@ -798,7 +797,7 @@ namespace fake::meta
 		// modifier. 
 		template<typename _Lambda>
 		constexpr auto clear(_Lambda &&_lambda) const noexcept{
-			update<storage<std::tuple<>>>([]{});
+			update<storage<meta::array<>>>([]{});
 		}
 		
 		template<auto = refresh(tool::token{}, adl{}), typename _Constant, typename _Package>
@@ -820,7 +819,7 @@ namespace fake::meta
 				"\n-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-\n"
 			);
 			if constexpr(insert_origin){
-				using fresh = std::tuple<type_t>;
+				using fresh = meta::array<type_t>;
 				update<storage<fresh>>([]{});
 				
 				using broker_index = std::integral_constant<std::size_t, 0>;
@@ -830,17 +829,11 @@ namespace fake::meta
 			else if constexpr(valid_index)
 			{
 				constexpr auto result = read_impl([]{});
-				using tuple = typename decltype(result)::type::tuple_t;
+				using array = typename decltype(result)::type::array_t;
 				constexpr std::size_t tail = current_size - index_v;
-				using prefix = decltype(subtuple<tuple, 0>(std::make_index_sequence<index_v>{}));
-				using suffix = decltype(subtuple<tuple, index_v>(std::make_index_sequence<tail>{}));
-				using fresh = decltype(
-					std::tuple_cat(
-						std::declval<typename prefix::type>(),
-						std::declval<std::tuple<type_t>>(),
-						std::declval<typename suffix::type>()
-					)
-				);
+				using prefix = decltype(subarray<array, 0>(std::make_index_sequence<index_v>{}));
+				using suffix = decltype(subarray<array, index_v>(std::make_index_sequence<tail>{}));
+				using fresh = array_cat_t<typename prefix::type, meta::array<type_t>, typename suffix::type>;
 				update<storage<fresh>>([]{});
 				
 				using broker_index = std::integral_constant<std::size_t, index_v>;
@@ -869,7 +862,7 @@ namespace fake::meta
 				"\n-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-\n"
 			);
 			if constexpr(insert_origin){
-				using fresh = std::tuple<type_t>;
+				using fresh = meta::array<type_t>;
 				update<storage<fresh>>([]{});
 				
 				using broker_index = std::integral_constant<std::size_t, 0>;
@@ -879,17 +872,11 @@ namespace fake::meta
 			else if constexpr(valid_index)
 			{
 				constexpr auto result = read_impl([]{});
-				using tuple = typename decltype(result)::type::tuple_t;
+				using array = typename decltype(result)::type::array_t;
 				constexpr std::size_t tail = current_size - index_v;
-				using prefix = decltype(subtuple<tuple, 0>(std::make_index_sequence<index_v>{}));
-				using suffix = decltype(subtuple<tuple, index_v>(std::make_index_sequence<tail>{}));
-				using fresh = decltype(
-					std::tuple_cat(
-						std::declval<typename prefix::type>(),
-						std::declval<std::tuple<type_t>>(),
-						std::declval<typename suffix::type>()
-					)
-				);
+				using prefix = decltype(subarray<array, 0>(std::make_index_sequence<index_v>{}));
+				using suffix = decltype(subarray<array, index_v>(std::make_index_sequence<tail>{}));
+				using fresh = array_cat_t<typename prefix::type, meta::array<type_t>, typename suffix::type>;
 				update<storage<fresh>>([]{});
 				
 				using broker_index = std::integral_constant<std::size_t, index_v>;
@@ -957,16 +944,11 @@ namespace fake::meta
 			if constexpr(valid_index)
 			{
 				constexpr auto result = read_impl([]{});
-				using tuple = typename decltype(result)::type::tuple_t;
+				using array = typename decltype(result)::type::array_t;
 				constexpr std::size_t tail = current_size - index_v - 1;
-				using prefix = decltype(subtuple<tuple, 0>(std::make_index_sequence<index_v>{}));
-				using suffix = decltype(subtuple<tuple, index_v + 1>(std::make_index_sequence<tail>{}));
-				using fresh = decltype(
-					std::tuple_cat(
-						std::declval<typename prefix::type>(),
-						std::declval<typename suffix::type>()
-					)
-				);
+				using prefix = decltype(subarray<array, 0>(std::make_index_sequence<index_v>{}));
+				using suffix = decltype(subarray<array, index_v + 1>(std::make_index_sequence<tail>{}));
+				using fresh = array_cat_t<typename prefix::type, typename suffix::type>;
 				update<storage<fresh>>([]{});
 				
 				if constexpr(tail){
@@ -1012,10 +994,10 @@ namespace fake::meta
 			);
 			if constexpr(current_size){
 				constexpr auto result = read_impl([]{});
-				using tuple = typename decltype(result)::type::tuple_t;
-				using pack = decltype(subtuple<tuple, 0>(std::make_index_sequence<current_size - 1>{}));
+				using array = typename decltype(result)::type::array_t;
+				using pack = decltype(subarray<array, 0>(std::make_index_sequence<current_size - 1>{}));
 				update<storage<typename pack::type>>([]{});
-				return fake::pack_v<std::tuple_element_t<current_size - 1, tuple>>;
+				return fake::pack_v<meta::array_element_t<current_size - 1, array>>;
 			}
 			else{
 				return fake::pack_v<fake::null_t>;
@@ -1058,10 +1040,10 @@ namespace fake::meta
 			);
 			if constexpr(current_size){
 				constexpr auto result = read_impl([]{});
-				using tuple = typename decltype(result)::type::tuple_t;
-				using pack = decltype(subtuple<tuple, 1>(std::make_index_sequence<current_size - 1>{}));
+				using array = typename decltype(result)::type::array_t;
+				using pack = decltype(subarray<array, 1>(std::make_index_sequence<current_size - 1>{}));
 				update<storage<typename pack::type>>([]{});
-				return fake::pack_v<std::tuple_element_t<0, tuple>>;
+				return fake::pack_v<meta::array_element_t<0, array>>;
 			}
 			else{
 				return fake::pack_v<fake::null_t>;
@@ -1074,19 +1056,14 @@ namespace fake::meta
 			constexpr std::size_t size_v = _Constant::value;
 			constexpr std::size_t current_size = size_impl([]{});
 			constexpr auto result = read_impl([]{});
-			using tuple = typename decltype(result)::type::tuple_t;
+			using array = typename decltype(result)::type::array_t;
 			if constexpr(size_v < current_size){
-				using pack = decltype(subtuple<tuple, 0>(std::make_index_sequence<size_v>{}));
+				using pack = decltype(subarray<array, 0>(std::make_index_sequence<size_v>{}));
 				update<storage<typename pack::type>>([]{});
 			}
 			else if constexpr(current_size < size_v){
-				using suffix = decltype(exttuple<tuple>(std::make_index_sequence<size_v - current_size>{}));
-				using fresh = decltype(
-					std::tuple_cat(
-						std::declval<tuple>(),
-						std::declval<typename suffix::type>()
-					)
-				);
+				using suffix = decltype(extarray<array>(std::make_index_sequence<size_v - current_size>{}));
+				using fresh = array_cat_t<array, typename suffix::type>;
 				update<storage<fresh>>([]{});
 			}
 		}
@@ -1118,11 +1095,6 @@ namespace fake::meta
 			return fake::type_map::read<key, current>([]{});
 		}
 		
-		template<typename _Tuple, std::size_t... _Index>
-		static constexpr auto to_array(std::index_sequence<_Index...>) noexcept{
-			return meta::array<std::tuple_element_t<_Index, _Tuple>...>{};
-		}
-		
 		template<typename _Lambda>
 		static constexpr std::size_t size_impl(_Lambda &&_lambda) noexcept{
 			constexpr auto result = read_impl([]{});
@@ -1134,51 +1106,47 @@ namespace fake::meta
 		static constexpr auto emplace_back_impl(_Lambda &&_lambda) noexcept{
 			constexpr auto result = read_impl([]{});
 			using package = decltype(result);
-			using tuple_t = decltype(
-				std::tuple_cat(std::declval<typename package::type::tuple_t>(), std::declval<std::tuple<_Type>>())
-			);
-			update<storage<tuple_t>>([]{});
+			using array_t = array_cat_t<typename package::type::array_t, meta::array<_Type>>;
+			update<storage<array_t>>([]{});
 			
 			using broker_index = std::integral_constant<
 				std::size_t,
-				std::tuple_size_v<typename package::type::tuple_t>
+				meta::array_size_v<typename package::type::array_t>
 			>;
 			
-			return broker<broker_index, storage<tuple_t>>{};
+			return broker<broker_index, storage<array_t>>{};
 		}
 		
 		template<typename _Type, typename _Lambda>
 		static constexpr auto emplace_front_impl(_Lambda &&_lambda) noexcept{
 			constexpr auto result = read_impl([]{});
 			using package = decltype(result);
-			using tuple_t = decltype(
-				std::tuple_cat(std::declval<std::tuple<_Type>>(), std::declval<typename package::type::tuple_t>())
-			);
-			update<storage<tuple_t>>([]{});
+			using array_t = array_cat_t<meta::array<_Type>, typename package::type::array_t>;
+			update<storage<array_t>>([]{});
 			
 			using broker_index = std::integral_constant<std::size_t, 0>;
 			
-			return broker<broker_index, storage<tuple_t>>{};
+			return broker<broker_index, storage<array_t>>{};
 		}
 		
-		template<typename _Tuple, std::size_t _Origin, std::size_t... _Index>
-		static constexpr auto subtuple(std::index_sequence<_Index...>) noexcept{
-			return fake::pack_v<std::tuple<std::tuple_element_t<_Origin + _Index, _Tuple>...>>;
+		template<typename _Array, std::size_t _Origin, std::size_t... _Index>
+		static constexpr auto subarray(std::index_sequence<_Index...>) noexcept{
+			return fake::pack_v<meta::array<meta::array_element_t<_Origin + _Index, _Array>...>>;
 		}
 		
-		template<typename _Tuple, std::size_t... _Index>
-		static constexpr auto exttuple(std::index_sequence<_Index...>) noexcept{
-			return fake::pack_v<std::tuple<fake::type_t<decltype(_Index), fake::null_t>...>>;
+		template<typename _Array, std::size_t... _Index>
+		static constexpr auto extarray(std::index_sequence<_Index...>) noexcept{
+			return fake::pack_v<meta::array<fake::type_t<decltype(_Index), fake::null_t>...>>;
 		}
 		
 		// storage. 
-		template<typename _Tuple>
+		template<typename _Array>
 		struct storage{
 			constexpr storage() noexcept{}
 			storage(const storage&) = delete;
 			
-			static constexpr std::size_t size = std::tuple_size_v<_Tuple>;
-			using tuple_t = _Tuple;
+			static constexpr std::size_t size = meta::array_size_v<_Array>;
+			using array_t = _Array;
 		};
 		
 	private:
@@ -1195,7 +1163,7 @@ namespace fake::meta
 			broker(const broker&) = delete;
 			
 			static constexpr std::size_t index_v = _Constant::value;
-			using type = std::tuple_element_t<index_v, typename _Storage::tuple_t>;
+			using type = meta::array_element_t<index_v, typename _Storage::array_t>;
 			
 			template<typename _Lambda> constexpr auto operator()(_Lambda&&) const noexcept{return fake::pack_v<type>;}
 			
@@ -1205,9 +1173,9 @@ namespace fake::meta
 				
 				constexpr container_t vec{};
 				
-				using tuple = typename decltype(vec.read_impl(pull<lambda_t>{}))::type::tuple_t;
+				using array = typename decltype(vec.read_impl(pull<lambda_t>{}))::type::array_t;
 				
-				constexpr auto pack = replace<tuple, _Type>(std::make_index_sequence<std::tuple_size_v<tuple>>{});
+				constexpr auto pack = replace<array, _Type>(std::make_index_sequence<meta::array_size_v<array>>{});
 				using storage = typename vector::template storage<typename decltype(pack)::type>;
 				
 				vec.update<storage>(update<lambda_t>{});
@@ -1228,10 +1196,10 @@ namespace fake::meta
 				
 				constexpr container_t vec{};
 				
-				using tuple = typename decltype(vec.read_impl(pull<lambda_t>{}))::type::tuple_t;
+				using array = typename decltype(vec.read_impl(pull<lambda_t>{}))::type::array_t;
 				using type = typename _Broker::type;
 				
-				constexpr auto pack = replace<tuple, type>(std::make_index_sequence<std::tuple_size_v<tuple>>{});
+				constexpr auto pack = replace<array, type>(std::make_index_sequence<meta::array_size_v<array>>{});
 				using storage = typename vector::template storage<typename decltype(pack)::type>;
 				
 				vec.update<storage>(update<lambda_t>{});
@@ -1255,14 +1223,14 @@ namespace fake::meta
 			template<typename _Type> struct refresh{};
 			struct token;
 			
-			template<typename _Tuple, typename _Type, std::size_t... _Args>
+			template<typename _Array, typename _Type, std::size_t... _Args>
 			static constexpr auto replace(std::index_sequence<_Args...>) noexcept{
 				return fake::pack_v<
-					std::tuple<
+					meta::array<
 						std::conditional_t<
 							index_v == _Args,
 							_Type,
-							std::tuple_element_t<_Args, _Tuple>
+							meta::array_element_t<_Args, _Array>
 						>...
 					>
 				>;
@@ -1297,9 +1265,9 @@ namespace fake::meta
 			constexpr auto init = node_next([]{});
 			using init_t = decltype(init);
 			constexpr auto result = data_impl<init_t>([]{});
-			using tuple_t = typename decltype(result)::type;
+			using array_t = typename decltype(result)::type;
 			
-			return tuple_to_array<tuple_t>();
+			return array_t{};
 		}
 		
 		// capacity. 
@@ -1400,13 +1368,13 @@ namespace fake::meta
 			using next_t = _Next;
 		};
 		
-		template<typename _Tuple>
+		template<typename _Array>
 		struct storage{
 			constexpr storage() noexcept{}
 			storage(const storage&) = delete;
 			
-			static constexpr std::size_t size = std::tuple_size_v<_Tuple>;
-			using tuple_t = _Tuple;
+			static constexpr std::size_t size = meta::array_size_v<_Array>;
+			using array_t = _Array;
 		};
 		
 		// node interface. 
@@ -1575,7 +1543,7 @@ namespace fake::meta
 			if constexpr(next)
 				return fake::type_map::read<key<_Hash>, next - 1>([]{});
 			else
-				return fake::pack_v<storage<std::tuple<>>>;
+				return fake::pack_v<storage<meta::array<>>>;
 		}
 		
 		template<std::size_t _Hash, typename _Lambda>
@@ -1585,54 +1553,42 @@ namespace fake::meta
 			return package::type::size;
 		}
 		
-		// tuple interface. 
-		template<typename _Tuple, typename _Target>
-		requires fake::tuple_c<_Tuple>
-		static constexpr auto tuple_contains() noexcept{
+		// array interface. 
+		template<fake::meta::array_c _Array, typename _Target>
+		static constexpr auto array_contains() noexcept{
 			constexpr auto impl = []<std::size_t... _Index>(std::index_sequence<_Index...>){
-				return (std::is_same_v<std::tuple_element_t<_Index, _Tuple>, _Target> || ...);
+				return (std::is_same_v<meta::array_element_t<_Index, _Array>, _Target> || ...);
 			};
-			return impl(std::make_index_sequence<std::tuple_size_v<_Tuple>>());
+			return impl(std::make_index_sequence<meta::array_size_v<_Array>>());
 		}
 		
-		template<typename _Tuple, typename _Type>
-		requires fake::tuple_c<_Tuple>
-		static constexpr auto tuple_append() noexcept{
-			using tuple_t = decltype(std::tuple_cat(std::declval<_Tuple>(), std::declval<std::tuple<_Type>>()));
-			return fake::pack_v<tuple_t>;
+		template<fake::meta::array_c _Array, typename _Type>
+		static constexpr auto array_append() noexcept{
+			using array_t = array_cat_t<_Array, meta::array<_Type>>;
+			return fake::pack_v<array_t>;
 		}
 		
-		template<typename _Tuple, typename _Type, std::size_t _Index = 0>
-		requires fake::tuple_c<_Tuple>
-		static constexpr auto tuple_remove() noexcept{
-			constexpr std::size_t size = std::tuple_size_v<_Tuple>;
+		template<fake::meta::array_c _Array, typename _Type, std::size_t _Index = 0>
+		static constexpr auto array_remove() noexcept{
+			constexpr std::size_t size = meta::array_size_v<_Array>;
 			if constexpr(_Index < size){
-				using current_t = std::tuple_element_t<_Index, _Tuple>;
-				constexpr auto package = tuple_remove<_Tuple, _Type, _Index + 1>();
-				using tuple_t = typename decltype(package)::type;
+				using current_t = meta::array_element_t<_Index, _Array>;
+				constexpr auto package = array_remove<_Array, _Type, _Index + 1>();
+				using array_t = typename decltype(package)::type;
 				
 				if constexpr(std::is_same_v<_Type, current_t>){
-					return fake::pack_v<tuple_t>;
+					return fake::pack_v<array_t>;
 				}
 				else{
-					using type_t = std::tuple<current_t>;
-					using cat_t = decltype(std::tuple_cat(std::declval<tuple_t>(), std::declval<type_t>()));
+					using type_t = meta::array<current_t>;
+					using cat_t = array_cat_t<array_t, type_t>;
 					
 					return fake::pack_v<cat_t>;
 				}
 			}
 			else{
-				return fake::pack_v<std::tuple<>>;
+				return fake::pack_v<meta::array<>>;
 			}
-		}
-		
-		template<typename _Tuple>
-		requires fake::tuple_c<_Tuple>
-		static constexpr auto tuple_to_array() noexcept{
-			constexpr auto impl = []<std::size_t... _Index>(std::index_sequence<_Index...>){
-				return meta::array<std::tuple_element_t<_Index, _Tuple>...>{};
-			};
-			return impl(std::make_index_sequence<std::tuple_size_v<_Tuple>>());
 		}
 		
 		// implement interface. 
@@ -1640,17 +1596,17 @@ namespace fake::meta
 		static constexpr auto data_impl(_Lambda &&_lambda) noexcept{
 			using ptr_t = std::remove_const_t<_Ptr>;
 			if constexpr(std::is_same_v<ptr_t, node_null>){
-				return fake::pack_v<std::tuple<>>;
+				return fake::pack_v<meta::array<>>;
 			}
 			else{
 				constexpr auto next = node_next<ptr_t>([]{});
 				using next_t = decltype(next);
 				constexpr auto package = data_impl<next_t>([]{});
-				using tuple_t = typename decltype(package)::type;
+				using array_t = typename decltype(package)::type;
 				constexpr auto bucket = bucket_read<ptr_t::value>([]{});
-				using current_t = typename decltype(bucket)::type::tuple_t;
+				using current_t = typename decltype(bucket)::type::array_t;
 				
-				using cat_t = decltype(std::tuple_cat(std::declval<tuple_t>(), std::declval<current_t>()));
+				using cat_t = array_cat_t<array_t, current_t>;
 				
 				return fake::pack_v<cat_t>;
 			}
@@ -1666,11 +1622,11 @@ namespace fake::meta
 				constexpr auto next = node_next<ptr_t>([]{});
 				using next_t = decltype(next);
 				constexpr auto package = data_impl<next_t>([]{});
-				using tuple_t = typename decltype(package)::type;
+				using array_t = typename decltype(package)::type;
 				constexpr auto bucket = bucket_read<ptr_t::value>([]{});
-				using current_t = typename decltype(bucket)::type::tuple_t;
+				using current_t = typename decltype(bucket)::type::array_t;
 				
-				return std::tuple_size_v<tuple_t> + std::tuple_size_v<current_t>;
+				return meta::array_size_v<array_t> + meta::array_size_v<current_t>;
 			}
 		}
 		
@@ -1688,7 +1644,7 @@ namespace fake::meta
 				constexpr std::size_t hash_update = fake::type_map::size<node_key_t>([]{});
 				fake::type_map::write<node_key_t, hash_update, node_null>([]{});
 				
-				bucket_update<ptr_t::value, storage<std::tuple<>>>([]{});
+				bucket_update<ptr_t::value, storage<meta::array<>>>([]{});
 				
 				return clear_impl<next_t>([]{});
 			}
@@ -1701,13 +1657,13 @@ namespace fake::meta
 			if constexpr(decltype(result)::type::size == 0)
 				node_emplace<_Hash>([]{});
 			
-			using origin_t = typename decltype(result)::type::tuple_t;
-			constexpr bool contains = tuple_contains<origin_t, _Type>();
+			using origin_t = typename decltype(result)::type::array_t;
+			constexpr bool contains = array_contains<origin_t, _Type>();
 			
 			if constexpr(contains == false){
-				constexpr auto append = tuple_append<origin_t, _Type>();
-				using tuple_t = typename decltype(append)::type;
-				bucket_update<_Hash, storage<tuple_t>>([]{});
+				constexpr auto append = array_append<origin_t, _Type>();
+				using array_t = typename decltype(append)::type;
+				bucket_update<_Hash, storage<array_t>>([]{});
 			}
 			
 			return contains == false;
@@ -1718,15 +1674,15 @@ namespace fake::meta
 			constexpr auto result = bucket_read<_Hash>([]{});
 			
 			if constexpr(decltype(result)::type::size){
-				using origin_t = typename decltype(result)::type::tuple_t;
-				constexpr auto remove = tuple_remove<origin_t, _Type>();
-				using tuple_t = typename decltype(remove)::type;
-				constexpr bool contains = std::tuple_size_v<origin_t> != std::tuple_size_v<tuple_t>;
+				using origin_t = typename decltype(result)::type::array_t;
+				constexpr auto remove = array_remove<origin_t, _Type>();
+				using array_t = typename decltype(remove)::type;
+				constexpr bool contains = meta::array_size_v<origin_t> != meta::array_size_v<array_t>;
 				
 				if constexpr(contains){
-					bucket_update<_Hash, storage<tuple_t>>([]{});
+					bucket_update<_Hash, storage<array_t>>([]{});
 					
-					if constexpr(std::tuple_size_v<tuple_t> == 0)
+					if constexpr(meta::array_size_v<array_t> == 0)
 						node_erase<_Hash>([]{});
 				}
 				
@@ -1740,9 +1696,9 @@ namespace fake::meta
 		template<std::size_t _Hash, typename _Type, typename _Lambda>
 		static constexpr auto contains_impl(_Lambda &&_lambda) noexcept{
 			constexpr auto result = bucket_read<_Hash>([]{});
-			using origin_t = typename decltype(result)::type::tuple_t;
+			using origin_t = typename decltype(result)::type::array_t;
 			
-			return tuple_contains<origin_t, _Type>();
+			return array_contains<origin_t, _Type>();
 		}
 	};
 	
@@ -1773,8 +1729,8 @@ namespace fake::meta
 			constexpr auto init = node_next([]{});
 			using init_t = decltype(init);
 			constexpr auto result = data_impl<init_t>([]{});
-			using tuple_t = typename decltype(result)::type;
-			return tuple_to_array<tuple_t>();
+			using array_t = typename decltype(result)::type;
+			return array_t{};
 		}
 		
 		template<auto = refresh(tool::token{}, adl{}), typename _Key>
@@ -1891,13 +1847,13 @@ namespace fake::meta
 			using next_t = _Next;
 		};
 		
-		template<typename _Tuple>
+		template<typename _Array>
 		struct storage{
 			constexpr storage() noexcept{}
 			storage(const storage&) = delete;
 			
-			static constexpr std::size_t size = std::tuple_size_v<_Tuple>;
-			using tuple_t = _Tuple;
+			static constexpr std::size_t size = meta::array_size_v<_Array>;
+			using array_t = _Array;
 		};
 		
 		// node interface. 
@@ -2066,7 +2022,7 @@ namespace fake::meta
 			if constexpr(next)
 				return fake::type_map::read<key<_Hash>, next - 1>([]{});
 			else
-				return fake::pack_v<storage<std::tuple<>>>;
+				return fake::pack_v<storage<meta::array<>>>;
 		}
 		
 		template<std::size_t _Hash, typename _Lambda>
@@ -2076,87 +2032,73 @@ namespace fake::meta
 			return package::type::size;
 		}
 		
-		// tuple interface. 
-		template<typename _Tuple, typename _Target, std::size_t _Index = 0>
-		requires fake::tuple_c<_Tuple>
-		static constexpr auto tuple_query() noexcept{
-			constexpr std::size_t size = std::tuple_size_v<_Tuple>;
+		// array interface. 
+		template<fake::meta::array_c _Array, typename _Target, std::size_t _Index = 0>
+		static constexpr auto array_query() noexcept{
+			constexpr std::size_t size = meta::array_size_v<_Array>;
 			
 			if constexpr(_Index < size){
-				using current_key_t = typename std::tuple_element_t<_Index, _Tuple>::first_type;
-				using current_value_t = typename std::tuple_element_t<_Index, _Tuple>::second_type;
+				using current_key_t = typename meta::array_element_t<_Index, _Array>::first_type;
+				using current_value_t = typename meta::array_element_t<_Index, _Array>::second_type;
 				constexpr bool same = std::is_same_v<current_key_t, _Target>;
 				
 				if constexpr(same)
 					return fake::pack_v<current_value_t>;
 				else
-					return tuple_query<_Tuple, _Target, _Index + 1>();
+					return array_query<_Array, _Target, _Index + 1>();
 			}
 			else{
 				return fake::pack_v<fake::null_t>;
 			}
 		}
 		
-		template<typename _Tuple, typename _Target>
-		requires fake::tuple_c<_Tuple>
-		static constexpr auto tuple_contains() noexcept{
+		template<fake::meta::array_c _Array, typename _Target>
+		static constexpr auto array_contains() noexcept{
 			constexpr auto impl = []<std::size_t... _Index>(std::index_sequence<_Index...>){
 				return (
-					std::is_same_v<typename std::tuple_element_t<_Index, _Tuple>::first_type, _Target> || ...
+					std::is_same_v<typename meta::array_element_t<_Index, _Array>::first_type, _Target> || ...
 				);
 			};
-			return impl(std::make_index_sequence<std::tuple_size_v<_Tuple>>());
+			return impl(std::make_index_sequence<meta::array_size_v<_Array>>());
 		}
 		
-		template<typename _Tuple, typename _Key, typename _Value>
-		requires fake::tuple_c<_Tuple>
-		static constexpr auto tuple_contains_pair() noexcept{
+		template<fake::meta::array_c _Array, typename _Key, typename _Value>
+		static constexpr auto array_contains_pair() noexcept{
 			using pair_t = std::pair<_Key, _Value>;
 			constexpr auto impl = []<std::size_t... _Index>(std::index_sequence<_Index...>){
-				return (std::is_same_v<typename std::tuple_element_t<_Index, _Tuple>, pair_t> || ...);
+				return (std::is_same_v<typename meta::array_element_t<_Index, _Array>, pair_t> || ...);
 			};
-			return impl(std::make_index_sequence<std::tuple_size_v<_Tuple>>());
+			return impl(std::make_index_sequence<meta::array_size_v<_Array>>());
 		}
 		
-		template<typename _Tuple, typename _Key, typename _Value>
-		requires fake::tuple_c<_Tuple>
-		static constexpr auto tuple_append() noexcept{
+		template<fake::meta::array_c _Array, typename _Key, typename _Value>
+		static constexpr auto array_append() noexcept{
 			using pair_t = std::pair<_Key, _Value>;
-			using tuple_t = decltype(std::tuple_cat(std::declval<_Tuple>(), std::declval<std::tuple<pair_t>>()));
-			return fake::pack_v<tuple_t>;
+			using array_t = array_cat_t<_Array, meta::array<pair_t>>;
+			return fake::pack_v<array_t>;
 		}
 		
-		template<typename _Tuple, typename _Type, std::size_t _Index = 0>
-		requires fake::tuple_c<_Tuple>
-		static constexpr auto tuple_remove() noexcept{
-			constexpr std::size_t size = std::tuple_size_v<_Tuple>;
+		template<fake::meta::array_c _Array, typename _Type, std::size_t _Index = 0>
+		static constexpr auto array_remove() noexcept{
+			constexpr std::size_t size = meta::array_size_v<_Array>;
 			if constexpr(_Index < size){
-				using current_t = std::tuple_element_t<_Index, _Tuple>;
-				constexpr auto package = tuple_remove<_Tuple, _Type, _Index + 1>();
-				using tuple_t = typename decltype(package)::type;
+				using current_t = meta::array_element_t<_Index, _Array>;
+				constexpr auto package = array_remove<_Array, _Type, _Index + 1>();
+				using array_t = typename decltype(package)::type;
 				
 				if constexpr(std::is_same_v<_Type, typename current_t::first_type>){
-					return fake::pack_v<tuple_t>;
+					return fake::pack_v<array_t>;
 				}
 				else{
-					using type_t = std::tuple<current_t>;
-					using cat_t = decltype(std::tuple_cat(std::declval<tuple_t>(), std::declval<type_t>()));
+					using type_t = meta::array<current_t>;
+					using cat_t = array_cat_t<array_t, type_t>;
 					
 					return fake::pack_v<cat_t>;
 				}
 			}
 			else{
-				return fake::pack_v<std::tuple<>>;
+				return fake::pack_v<meta::array<>>;
 			}
-		}
-		
-		template<typename _Tuple>
-		requires fake::tuple_c<_Tuple>
-		static constexpr auto tuple_to_array() noexcept{
-			constexpr auto impl = []<std::size_t... _Index>(std::index_sequence<_Index...>){
-				return meta::array<std::tuple_element_t<_Index, _Tuple>...>{};
-			};
-			return impl(std::make_index_sequence<std::tuple_size_v<_Tuple>>());
 		}
 		
 		// implement interface. 
@@ -2164,17 +2106,17 @@ namespace fake::meta
 		static constexpr auto data_impl(_Lambda &&_lambda) noexcept{
 			using ptr_t = std::remove_const_t<_Ptr>;
 			if constexpr(std::is_same_v<ptr_t, node_null>){
-				return fake::pack_v<std::tuple<>>;
+				return fake::pack_v<meta::array<>>;
 			}
 			else{
 				constexpr auto next = node_next<ptr_t>([]{});
 				using next_t = decltype(next);
 				constexpr auto package = data_impl<next_t>([]{});
-				using tuple_t = typename decltype(package)::type;
+				using array_t = typename decltype(package)::type;
 				constexpr auto bucket = bucket_read<ptr_t::value>([]{});
-				using current_t = typename decltype(bucket)::type::tuple_t;
+				using current_t = typename decltype(bucket)::type::array_t;
 				
-				using cat_t = decltype(std::tuple_cat(std::declval<tuple_t>(), std::declval<current_t>()));
+				using cat_t = array_cat_t<array_t, current_t>;
 				
 				return fake::pack_v<cat_t>;
 			}
@@ -2183,9 +2125,9 @@ namespace fake::meta
 		template<std::size_t _Hash, typename _Type, typename _Lambda>
 		static constexpr auto at_impl(_Lambda &&_lambda) noexcept{
 			constexpr auto result = bucket_read<_Hash>([]{});
-			using origin_t = typename decltype(result)::type::tuple_t;
+			using origin_t = typename decltype(result)::type::array_t;
 			
-			return tuple_query<origin_t, _Type>();
+			return array_query<origin_t, _Type>();
 		}
 		
 		template<typename _Ptr, typename _Lambda>
@@ -2198,11 +2140,11 @@ namespace fake::meta
 				constexpr auto next = node_next<ptr_t>([]{});
 				using next_t = decltype(next);
 				constexpr auto package = data_impl<next_t>([]{});
-				using tuple_t = typename decltype(package)::type;
+				using array_t = typename decltype(package)::type;
 				constexpr auto bucket = bucket_read<ptr_t::value>([]{});
-				using current_t = typename decltype(bucket)::type::tuple_t;
+				using current_t = typename decltype(bucket)::type::array_t;
 				
-				return std::tuple_size_v<tuple_t> + std::tuple_size_v<current_t>;
+				return meta::array_size_v<array_t> + meta::array_size_v<current_t>;
 			}
 		}
 		
@@ -2220,7 +2162,7 @@ namespace fake::meta
 				constexpr std::size_t hash_update = fake::type_map::size<node_key_t>([]{});
 				fake::type_map::write<node_key_t, hash_update, node_null>([]{});
 				
-				bucket_update<ptr_t::value, storage<std::tuple<>>>([]{});
+				bucket_update<ptr_t::value, storage<meta::array<>>>([]{});
 				
 				return clear_impl<next_t>([]{});
 			}
@@ -2233,23 +2175,23 @@ namespace fake::meta
 			if constexpr(decltype(result)::type::size == 0)
 				node_emplace<_Hash>([]{});
 			
-			using origin_t = typename decltype(result)::type::tuple_t;
-			constexpr bool contains_key = tuple_contains<origin_t, _Key>();
-			constexpr bool contains_pair = tuple_contains_pair<origin_t, _Key, _Value>();
+			using origin_t = typename decltype(result)::type::array_t;
+			constexpr bool contains_key = array_contains<origin_t, _Key>();
+			constexpr bool contains_pair = array_contains_pair<origin_t, _Key, _Value>();
 			
 			if constexpr(contains_pair == false){
 				if constexpr(contains_key){
-					constexpr auto remove = tuple_remove<origin_t, _Key>();
+					constexpr auto remove = array_remove<origin_t, _Key>();
 					using remove_t = typename decltype(remove)::type;
 					
-					constexpr auto append = tuple_append<remove_t, _Key, _Value>();
-					using tuple_t = typename decltype(append)::type;
-					bucket_update<_Hash, storage<tuple_t>>([]{});
+					constexpr auto append = array_append<remove_t, _Key, _Value>();
+					using array_t = typename decltype(append)::type;
+					bucket_update<_Hash, storage<array_t>>([]{});
 				}
 				else{
-					constexpr auto append = tuple_append<origin_t, _Key, _Value>();
-					using tuple_t = typename decltype(append)::type;
-					bucket_update<_Hash, storage<tuple_t>>([]{});
+					constexpr auto append = array_append<origin_t, _Key, _Value>();
+					using array_t = typename decltype(append)::type;
+					bucket_update<_Hash, storage<array_t>>([]{});
 				}
 			}
 			
@@ -2261,15 +2203,15 @@ namespace fake::meta
 			constexpr auto result = bucket_read<_Hash>([]{});
 			
 			if constexpr(decltype(result)::type::size){
-				using origin_t = typename decltype(result)::type::tuple_t;
-				constexpr auto remove = tuple_remove<origin_t, _Type>();
-				using tuple_t = typename decltype(remove)::type;
-				constexpr bool contains = std::tuple_size_v<origin_t> != std::tuple_size_v<tuple_t>;
+				using origin_t = typename decltype(result)::type::array_t;
+				constexpr auto remove = array_remove<origin_t, _Type>();
+				using array_t = typename decltype(remove)::type;
+				constexpr bool contains = meta::array_size_v<origin_t> != meta::array_size_v<array_t>;
 				
 				if constexpr(contains){
-					bucket_update<_Hash, storage<tuple_t>>([]{});
+					bucket_update<_Hash, storage<array_t>>([]{});
 					
-					if constexpr(std::tuple_size_v<tuple_t> == 0)
+					if constexpr(meta::array_size_v<array_t> == 0)
 						node_erase<_Hash>([]{});
 				}
 				
@@ -2283,9 +2225,9 @@ namespace fake::meta
 		template<std::size_t _Hash, typename _Type, typename _Lambda>
 		static constexpr auto contains_impl(_Lambda &&_lambda) noexcept{
 			constexpr auto result = bucket_read<_Hash>([]{});
-			using origin_t = typename decltype(result)::type::tuple_t;
+			using origin_t = typename decltype(result)::type::array_t;
 			
-			return tuple_contains<origin_t, _Type>();
+			return array_contains<origin_t, _Type>();
 		}
 		
 	private:
@@ -2373,7 +2315,7 @@ namespace fake::meta
 		template<typename = void>
 		requires (size())
 		static constexpr auto top() noexcept{
-			return fake::pack_v<array_element<0, array_t>>;
+			return fake::pack_v<array_element_t<0, array_t>>;
 		}
 		
 		template<typename _Type>
@@ -2390,11 +2332,11 @@ namespace fake::meta
 	private:
 		template<typename _Type, std::size_t... _Index>
 		static constexpr auto push_impl(std::index_sequence<_Index...>) noexcept ->
-			stack<_Type, array_element<_Index, array_t>...>{return {};}
+			stack<_Type, array_element_t<_Index, array_t>...>{return {};}
 		
 		template<std::size_t... _Index>
 		static constexpr auto pop_impl(std::index_sequence<_Index...>) noexcept ->
-			stack<array_element<_Index + 1, array_t>...>{return {};}
+			stack<array_element_t<_Index + 1, array_t>...>{return {};}
 		
 		static_assert(
 			(fake::meta::is_array_v<_Args> || ...) == false,
