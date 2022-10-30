@@ -10,7 +10,7 @@
  *                                                       * 
 \*       0. You just DO WHAT THE FUCK YOU WANT TO.       */
 
-#include "is_valid.h"
+#include "traits.h"
 
 namespace fake::meta
 {
@@ -52,6 +52,7 @@ namespace fake::meta
 	template<typename _Type> concept array_c = is_array_v<_Type>;
 	
 	template<std::size_t _Index, typename _Array>
+	requires std::convertible_to<_Array, mimic_t<_Array, array>>
 	using array_element_t = typename decltype(std::remove_cvref_t<_Array>::template at<_Index>())::type;
 	
 	template<array_c...>
