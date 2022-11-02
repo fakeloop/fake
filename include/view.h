@@ -1,6 +1,15 @@
 #ifndef __FAKE_VIEW_H__
 #define __FAKE_VIEW_H__
 
+/*    This project is licensed under the terms of the    *\
+ *      DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE      * 
+ *                                                       * 
+ *                    version 114.514                    * 
+ *                                                       * 
+ *   as published by fakeloop, on 2022, as it follows:   * 
+ *                                                       * 
+\*       0. You just DO WHAT THE FUCK YOU WANT TO.       */
+
 #include <type_traits>
 #include <algorithm>
 
@@ -224,6 +233,61 @@ namespace fake
 			return []<std::size_t... _I>(std::index_sequence<_I...>){
 				return view<local[_Index + _I]...>{};
 			}(std::make_index_sequence<std::min(_Size, sizeof...(_Chars) - _Index)>());
+		}
+		
+	private:
+		template<auto>
+		struct adapt;
+		
+		template<fake::view _View>
+		struct adapt<_View> final{static constexpr auto value = _View;};
+		
+		template<fake::detail::view::string _Value>
+		struct adapt<_Value> final{static constexpr auto value = make_view<_Value>();};
+		
+		template<auto _arg>
+		static constexpr auto adapt_v = adapt<_arg>::value;
+		
+		template<char...>
+		friend struct fake::view;
+		
+		template<char... _Rhs>
+		static constexpr auto concat(fake::view<_Rhs...>) noexcept{
+			return fake::view<_Chars..., _Rhs...>{};
+		}
+		
+	public:
+		template<fake::view _What, fake::view _With, std::size_t _Index = 0>
+		static constexpr auto replace() noexcept{
+			constexpr std::size_t index = find<_What, _Index>();
+			if constexpr(index == npos){
+				return view{};
+			}
+			else{
+				constexpr std::size_t tail = index + _What.size();
+				constexpr fake::view prefix = substr<0, index>();
+				constexpr fake::view suffix = substr<tail>();
+				constexpr fake::view result = prefix.concat(_With).concat(suffix);
+				return result.template replace<_What, _With, tail>();
+			}
+		}
+		
+		template<fake::detail::view::string _What, fake::detail::view::string _With, std::size_t _Index = 0>
+		requires requires{adapt_v<_What>; adapt_v<_With>;}
+		static constexpr auto replace() noexcept{
+			return replace<adapt_v<_What>, adapt_v<_With>, _Index>();
+		}
+		
+		template<fake::view _What, fake::detail::view::string _With, std::size_t _Index = 0>
+		requires requires{adapt_v<_What>; adapt_v<_With>;}
+		static constexpr auto replace() noexcept{
+			return replace<_What, adapt_v<_With>, _Index>();
+		}
+		
+		template<fake::detail::view::string _What, fake::view _With, std::size_t _Index = 0>
+		requires requires{adapt_v<_What>; adapt_v<_With>;}
+		static constexpr auto replace() noexcept{
+			return replace<adapt_v<_What>, _With, _Index>();
 		}
 		
 		static constexpr decltype(auto) data() noexcept{return (buffer);}

@@ -337,6 +337,8 @@ namespace fake
 		static constexpr bool value = true;
 		using args = std::tuple<_Types...>;
 		static constexpr std::size_t size = sizeof...(_Types);
+		template<typename... _Args>
+		using type = _Template<_Args...>;
 	};
 	
 	template<typename _T>

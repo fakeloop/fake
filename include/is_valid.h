@@ -94,6 +94,9 @@ namespace fake
 		using type = _Template<_Parameters...>;
 	};
 	
+	template<template<typename...> typename _Template>
+	constexpr generic_form<_Template> gene_v{};
+	
 	template<typename>
 	struct is_generic_form : std::false_type{};
 	
