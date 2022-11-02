@@ -27,7 +27,7 @@ namespace fake
 		
 	}
 	
-	namespace detail
+	namespace detail::container
 	{
 		
 		struct hash final{
@@ -36,7 +36,7 @@ namespace fake
 		
 	}
 	
-	namespace detail
+	namespace detail::container
 	{
 		
 		template<typename _Element>
@@ -52,7 +52,9 @@ namespace fake
 	}
 	
 	template<typename _Element, typename... _Args>
-	using vector = typename decltype(detail::vector_t<_Element>())::template type<_Element, _Args...>;
+	using vector = typename decltype(
+		detail::container::vector_t<_Element>()
+	)::template type<_Element, _Args...>;
 	
 	template<typename _Type>
 	concept vector_c = fake::trait_v<vector, _Type>;
@@ -60,7 +62,7 @@ namespace fake
 	template<typename _Element>
 	concept include_vector_c = container::null_c<vector<_Element>> == false;
 	
-	namespace detail
+	namespace detail::container
 	{
 		
 		template<typename _Element>
@@ -76,7 +78,9 @@ namespace fake
 	}
 	
 	template<typename _Element, typename... _Args>
-	using deque = typename decltype(detail::deque_t<_Element>())::template type<_Element, _Args...>;
+	using deque = typename decltype(
+		detail::container::deque_t<_Element>()
+	)::template type<_Element, _Args...>;
 	
 	template<typename _Type>
 	concept deque_c = fake::trait_v<deque, _Type>;
@@ -84,7 +88,7 @@ namespace fake
 	template<typename _Element>
 	concept include_deque_c = container::null_c<deque<_Element>> == false;
 	
-	namespace detail
+	namespace detail::container
 	{
 		
 		template<typename _Element>
@@ -100,7 +104,9 @@ namespace fake
 	}
 	
 	template<typename _Element, typename... _Args>
-	using forward_list = typename decltype(detail::forward_list_t<_Element>())::template type<_Element, _Args...>;
+	using forward_list = typename decltype(
+		detail::container::forward_list_t<_Element>()
+	)::template type<_Element, _Args...>;
 	
 	template<typename _Type>
 	concept forward_list_c = fake::trait_v<forward_list, _Type>;
@@ -108,7 +114,7 @@ namespace fake
 	template<typename _Element>
 	concept include_forward_list_c = container::null_c<forward_list<_Element>> == false;
 	
-	namespace detail
+	namespace detail::container
 	{
 		
 		template<typename _Element>
@@ -124,7 +130,9 @@ namespace fake
 	}
 	
 	template<typename _Element, typename... _Args>
-	using list = typename decltype(detail::list_t<_Element>())::template type<_Element, _Args...>;
+	using list = typename decltype(
+		detail::container::list_t<_Element>()
+	)::template type<_Element, _Args...>;
 	
 	template<typename _Type>
 	concept list_c = fake::trait_v<list, _Type>;
@@ -132,7 +140,7 @@ namespace fake
 	template<typename _Element>
 	concept include_list_c = container::null_c<list<_Element>> == false;
 	
-	namespace detail
+	namespace detail::container
 	{
 		
 		template<typename _Element>
@@ -148,7 +156,9 @@ namespace fake
 	}
 	
 	template<typename _Element, typename... _Args>
-	using set = typename decltype(detail::set_t<_Element>())::template type<_Element, _Args...>;
+	using set = typename decltype(
+		detail::container::set_t<_Element>()
+	)::template type<_Element, _Args...>;
 	
 	template<typename _Type>
 	concept set_c = fake::trait_v<set, _Type>;
@@ -156,7 +166,7 @@ namespace fake
 	template<typename _Element>
 	concept include_set_c = container::null_c<set<_Element>> == false;
 	
-	namespace detail
+	namespace detail::container
 	{
 		
 		template<typename _Element>
@@ -172,7 +182,9 @@ namespace fake
 	}
 	
 	template<typename _Element, typename... _Args>
-	using multiset = typename decltype(detail::multiset_t<_Element>())::template type<_Element, _Args...>;
+	using multiset = typename decltype(
+		detail::container::multiset_t<_Element>()
+	)::template type<_Element, _Args...>;
 	
 	template<typename _Type>
 	concept multiset_c = fake::trait_v<multiset, _Type>;
@@ -180,7 +192,7 @@ namespace fake
 	template<typename _Element>
 	concept include_multiset_c = container::null_c<multiset<_Element>> == false;
 	
-	namespace detail
+	namespace detail::container
 	{
 		
 		template<typename _Element>
@@ -196,7 +208,9 @@ namespace fake
 	}
 	
 	template<typename _Element, typename... _Args>
-	using unordered_set = typename decltype(detail::unordered_set_t<_Element>())::template type<_Element, _Args...>;
+	using unordered_set = typename decltype(
+		detail::container::unordered_set_t<_Element>()
+	)::template type<_Element, _Args...>;
 	
 	template<typename _Type>
 	concept unordered_set_c = fake::trait_v<unordered_set, _Type>;
@@ -204,7 +218,7 @@ namespace fake
 	template<typename _Element>
 	concept include_unordered_set_c = container::null_c<unordered_set<_Element>> == false;
 	
-	namespace detail
+	namespace detail::container
 	{
 		
 		template<typename _Element>
@@ -221,8 +235,8 @@ namespace fake
 	
 	template<typename _Element, typename... _Args>
 	using unordered_multiset = typename decltype(
-			detail::unordered_multiset_t<_Element>()
-		)::template type<_Element, _Args...>;
+		detail::container::unordered_multiset_t<_Element>()
+	)::template type<_Element, _Args...>;
 	
 	template<typename _Type>
 	concept unordered_multiset_c = fake::trait_v<unordered_multiset, _Type>;
@@ -230,7 +244,7 @@ namespace fake
 	template<typename _Element>
 	concept include_unordered_multiset_c = container::null_c<unordered_multiset<_Element>> == false;
 	
-	namespace detail
+	namespace detail::container
 	{
 		
 		template<typename _Key, typename _Mapped>
@@ -246,7 +260,9 @@ namespace fake
 	}
 	
 	template<typename _Key, typename _Mapped, typename... _Args>
-	using map = typename decltype(detail::map_t<_Key, _Mapped>())::template type<_Key, _Mapped, _Args...>;
+	using map = typename decltype(
+		detail::container::map_t<_Key, _Mapped>()
+	)::template type<_Key, _Mapped, _Args...>;
 	
 	template<typename _Type>
 	concept map_c = fake::trait_v<map, _Type>;
@@ -254,7 +270,7 @@ namespace fake
 	template<typename _Key, typename _Mapped>
 	concept include_map_c = container::null_c<map<_Key, _Mapped>> == false;
 	
-	namespace detail
+	namespace detail::container
 	{
 		
 		template<typename _Key, typename _Mapped>
@@ -270,7 +286,9 @@ namespace fake
 	}
 	
 	template<typename _Key, typename _Mapped, typename... _Args>
-	using multimap = typename decltype(detail::multimap_t<_Key, _Mapped>())::template type<_Key, _Mapped, _Args...>;
+	using multimap = typename decltype(
+		detail::container::multimap_t<_Key, _Mapped>()
+	)::template type<_Key, _Mapped, _Args...>;
 	
 	template<typename _Type>
 	concept multimap_c = fake::trait_v<multimap, _Type>;
@@ -278,7 +296,7 @@ namespace fake
 	template<typename _Key, typename _Mapped>
 	concept include_multimap_c = container::null_c<multimap<_Key, _Mapped>> == false;
 	
-	namespace detail
+	namespace detail::container
 	{
 		
 		template<typename _Key, typename _Mapped>
@@ -295,8 +313,8 @@ namespace fake
 	
 	template<typename _Key, typename _Mapped, typename... _Args>
 	using unordered_map = typename decltype(
-			detail::unordered_map_t<_Key, _Mapped>()
-		)::template type<_Key, _Mapped, _Args...>;
+		detail::container::unordered_map_t<_Key, _Mapped>()
+	)::template type<_Key, _Mapped, _Args...>;
 	
 	template<typename _Type>
 	concept unordered_map_c = fake::trait_v<unordered_map, _Type>;
@@ -304,7 +322,7 @@ namespace fake
 	template<typename _Key, typename _Mapped>
 	concept include_unordered_map_c = container::null_c<unordered_map<_Key, _Mapped>> == false;
 	
-	namespace detail
+	namespace detail::container
 	{
 		
 		template<typename _Key, typename _Mapped>
@@ -323,8 +341,8 @@ namespace fake
 	
 	template<typename _Key, typename _Mapped, typename... _Args>
 	using unordered_multimap = typename decltype(
-			detail::unordered_multimap_t<_Key, _Mapped>()
-		)::template type<_Key, _Mapped, _Args...>;
+		detail::container::unordered_multimap_t<_Key, _Mapped>()
+	)::template type<_Key, _Mapped, _Args...>;
 	
 	template<typename _Type>
 	concept unordered_multimap_c = fake::trait_v<unordered_multimap, _Type>;
