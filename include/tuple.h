@@ -98,20 +98,18 @@ namespace fake::tuple
 		static consteval auto impl(){
 			constexpr std::size_t size = std::tuple_size_v<_Tuple>;
 			
-			constexpr auto result = []<std::size_t... _Index>(std::index_sequence<_Index...>){
+			constexpr std::size_t result = []<std::size_t... _Index>(std::index_sequence<_Index...>){
 				constexpr std::array<bool, size> pick = {
 					_functor(fake::pack_v<std::tuple_element_t<_Index, _Tuple>>)...
 				};
-				constexpr std::array<std::size_t, size> source = {_Index...};
-				constexpr std::size_t match = std::ranges::count(pick, true);
-				std::array<std::size_t, match> query;
-				std::ranges::copy_if(source, query.data(), [pick](std::size_t _index){return pick[_index];});
-				
-				return query;
+				for(std::size_t i = 0; i < size; i++)
+					if(pick[i])
+						return i;
+				return size;
 			}(std::make_index_sequence<size>());
 			
-			if constexpr(result.size())
-				return fake::pack_v<std::integral_constant<std::size_t, result[0]>>;
+			if constexpr(result < size)
+				return fake::pack_v<std::integral_constant<std::size_t, result>>;
 			else
 				return fake::pack_v<fake::null_t>;
 		}
@@ -129,26 +127,18 @@ namespace fake::tuple
 		static consteval auto impl(){
 			constexpr std::size_t size = std::tuple_size_v<_Tuple>;
 			
-			constexpr auto result = []<std::size_t... _Index>(std::index_sequence<_Index...>){
+			constexpr std::size_t result = []<std::size_t... _Index>(std::index_sequence<_Index...>){
 				constexpr std::array<bool, size> pick = {
 					_functor(fake::pack_v<std::tuple_element_t<_Index, _Tuple>>)...
 				};
-				constexpr std::array<std::size_t, size> source = {_Index...};
-				constexpr std::size_t match = std::ranges::count(pick, true);
-				std::array<std::size_t, match> query;
-				std::ranges::copy_if(source, query.data(), [pick](std::size_t _index){return pick[_index];});
-				
-				return query;
+				for(std::size_t i = 0; i < size; i++)
+					if(pick[i])
+						return i;
+				return size;
 			}(std::make_index_sequence<size>());
 			
-			using result_t = fake::take_t<
-				[]<std::size_t... _Index, auto _result>(std::index_sequence<_Index...>, fake::mezz_t<_result>){
-					return fake::pack_v<std::tuple<std::tuple_element_t<_result[_Index], _Tuple>...>>;
-				}(std::make_index_sequence<result.size()>(), fake::mezz_v<result>)
-			>;
-			
-			if constexpr(std::tuple_size_v<result_t>)
-				return fake::pack_v<std::tuple_element_t<0, result_t>>;
+			if constexpr(result < size)
+				return fake::pack_v<std::tuple_element_t<result, _Tuple>>;
 			else
 				return fake::pack_v<fake::null_t>;
 		}
@@ -180,10 +170,20 @@ namespace fake::tuple
 	constexpr auto contains_v = contains<_Tuple, _functor>::value;
 	
 	template<fake::tuple_c _Tuple, typename _Type>
-	constexpr auto contains_type_v = contains<
-		_Tuple,
-		[](fake::pack_c auto _pack){return std::is_same_v<fake::take_t<_pack>, _Type>;}
-	>::value;
+	struct contains_type final{
+	private:
+		static consteval auto impl(){
+			return []<std::size_t... _Index>(std::index_sequence<_Index...>){
+				return (std::is_same_v<std::tuple_element_t<_Index, _Tuple>, _Type> || ...);
+			}(std::make_index_sequence<std::tuple_size_v<_Tuple>>());
+		}
+		
+	public:
+		static constexpr bool value = impl();
+	};
+	
+	template<fake::tuple_c _Tuple, typename _Type>
+	constexpr auto contains_type_v = contains_type<_Tuple, _Type>::value;
 	
 	template<fake::tuple_c _Tuple, auto _functor>
 	struct scale final{
@@ -243,10 +243,16 @@ namespace fake::tuple
 				constexpr std::array<bool, size> pick = {
 					_functor(fake::pack_v<std::tuple_element_t<_Index, _Tuple>>)...
 				};
-				constexpr std::array<std::size_t, size> source = {_Index...};
-				constexpr std::size_t match = std::ranges::count(pick, true);
+				constexpr std::size_t match = [](const std::array<bool, size> &_pick){
+					std::size_t count = 0;
+					for(std::size_t i = 0; i < sizeof...(_Index); i++)
+						count += std::size_t(_pick[i]);
+					return count;
+				}(pick);
 				std::array<std::size_t, match> query;
-				std::ranges::copy_if(source, query.data(), [pick](std::size_t _index){return pick[_index];});
+				for(std::size_t i = 0, j = 0; j < match; i++)
+					if(pick[i])
+						query[j++] = i;
 				
 				return query;
 			}(std::make_index_sequence<size>());
@@ -276,10 +282,16 @@ namespace fake::tuple
 				constexpr std::array<bool, size> pick = {
 					(_functor(fake::pack_v<std::tuple_element_t<_Index, _Tuple>>) == false)...
 				};
-				constexpr std::array<std::size_t, size> source = {_Index...};
-				constexpr std::size_t match = std::ranges::count(pick, true);
+				constexpr std::size_t match = [](const std::array<bool, size> &_pick){
+					std::size_t count = 0;
+					for(std::size_t i = 0; i < sizeof...(_Index); i++)
+						count += std::size_t(_pick[i]);
+					return count;
+				}(pick);
 				std::array<std::size_t, match> query;
-				std::ranges::copy_if(source, query.data(), [pick](std::size_t _index){return pick[_index];});
+				for(std::size_t i = 0, j = 0; j < match; i++)
+					if(pick[i])
+						query[j++] = i;
 				
 				return query;
 			}(std::make_index_sequence<size>());
@@ -628,6 +640,11 @@ namespace fake::tuple
 						else if constexpr(_source[_begin].key == _source[_end].key){
 							return _self(_self, _begin_m, fake::mezz_v<_end + 1>, _source_m, _unique_m, _result_p);
 						}
+						else if constexpr(_begin + 1 == _end){
+							constexpr auto concat = push_back_v<_Result, fake::mezz_t<_source[_begin].reverse>>;
+							
+							return _self(_self, _end_m, fake::mezz_v<_end + 1>, _source_m, _unique_m, concat);
+						}
 						else{
 							using local_t = fake::take_t<_unique(_unique, _begin_m, _end_m, _source_m, init, init)>;
 							constexpr auto concat = concat_v<_Result, local_t>;
@@ -670,6 +687,43 @@ namespace fake::tuple
 	
 	template<fake::tuple_c _Tuple>
 	constexpr auto shrink_v = fake::pack_v<shrink_t<_Tuple>>;
+	
+	template<fake::tuple_c _Tuple>
+	struct unique final{
+	private:
+		static constexpr std::size_t size = std::tuple_size_v<_Tuple>;
+		
+		static consteval auto impl(){
+			constexpr auto recur = []<typename _Self, std::size_t _current, fake::tuple_c _Result>(){
+				if constexpr(_current == size){
+					return fake::pack_v<_Result>;
+				}
+				else{
+					using current_t = std::tuple_element_t<_current, _Tuple>;
+					return _Self{}.template operator()<
+						_Self,
+						_current + 1,
+						std::conditional_t<
+							contains_type_v<_Result, current_t>,
+							_Result,
+							push_back_t<_Result, current_t>
+						>
+					>();
+				}
+			};
+			
+			return recur.template operator()<decltype(recur), 0, std::tuple<>>();
+		}
+		
+	public:
+		using type = fake::take_t<impl()>;
+	};
+	
+	template<fake::tuple_c _Tuple>
+	using unique_t = typename unique<_Tuple>::type;
+	
+	template<fake::tuple_c _Tuple>
+	constexpr auto unique_v = fake::pack_v<unique_t<_Tuple>>;
 	
 	template<typename... _Mix>
 	using make_tuple_t = std::tuple<
