@@ -412,7 +412,7 @@ namespace fake::custom
 					std::size_t i = 0;
 					auto scope = []<bool _comma, std::size_t _depth>(fake::mezz_t<_comma>, fake::mezz_t<_depth>){
 						if constexpr(_comma)
-							return decorate<map.comma>(","_v + endl) + decorate<map.indent>(indent<tab, _depth>());
+							return decorate<map.comma>(","_v) + endl + decorate<map.indent>(indent<tab, _depth>());
 						else
 							return endl + decorate<map.indent>(indent<tab, _depth>());
 					};
