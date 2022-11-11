@@ -19,41 +19,49 @@ namespace fake
 	
 	enum struct colors : std::size_t{black, red, green, yellow, blue, magenta, cyan, white};
 	
-	template<colors _front, colors _back = colors::black>
-	constexpr decltype(auto) color(const fake::view_c auto &_view) noexcept{
-		using namespace fake::literals;
+	namespace detail::utility
+	{
 		
-		constexpr char front = '0' + static_cast<std::underlying_type_t<colors>>(_front);
-		constexpr char back = '0' + static_cast<std::underlying_type_t<colors>>(_back);
+		template<colors _front, colors _back = colors::black>
+		consteval auto color() noexcept{
+			using namespace fake::literals;
+			constexpr char front = '0' + static_cast<std::underlying_type_t<colors>>(_front);
+			constexpr char back = '0' + static_cast<std::underlying_type_t<colors>>(_back);
+			
+			return "\e[3"_v + fake::view<front>{} + ";4"_v + fake::view<back>{} + "m"_v;
+		}
 		
-		return ("\e[3"_v + fake::view<front>{} + ";4"_v + fake::view<back>{} + "m"_v + _view + "\e[0m"_v).data();
+		consteval auto clear() noexcept{return fake::view_v<"\e[0m">;}
+		
+		template<typename _Type, colors _front, colors _back>
+		struct stream final
+		{
+			using type = std::remove_cvref_t<_Type>;
+			
+			constexpr stream(const type &_data): data(_data){}
+			stream(const stream&) = delete;
+			stream& operator=(const stream&) = delete;
+			
+			friend std::basic_ostream<char>& operator<<(std::basic_ostream<char> &_os, stream _view){
+				return _os << color<_front, _back>() << _view.data << clear();
+			}
+			
+		private:
+			const type &data;
+		};
+		
 	}
 	
 	template<colors _front, colors _back = colors::black>
-	std::string color(const std::string &_str){
-		using namespace fake::literals;
-		
-		constexpr char front = '0' + static_cast<std::underlying_type_t<colors>>(_front);
-		constexpr char back = '0' + static_cast<std::underlying_type_t<colors>>(_back);
-		
-		constexpr std::size_t fix = "\e[30;40m\e[0m"_v.length();
-		
-		std::string result;
-		result.reserve(fix + _str.length() + 1);
-		
-		result += "\e[3";
-		result += front;
-		result += ";4";
-		result += back;
-		result += "m";
-		result += _str;
-		result += "\e[0m";
-		
-		return result;
+	constexpr auto color(const fake::view_c auto &_view) noexcept{
+		return detail::utility::color<_front, _back>() + _view + detail::utility::clear();
 	}
 	
 	template<colors _front, colors _back = colors::black>
-	std::string color(const std::string_view &_sv){return fake::color<_front, _back>(std::string{_sv});}
+	constexpr auto color(std::string_view _sv){return detail::utility::stream<std::string_view, _front, _back>{_sv};}
+	
+	template<colors _front, colors _back = colors::black>
+	constexpr auto color(const auto &_data){return detail::utility::stream<decltype(_data), _front, _back>{_data};}
 	
 	template<typename _Number>
 	requires std::is_integral_v<_Number>

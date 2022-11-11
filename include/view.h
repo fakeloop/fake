@@ -12,6 +12,7 @@
 
 #include <type_traits>
 #include <algorithm>
+#include <ostream>
 
 #include "traits.h"
 #include "symbol.h"
@@ -264,11 +265,9 @@ namespace fake
 				return view{};
 			}
 			else{
-				constexpr std::size_t tail = index + _What.size();
 				constexpr fake::view prefix = substr<0, index>();
-				constexpr fake::view suffix = substr<tail>();
-				constexpr fake::view result = prefix.concat(_With).concat(suffix);
-				return result.template replace<_What, _With, tail>();
+				constexpr fake::view suffix = substr<index + _What.size()>();
+				return prefix.concat(_With).concat(suffix.template replace<_What, _With>());
 			}
 		}
 		
@@ -290,12 +289,28 @@ namespace fake
 			return replace<adapt_v<_What>, _With, _Index>();
 		}
 		
+		template<fake::view _Value>
+		static constexpr auto append() noexcept{
+			return concat(_Value);
+		}
+		
+		template<fake::detail::view::string _Value>
+		requires requires{make_view<_Value>();}
+		static constexpr auto append() noexcept{
+			return append<make_view<_Value>()>();
+		}
+		
 		static constexpr decltype(auto) data() noexcept{return (buffer);}
 		
 		static constexpr decltype(auto) c_str() noexcept{return (buffer);}
 		
 	private:
 		static constexpr char buffer[]{_Chars..., '\0'};
+		
+	private:
+		friend std::basic_ostream<char>& operator<<(std::basic_ostream<char> &_os, view _view){
+			return _os << _view.data();
+		}
 	};
 	
 	template<char... _Lhs, char... _Rhs>
@@ -375,8 +390,8 @@ namespace fake
 		return fake::view_v<fake::detail::view::string<symbol.size() + 1>{symbol.data()}>;
 	}
 	
-	constexpr auto type_view(auto _pack) noexcept{
-		constexpr auto symbol = fake::symbol::string_view<decltype(_pack)>();
+	constexpr auto type_view(auto _type) noexcept{
+		constexpr auto symbol = fake::symbol::string_view<decltype(_type)>();
 		return fake::view_v<fake::detail::view::string<symbol.size() + 1>{symbol.data()}>;
 	}
 	

@@ -1,8 +1,8 @@
-# `fake` C++ meta-programming library
+# `fake` C++ metaprogramming library
 
 ## ***brief:***
 
-`fake` provides a set of tools of `meta-programming`, `stateful meta-programming` and `concurrency adapter`
+`fake` provides a set of tools of `metaprogramming`, `stateful metaprogramming` and `concurrency adapter`
 
 `fake` is a header-only library
 
@@ -41,7 +41,7 @@ all codes passed the compilation test on `gcc-11.2.0` `gcc-11.2.1` `gcc-12.2.0`.
 
 ---
 
-**parameter for the `stateful meta-programming`:**
+**parameter for the `stateful metaprogramming`:**
 
 **`有状态元编程` 所需参数:**
 
@@ -63,47 +63,124 @@ all codes passed the compilation test on `gcc-11.2.0` `gcc-11.2.1` `gcc-12.2.0`.
 
 #### ***example:***
 
-`compile and launch the "demo/tuple/tuple.cpp"`
+`compile and launch the "demo/io/io.cpp"`
 
 #### ***示例:***
 
-`编译并运行 "demo/tuple/tuple.cpp"`
+`编译并运行 "demo/io/io.cpp"`
 
 ```sh
 cd ~
 mkdir my_workspace
 cd my_workspace
 git clone https://github.com/fakeloop/fake
-cd fake/demo/tuple
-g++ tuple.cpp -std=c++20 -iquote "../../include/" -o tuple.out
-./tuple.out
+cd fake/demo/io
+g++ io.cpp -std=c++20 -iquote "../../include/" -Wno-non-template-friend -o io.out
+./io.out
 ```
+
+- ***"demo/io/io.cpp"***
+
+```c++
+#include <iostream>
+#include <vector>
+#include <unordered_set>
+#include <unordered_map>
+
+#include "type_format.h"
+
+struct foo{
+    int x;
+    double y;
+    std::unordered_set<int> s;
+    std::unordered_map<std::string, int> m;
+};
+
+template<typename _Type>
+struct bar{
+    std::tuple<foo, std::string, std::string> t;
+    std::vector<std::string_view> v;
+    _Type z;
+    _Type w;
+    char s[2] = "S";
+    char n[2] = "N";
+    char e[0];
+    char m[3] = "NN";
+    char l[0];
+};
+
+struct foobar{
+public:
+    template<std::convertible_to<bar<std::string>> _Cookie>
+    foobar(_Cookie &&_cookie): cookie(std::forward<_Cookie>(_cookie)){}
+    
+private:
+    int password = 114514;
+    std::string secret = "embarrassing fact";
+    bar<std::string> cookie;
+};
+
+// steal private members. 
+template<>
+struct fake::tool::steal<[]{}, fake::tool::adaptor<foobar>, &foobar::password, &foobar::secret, &foobar::cookie>{
+    // register meta-implementations for token-based-cpo 'fake::for_each<fake::cpo::format<...>>' at compile-time. 
+    using token = fake::cpo::format<fake::io::token::pretty>;
+    static_assert(fake::custom::for_each::config::emplace_visitor<[]{}, token, steal>());
+};
+
+int main(int _argc, char* _argv[])
+{
+    using namespace std::string_literals;
+    
+    bar<std::string> var{
+        {{114, 514.0, {1919, 893},
+        {{"ya", 8},
+        {"ju", 10}}}, "MGR", "YUH"},
+        {"SZ", "JOKER"},
+        "DIYUSI"s,
+        "NEL"s
+    };
+    
+    foobar lost_owner{std::move(var)};
+    
+    std::cout << fake::io::pretty<>(lost_owner) << std::endl;
+}
+
+```
+
+***colorized output in terminal:***
+
+***着色后的控制台输出:***
+
+<div style="font-family:'Courier New';font-size:14px;font-weight:bolder;color:#CCCCCC;background-color:#1E1E1E;padding:12px;"><font color="#11A8CD">foobar</font><font color="#CCCCCC"> : </font><font color="#CCCCCC">{</font></br><font color="#878787">| &nbsp; </font><font color="#11A8CD">int</font> <font color="#E5E510">password</font><font color="#CCCCCC"> : </font><font color="#DB6A6A">114514</font><font color="#CCCCCC">,</br></font><font color="#878787">| &nbsp; </font><font color="#11A8CD">std::string</font> <font color="#E5E510">secret</font><font color="#CCCCCC"> : </font><font color="#DB6A6A">"</font>embarrassing fact<font color="#DB6A6A">"</font><font color="#CCCCCC">,</br></font><font color="#878787">| &nbsp; </font><font color="#11A8CD">bar&lt;std::string&gt;</font> <font color="#E5E510">cookie</font><font color="#CCCCCC"> : </font><font color="#4E8ED3">{</font></br><font color="#878787">| &nbsp; | &nbsp; </font><font color="#11A8CD">std::tuple&lt;foo, std::string, std::string&gt;</font> <font color="#0DBC79">0</font><font color="#CCCCCC"> : </font><font color="#E5E510">{</font></br><font color="#878787">| &nbsp; | &nbsp; | &nbsp; </font><font color="#11A8CD">foo</font> <font color="#C965C9">0</font><font color="#CCCCCC"> : </font><font color="#11A8CD">{</font></br><font color="#878787">| &nbsp; | &nbsp; | &nbsp; | &nbsp; </font><font color="#11A8CD">int</font> <font color="#CCCCCC">0</font><font color="#CCCCCC"> : </font><font color="#DB6A6A">114</font><font color="#CCCCCC">,</br></font><font color="#878787">| &nbsp; | &nbsp; | &nbsp; | &nbsp; </font><font color="#11A8CD">double</font> <font color="#CCCCCC">1</font><font color="#CCCCCC"> : </font><font color="#DB6A6A">514</font><font color="#CCCCCC">,</br></font><font color="#878787">| &nbsp; | &nbsp; | &nbsp; | &nbsp; </font><font color="#11A8CD">std::unordered_set&lt;int&gt;</font> <font color="#CCCCCC">2</font><font color="#CCCCCC"> : </font><font color="#DB6A6A">{</font></br><font color="#878787">| &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; </font><font color="#11A8CD">int</font><font color="#CCCCCC"> : </font><font color="#DB6A6A">893</font><font color="#CCCCCC">,</br></font><font color="#878787">| &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; </font><font color="#11A8CD">int</font><font color="#CCCCCC"> : </font><font color="#DB6A6A">1919</font></br><font color="#878787">| &nbsp; | &nbsp; | &nbsp; | &nbsp; </font><font color="#DB6A6A">}</font><font color="#CCCCCC">,</br></font><font color="#878787">| &nbsp; | &nbsp; | &nbsp; | &nbsp; </font><font color="#11A8CD">std::unordered_map&lt;std::string, int&gt;</font> <font color="#CCCCCC">3</font><font color="#CCCCCC"> : </font><font color="#DB6A6A">{</font></br><font color="#878787">| &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; </font><font color="#11A8CD">std::pair&lt;const std::string, int&gt;</font><font color="#CCCCCC"> : </font><font color="#0DBC79">{</font></br><font color="#878787">| &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; </font><font color="#11A8CD">std::string</font> <font color="#0DBC79">first</font><font color="#CCCCCC"> : </font><font color="#DB6A6A">"</font>ju<font color="#DB6A6A">"</font><font color="#CCCCCC">,</br></font><font color="#878787">| &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; </font><font color="#11A8CD">int</font> <font color="#0DBC79">second</font><font color="#CCCCCC"> : </font><font color="#DB6A6A">10</font></br><font color="#878787">| &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; </font><font color="#0DBC79">}</font><font color="#CCCCCC">,</br></font><font color="#878787">| &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; </font><font color="#11A8CD">std::pair&lt;const std::string, int&gt;</font><font color="#CCCCCC"> : </font><font color="#0DBC79">{</font></br><font color="#878787">| &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; </font><font color="#11A8CD">std::string</font> <font color="#0DBC79">first</font><font color="#CCCCCC"> : </font><font color="#DB6A6A">"</font>ya<font color="#DB6A6A">"</font><font color="#CCCCCC">,</br></font><font color="#878787">| &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; </font><font color="#11A8CD">int</font> <font color="#0DBC79">second</font><font color="#CCCCCC"> : </font><font color="#DB6A6A">8</font></br><font color="#878787">| &nbsp; | &nbsp; | &nbsp; | &nbsp; | &nbsp; </font><font color="#0DBC79">}</font></br><font color="#878787">| &nbsp; | &nbsp; | &nbsp; | &nbsp; </font><font color="#DB6A6A">}</font></br><font color="#878787">| &nbsp; | &nbsp; | &nbsp; </font><font color="#11A8CD">}</font><font color="#CCCCCC">,</br></font><font color="#878787">| &nbsp; | &nbsp; | &nbsp; </font><font color="#11A8CD">std::string</font> <font color="#C965C9">1</font><font color="#CCCCCC"> : </font><font color="#DB6A6A">"</font>MGR<font color="#DB6A6A">"</font><font color="#CCCCCC">,</br></font><font color="#878787">| &nbsp; | &nbsp; | &nbsp; </font><font color="#11A8CD">std::string</font> <font color="#C965C9">2</font><font color="#CCCCCC"> : </font><font color="#DB6A6A">"</font>YUH<font color="#DB6A6A">"</font></br><font color="#878787">| &nbsp; | &nbsp; </font><font color="#E5E510">}</font><font color="#CCCCCC">,</br></font><font color="#878787">| &nbsp; | &nbsp; </font><font color="#11A8CD">std::vector&lt;std::string_view&gt;</font> <font color="#0DBC79">1</font><font color="#CCCCCC"> : </font><font color="#E5E510">{</font></br><font color="#878787">| &nbsp; | &nbsp; | &nbsp; </font><font color="#11A8CD">std::string_view</font><font color="#CCCCCC"> : </font><font color="#DB6A6A">"</font>SZ<font color="#DB6A6A">"</font><font color="#CCCCCC">,</br></font><font color="#878787">| &nbsp; | &nbsp; | &nbsp; </font><font color="#11A8CD">std::string_view</font><font color="#CCCCCC"> : </font><font color="#DB6A6A">"</font>JOKER<font color="#DB6A6A">"</font></br><font color="#878787">| &nbsp; | &nbsp; </font><font color="#E5E510">}</font><font color="#CCCCCC">,</br></font><font color="#878787">| &nbsp; | &nbsp; </font><font color="#11A8CD">std::string</font> <font color="#0DBC79">2</font><font color="#CCCCCC"> : </font><font color="#DB6A6A">"</font>DIYUSI<font color="#DB6A6A">"</font><font color="#CCCCCC">,</br></font><font color="#878787">| &nbsp; | &nbsp; </font><font color="#11A8CD">std::string</font> <font color="#0DBC79">3</font><font color="#CCCCCC"> : </font><font color="#DB6A6A">"</font>NEL<font color="#DB6A6A">"</font><font color="#CCCCCC">,</br></font><font color="#878787">| &nbsp; | &nbsp; </font><font color="#11A8CD">char [2]</font> <font color="#0DBC79">4</font><font color="#CCCCCC"> : </font><font color="#DB6A6A">"</font>S<font color="#DB6A6A">"</font><font color="#CCCCCC">,</br></font><font color="#878787">| &nbsp; | &nbsp; </font><font color="#11A8CD">char [2]</font> <font color="#0DBC79">5</font><font color="#CCCCCC"> : </font><font color="#DB6A6A">"</font>N<font color="#DB6A6A">"</font><font color="#CCCCCC">,</br></font><font color="#878787">| &nbsp; | &nbsp; </font><font color="#11A8CD">char [3]</font> <font color="#0DBC79">6</font><font color="#CCCCCC"> : </font><font color="#DB6A6A">"</font>NN<font color="#DB6A6A">"</font></br><font color="#878787">| &nbsp; </font><font color="#4E8ED3">}</font></br><font color="#CCCCCC">}</font></div>
+
+---
 
 ***warning:***
 
-the `stateful meta-programming` is some sort of **black magic**, which has always been ***controversial***.
+the `stateful metaprogramming` is some sort of **black magic**, which has always been ***controversial***.
 
 The C++ standard may drop support for this feature in the future, although the issue is currently in an open state.
 
-the following headers contain **black magic**: `include/type_map.h` `include/meta.h`.
+the following headers contain **black magic**: `include/type_map.h` `include/meta.h` `include/type_name.h` `include/type_info.h` `include/type_stream.h` `include/type_format.h`.
 
 ***警告:***
 
 `有状态元编程` 是一种 **黑魔法**, 一直以来都存在 ***争议***。
 
-C++ 标准可能会在未来放弃对该特性的支持，虽然目前该议题处于开放状态。
+C++ 标准可能会在未来放弃对该特性的支持, 虽然目前该议题处于开放状态。
 
-这些头文件包含 **black magic**: `include/type_map.h` `include/meta.h`.
+这些头文件包含 **black magic**: `include/type_map.h` `include/meta.h` `include/type_name.h` `include/type_info.h` `include/type_stream.h` `include/type_format.h`。
 
 ---
 
-## `meta-programming`
+## `metaprogramming`
 
 ## `元编程`
 
 ***version:***
 
-the `meta-programming` subsystem of `fake` is interface-stable currently.
+the `metaprogramming` subsystem of `fake` is interface-stable currently.
 
 ***版本:***
 
@@ -240,13 +317,13 @@ view
 
 ---
 
-## `stateful meta-programming`
+## `stateful metaprogramming`
 
 ## `有状态元编程`
 
 ***version:***
 
-the `stateful meta-programming` subsystem of `fake` is interface-stable currently.
+the `stateful metaprogramming` subsystem of `fake` is interface-stable currently.
 
 ***版本:***
 
@@ -325,7 +402,7 @@ int main(int _argc, char* _argv[])
 
 *The template functions and template member functions defined in this header `"meta.h"` may take a dummy parameter `[]{}` in order to force the compiler to generate a new specialization. The template parameter `[]{}` is necessary for `gcc-12.x.x`, but not necessary for `gcc-11.x.x` when invoking these template functions in another template context. It is usually the first parameter of the template, taking something like `template<auto = refresh(tool::token{}, key{}), ...>` by default.*
 
-**注意: 编译器只会为某个函数或类型进行一次语法树生成, 因此在编写并多次调用编译期函数时请小心。如果您希望运行一个编译期程序，您永远应该在类似 `template<auto> auto demo()` 的函数内部编写这些编译期代码, 并且通过 `demo<[]{}>()` 调用它们。每次您所调用的都将是 `demo()` 模板函数的一个不同特化, 这是由于每个 `[]{}` 都拥有不同的类型。编译器永远无法跳过 `demo()` 函数的语法树生成过程, 因为要推导出返回值类型 `auto` 就必须编译函数体定义。**
+**注意: 编译器只会为某个函数或类型进行一次语法树生成, 因此在编写并多次调用编译期函数时请小心。如果您希望运行一个编译期程序, 您永远应该在类似 `template<auto> auto demo()` 的函数内部编写这些编译期代码, 并且通过 `demo<[]{}>()` 调用它们。每次您所调用的都将是 `demo()` 模板函数的一个不同特化, 这是由于每个 `[]{}` 都拥有不同的类型。编译器永远无法跳过 `demo()` 函数的语法树生成过程, 因为要推导出返回值类型 `auto` 就必须编译函数体定义。**
 
 *本头文件 `"meta.h"` 中定义的模板函数和模板成员函数可以接收一个伪参数 `[]{}`, 目的是强制编译器重新进行特化。如要在其他模板上下文中调用这些模板函数, 在使用 `gcc-12.x.x` 时, 模板参数 `[]{}` 是必须的, 但使用 `gcc-11.x.x` 时不是必须的。其通常为首个模板参数, 默认接收 `template<auto = refresh(tool::token{}, key{}), ...>`。*
 
@@ -333,7 +410,7 @@ int main(int _argc, char* _argv[])
 
 *demo see `"demo/meta/"` `"demo/format/"` `"demo/print/"`*
 
-`"demo/format/"` and `"demo/print/"` are comprehensive examples to demonstrate the generic techniques of the `stateful meta-programming`
+`"demo/format/"` and `"demo/print/"` are comprehensive examples to demonstrate the generic techniques of the `stateful metaprogramming`
 
 ***示例:***
 
@@ -362,6 +439,46 @@ g++ meta.cpp -o meta.out -iquote "../../include" -std=c++20 -Wno-non-template-fr
 ```sh
 ./make.sh
 ```
+
+---
+
+### `"type_format.h"`
+
+***brief:***
+
+the `fake::io` is a customizable `object formatter` with several preset format schemes `fake::io::plain<>` `fake::io::pretty<>` `fake::io::json<>` `fake::io::html<>`
+
+the `standard template container libraries` should always be included before the `"type_format.h"` library
+
+the `standard template container libraries` are `<vector>` `<list>` `<forward_list>` `<deque>` `<set>` `<unordered_set>` `<map>` `<unordered_map>`
+
+***简介:***
+
+`fake::io` 是一个可定制的 `对象格式化器`, 其提供了一些预设格式方案 `fake::io::plain<>` `fake::io::pretty<>` `fake::io::json<>` `fake::io::html<>`
+
+应确保在包含 `标准模板容器库` 后再包含 `"type_format.h"` 库
+
+`标准模板容器库` 包括 `<vector>` `<list>` `<forward_list>` `<deque>` `<set>` `<unordered_set>` `<map>` `<unordered_map>`
+
+***usage:***
+
+***使用方法:***
+
+```c++
+// #include <vector.h>
+// #include <list.h>
+// ...
+
+#include "type_format.h"
+```
+
+***example:***
+
+*demo see `"demo/io/"`*
+
+***示例:***
+
+*示例见 `"demo/io/"`*
 
 ---
 

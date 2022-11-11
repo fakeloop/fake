@@ -41,7 +41,7 @@ namespace fake
 		
 		template<typename _Element>
 		static consteval auto vector_t() noexcept{
-			using init_t = std::initializer_list<_Element>;
+			using init_t = std::initializer_list<std::remove_cvref_t<_Element>>;
 			using namespace std;
 			if constexpr(requires{vector(init_t{});})
 				return fake::gene_v<fake::template_info<decltype(vector(init_t{}))>::template type>;
@@ -67,7 +67,7 @@ namespace fake
 		
 		template<typename _Element>
 		static consteval auto deque_t() noexcept{
-			using init_t = std::initializer_list<_Element>;
+			using init_t = std::initializer_list<std::remove_cvref_t<_Element>>;
 			using namespace std;
 			if constexpr(requires{deque(init_t{});})
 				return fake::gene_v<fake::template_info<decltype(deque(init_t{}))>::template type>;
@@ -93,7 +93,7 @@ namespace fake
 		
 		template<typename _Element>
 		static consteval auto forward_list_t() noexcept{
-			using init_t = std::initializer_list<_Element>;
+			using init_t = std::initializer_list<std::remove_cvref_t<_Element>>;
 			using namespace std;
 			if constexpr(requires{forward_list(init_t{});})
 				return fake::gene_v<fake::template_info<decltype(forward_list(init_t{}))>::template type>;
@@ -119,7 +119,7 @@ namespace fake
 		
 		template<typename _Element>
 		static consteval auto list_t() noexcept{
-			using init_t = std::initializer_list<_Element>;
+			using init_t = std::initializer_list<std::remove_cvref_t<_Element>>;
 			using namespace std;
 			if constexpr(requires{list(init_t{});})
 				return fake::gene_v<fake::template_info<decltype(list(init_t{}))>::template type>;
@@ -145,7 +145,7 @@ namespace fake
 		
 		template<typename _Element>
 		static consteval auto set_t() noexcept{
-			using init_t = std::initializer_list<_Element>;
+			using init_t = std::initializer_list<std::remove_cvref_t<_Element>>;
 			using namespace std;
 			if constexpr(requires{set(init_t{});})
 				return fake::gene_v<fake::template_info<decltype(set(init_t{}))>::template type>;
@@ -171,7 +171,7 @@ namespace fake
 		
 		template<typename _Element>
 		static consteval auto multiset_t() noexcept{
-			using init_t = std::initializer_list<_Element>;
+			using init_t = std::initializer_list<std::remove_cvref_t<_Element>>;
 			using namespace std;
 			if constexpr(requires{multiset(init_t{});})
 				return fake::gene_v<fake::template_info<decltype(multiset(init_t{}))>::template type>;
@@ -197,7 +197,7 @@ namespace fake
 		
 		template<typename _Element>
 		static consteval auto unordered_set_t() noexcept{
-			using init_t = std::initializer_list<_Element>;
+			using init_t = std::initializer_list<std::remove_cvref_t<_Element>>;
 			using namespace std;
 			if constexpr(requires{unordered_set(init_t{});})
 				return fake::gene_v<fake::template_info<decltype(unordered_set(init_t{}))>::template type>;
@@ -223,7 +223,7 @@ namespace fake
 		
 		template<typename _Element>
 		static consteval auto unordered_multiset_t() noexcept{
-			using init_t = std::initializer_list<_Element>;
+			using init_t = std::initializer_list<std::remove_cvref_t<_Element>>;
 			using namespace std;
 			if constexpr(requires{unordered_multiset(init_t{});})
 				return fake::gene_v<fake::template_info<decltype(unordered_multiset(init_t{}))>::template type>;
