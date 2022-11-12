@@ -152,7 +152,7 @@ int main(int _argc, char* _argv[])
 
 ***着色后的控制台输出:***
 
-![output terminal](https://raw.githubusercontent.com/fakeloop/fake/tuple-speed-boost/demo/io/output.png)
+![output terminal](https://raw.githubusercontent.com/fakeloop/fake/master/demo/io/output.png)
 
 ---
 
