@@ -124,7 +124,7 @@ namespace fake
 						auto pick = [&]<std::size_t _Key>(index_t<_Key>){
 							if constexpr(requires{extract<_Key>(mapping{});}){
 								using formatter = std::remove_const_t<
-									decltype(fake::meta::array_element<_Key, sequence>::view)
+									decltype(fake::meta::array_element_t<_Key, sequence>::view)
 								>;
 								using lambda_t = typename decltype(
 									local_t{}.template at<[]{}>(fake::pack_v<formatter>)
@@ -136,7 +136,7 @@ namespace fake
 									_os << lambda_t{}(std::get<extract<_Key>(mapping{})>(_stm.references));
 							}
 							else{
-								_os << fake::meta::array_element<_Key, sequence>::view.data();
+								_os << fake::meta::array_element_t<_Key, sequence>::view.data();
 							}
 						};
 						

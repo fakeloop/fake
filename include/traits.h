@@ -164,6 +164,14 @@ namespace fake
 		return std::visit(branch{std::forward<_Lambda>(_lambda)...}, std::forward<_Instance>(_instance));
 	}
 	
+	template<auto... _mezz>
+	requires (fake::mezz_c<decltype(_mezz)> && ...)
+	inline constexpr auto filter = [](auto &&..._args) consteval{
+		struct invalid final{};
+		constexpr auto selector = fake::branch{[](...) consteval{return invalid{};}, _mezz.value...};
+		return requires{{selector(std::forward<decltype(_args)>(_args)...)} -> std::same_as<invalid>;} == false;
+	};
+	
 	template<typename = void>
 	struct is_pair
 	{
@@ -234,7 +242,7 @@ namespace fake
 	concept array_c = is_array_v<_Type>;
 	
 	template<array_c _Array>
-	struct array_element final{
+	struct array_value final{
 	private:
 		using ref_t = std::add_lvalue_reference_t<std::remove_cvref_t<_Array>>;
 		
@@ -246,7 +254,7 @@ namespace fake
 	};
 	
 	template<array_c _Array>
-	using array_element_t = typename array_element<_Array>::type;
+	using array_value_t = typename array_value<_Array>::type;
 	
 	template<array_c _Array>
 	struct array_size final{
@@ -254,10 +262,18 @@ namespace fake
 		using ref_t = std::add_lvalue_reference_t<std::remove_cvref_t<_Array>>;
 		
 		template<typename _Type, std::size_t _Size>
-		static const auto impl(_Type (&)[_Size]){return fake::index_v<_Size>;}
+		static const auto deduce(_Type (&)[_Size]){return fake::index_v<_Size>;}
+		
+		template<typename _Type>
+		static consteval std::size_t impl(){
+			if constexpr(empty_array<std::remove_cvref_t<_Type>>::value)
+				return 0;
+			else
+				return decltype(deduce(std::declval<ref_t>()))::value;
+		}
 		
 	public:
-		static constexpr std::size_t value = decltype(impl(std::declval<ref_t>()))::value;
+		static constexpr std::size_t value = impl<_Array>();
 	};
 	
 	template<array_c _Array>
@@ -335,12 +351,37 @@ namespace fake
 	template<template<typename...> typename _Template, typename... _Types>
 	struct template_info<_Template<_Types...>>{
 		static constexpr bool value = true;
+		static constexpr bool is_array_like = false;
 		using args = std::tuple<_Types...>;
 		static constexpr std::size_t size = sizeof...(_Types);
+		template<typename... _Args>
+		using type = _Template<_Args...>;
+	};
+	
+	template<template<typename, std::size_t> typename _Template, typename _Type, std::size_t _size>
+	struct template_info<_Template<_Type, _size>>{
+		static constexpr bool value = true;
+		static constexpr bool is_array_like = true;
+		using arg = _Type;
+		static constexpr std::size_t array_size = _size;
+		template<typename _Arg, std::size_t _s>
+		using type = _Template<_Arg, _s>;
 	};
 	
 	template<typename _T>
 	constexpr bool is_template_v = template_info<std::remove_cvref_t<_T>>::value;
+	
+	template<typename _Type>
+	struct bare final{using type = _Type;};
+	
+	template<typename _Type>
+	requires (!std::same_as<_Type, std::remove_pointer_t<_Type>> || !std::same_as<_Type, std::remove_cvref_t<_Type>>)
+	struct bare<_Type> final{
+		using type = typename bare<std::remove_cvref_t<std::remove_pointer_t<_Type>>>::type;
+	};
+	
+	template<typename _Type>
+	using bare_t = typename bare<_Type>::type;
 	
 	template<typename = void>
 	struct is_ref

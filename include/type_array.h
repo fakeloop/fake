@@ -10,52 +10,40 @@
  *                                                       * 
 \*       0. You just DO WHAT THE FUCK YOU WANT TO.       */
 
-#include "is_valid.h"
+#include "traits.h"
 
 namespace fake::meta
 {
 	
+	namespace detail::meta::array
+	{
+		
+		template<std::size_t _index, typename _Type>
+		struct bind{};
+		
+		template<typename, typename...>
+		struct broker;
+		
+		template<std::size_t... _index, typename... _Args>
+		struct broker<std::index_sequence<_index...>, _Args...> : bind<_index, _Args>...{};
+		
+	}
+	
 	template<typename... _Args>
-	struct array{
+	struct array : fake::meta::detail::meta::array::broker<std::index_sequence_for<_Args...>, _Args...>{
 		static constexpr std::size_t size = sizeof... (_Args);
 		
-		template<std::size_t _Index>
-		static constexpr auto at() noexcept{
-			constexpr bool valid = _Index < size;
-			static_assert(
-				valid,
-				"\n-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-\n"
-				"\nerror<fake::meta::array::at()>:\n"
-				"\tout on range.\n"
-				"\n-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-\n"
-			);
-			if constexpr(valid)
-				return get<0, _Index, args>();
+		template<std::size_t _index>
+		requires (_index < size)
+		static consteval auto at() noexcept{
+			return get<_index>(array{});
 		}
 		
 	private:
-		template<std::size_t _Current, std::size_t _Target, typename _Tail>
-		static constexpr auto get() noexcept{
-			if constexpr(_Current < _Target)
-				return get<_Current + 1, _Target, typename _Tail::tail>();
-			else
-				return fake::pack_v<typename _Tail::type>;
+		template<std::size_t _index, typename _Type>
+		static consteval auto get(detail::meta::array::bind<_index, _Type>) noexcept{
+			return fake::pack_v<_Type>;
 		}
-		
-		template<std::size_t, typename...>
-		struct impl;
-		
-		template<std::size_t _Index, typename _Type, typename... _Tail>
-		struct impl<_Index, _Type, _Tail...>{
-			static constexpr std::size_t index = _Index;
-			using type = _Type;
-			using tail = impl<_Index + 1, _Tail...>;
-		};
-		
-		template<std::size_t _Index>
-		struct impl<_Index>{};
-		
-		using args = impl<0, _Args...>;
 	};
 	
 	template<typename = void> struct is_array{static constexpr bool value = false;};
@@ -64,18 +52,46 @@ namespace fake::meta
 	template<typename _Type> concept array_c = is_array_v<_Type>;
 	
 	template<std::size_t _Index, typename _Array>
-	using array_element = typename decltype(std::remove_cvref_t<_Array>::template at<_Index>())::type;
+	requires std::convertible_to<_Array, mimic_t<_Array, array>>
+	using array_element_t = typename decltype(std::remove_cvref_t<_Array>::template at<_Index>())::type;
 	
-	template<array_c, array_c>
+	template<array_c...>
 	struct array_cat final{};
+	
+	template<>
+	struct array_cat<> final{
+		using type = array<>;
+	};
+	
+	template<typename... _Types>
+	struct array_cat<array<_Types...>> final{
+		using type = array<_Types...>;
+	};
 	
 	template<typename... _Lhs, typename... _Rhs>
 	struct array_cat<array<_Lhs...>, array<_Rhs...>> final{
 		using type = array<_Lhs..., _Rhs...>;
 	};
 	
-	template<array_c _Lhs, array_c _Rhs>
-	using array_cat_t = typename array_cat<_Lhs, _Rhs>::type;
+	template<typename... _Lhs, typename... _Rhs, array_c... _Tail>
+	struct array_cat<array<_Lhs...>, array<_Rhs...>, _Tail...> final{
+		using type = typename array_cat<array<_Lhs..., _Rhs...>, _Tail...>::type;
+	};
+	
+	template<array_c... _Segments>
+	using array_cat_t = typename array_cat<_Segments...>::type;
+	
+	template<array_c _Array>
+	inline constexpr std::size_t array_size_v = _Array::size;
+	
+	template<typename = void>
+	struct make{};
+	
+	template<template<typename...> typename _Template, typename... _Args>
+	struct make<_Template<_Args...>>{using type = array<_Args...>;};
+	
+	template<typename _Type>
+	using make_t = typename make<std::remove_cvref_t<_Type>>::type;
 	
 }
 

@@ -1,5 +1,5 @@
-#ifndef __IS_VALID_H__
-#define __IS_VALID_H__
+#ifndef __FAKE_IS_VALID_H__
+#define __FAKE_IS_VALID_H__
 
 /*    This project is licensed under the terms of the    *\
  *      DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE      * 
@@ -88,23 +88,35 @@ namespace fake
 	concept mezz_c = trait_auto_v<value_mezzanine, std::remove_cvref_t<_Type>>;
 	
 	template<template<typename...> typename _Template>
-	struct generic_form
+	struct generic
 	{
 		template<typename... _Parameters>
 		using type = _Template<_Parameters...>;
 	};
 	
-	template<typename>
-	struct is_generic_form : std::false_type{};
+	template<template<typename, std::size_t> typename _Template>
+	struct array_like{
+		template<typename _T, std::size_t _s>
+		using type = _Template<_T, _s>;
+	};
 	
 	template<template<typename...> typename _Template>
-	struct is_generic_form<generic_form<_Template>> : std::true_type{};
+	constexpr generic<_Template> gene_v{};
+	
+	template<typename>
+	struct is_generic : std::false_type{};
+	
+	template<template<typename...> typename _Template>
+	struct is_generic<generic<_Template>> : std::true_type{};
+	
+	template<template<typename, std::size_t> typename _Template>
+	struct is_generic<array_like<_Template>> : std::true_type{};
 	
 	template<typename _Type>
-	constexpr bool is_generic_form_v = is_generic_form<std::remove_cvref_t<_Type>>::value;
+	constexpr bool is_generic_v = is_generic<std::remove_cvref_t<_Type>>::value;
 	
 	template<typename _Type>
-	concept gene_c = is_generic_form_v<_Type>;
+	concept gene_c = is_generic_v<_Type>;
 	
 	template<typename _Type>
 	struct pattern
@@ -115,7 +127,13 @@ namespace fake
 	template<template<typename...> typename _Template, typename... _Parameters>
 	struct pattern<_Template<_Parameters...>>
 	{
-		using type = generic_form<_Template>;
+		using type = generic<_Template>;
+	};
+	
+	template<template<typename, std::size_t> typename _Template, typename _Type, std::size_t _size>
+	struct pattern<_Template<_Type, _size>>
+	{
+		using type = array_like<_Template>;
 	};
 	
 	template<typename _Type>
@@ -274,4 +292,4 @@ namespace fake
 	
 }
 
-#endif /*__IS_VALID_H__*/ 
+#endif /*__FAKE_IS_VALID_H__*/ 
