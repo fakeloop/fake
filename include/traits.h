@@ -351,10 +351,21 @@ namespace fake
 	template<template<typename...> typename _Template, typename... _Types>
 	struct template_info<_Template<_Types...>>{
 		static constexpr bool value = true;
+		static constexpr bool is_array_like = false;
 		using args = std::tuple<_Types...>;
 		static constexpr std::size_t size = sizeof...(_Types);
 		template<typename... _Args>
 		using type = _Template<_Args...>;
+	};
+	
+	template<template<typename, std::size_t> typename _Template, typename _Type, std::size_t _size>
+	struct template_info<_Template<_Type, _size>>{
+		static constexpr bool value = true;
+		static constexpr bool is_array_like = true;
+		using arg = _Type;
+		static constexpr std::size_t array_size = _size;
+		template<typename _Arg, std::size_t _s>
+		using type = _Template<_Arg, _s>;
 	};
 	
 	template<typename _T>

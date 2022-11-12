@@ -421,6 +421,7 @@ namespace fake::custom
 						_os << scope(fake::mezz_v<true>, fake::mezz_v<_layer>);
 					
 					constexpr fake::view_c auto quote = decorate<map.quote>("\""_v);
+					constexpr fake::view_c auto char_quote = decorate<map.quote>("'"_v);
 					constexpr fake::view_c auto json_quote = std::conditional_t<json, decltype(quote), fake::view<>>{};
 					
 					constexpr fake::view title = [](auto _name, auto _space, auto _json_quote, auto _element){
@@ -436,13 +437,7 @@ namespace fake::custom
 					constexpr fake::view_c auto l = std::conditional_t<contian, fake::view_t<"[">, fake::view_t<"{">>{};
 					constexpr fake::view_c auto r = std::conditional_t<contian, fake::view_t<"]">, fake::view_t<"}">>{};
 					
-					if constexpr(requires{_os << _e;}){
-						if constexpr(requires{std::quoted(_e);})
-							_os << title + quote << _e << quote;
-						else
-							_os << title << decorate<map.value>(_e);
-					}
-					else{
+					if constexpr(requires{fake::for_each<_ConfigToken>(_e, []<fake::view_c>(auto &&_e){});}){
 						_os << title + decorate<map.bracket, context::bracket, _layer>(l) +
 							scope(fake::mezz_v<false>, fake::mezz_v<_layer + 1>);
 						
@@ -455,6 +450,21 @@ namespace fake::custom
 						
 						_os << scope(fake::mezz_v<false>, fake::mezz_v<_layer>) +
 							decorate<map.bracket, context::bracket, _layer>(r);
+					}
+					else if constexpr(std::is_enum_v<type>){
+						using underlying = std::underlying_type_t<type>;
+						if constexpr(std::same_as<underlying, char>)
+							_os << title + char_quote << static_cast<char>(_e) << char_quote;
+						else
+							_os << title << decorate<map.value>(static_cast<underlying>(_e));
+					}
+					else{
+						if constexpr(requires{std::quoted(_e);})
+							_os << title + quote << _e << quote;
+						else if constexpr(std::same_as<type, char>)
+							_os << title + char_quote << _e << char_quote;
+						else
+							_os << title << decorate<map.value>(_e);
 					}
 				};
 				
@@ -480,6 +490,16 @@ namespace fake::custom
 		template<typename... _Type>
 		using adaptor = fake::tool::adaptor<_Type...>;
 		
+		template<typename>
+		struct is_std_array final : std::false_type{};
+		
+		template<template<typename, std::size_t> typename _Template, typename _Type, std::size_t _size>
+		requires std::same_as<_Template<_Type, _size>, std::array<_Type, _size>>
+		struct is_std_array<_Template<_Type, _size>> final : std::true_type{};
+		
+		template<typename _Type>
+		static constexpr bool is_std_array_v = is_std_array<std::remove_cvref_t<_Type>>::value;
+		
 		// register meta-implementations for token-based-cpo 'fake::type_stream' and 'fake::for_each' at compile-time. 
 		template<typename _ConfigToken>
 		static consteval auto inject() noexcept{
@@ -490,6 +510,7 @@ namespace fake::custom
 			
 			type_stream::config::emplace_stream<vest, token_t<_ConfigToken>, type_stream::adaptor<stream>>();
 			
+			// 'std utilities'. 
 			for_each::config::emplace_visitor<vest, token_t<_ConfigToken>, adaptor<fake::generic<std::pair>>>(
 				[](auto &&_e, const auto &_f){
 					_f.template operator()<fake::view_t<"first">>(_e.first);
@@ -505,10 +526,39 @@ namespace fake::custom
 				}
 			);
 			
+			for_each::config::emplace_visitor<vest, token_t<_ConfigToken>, adaptor<fake::generic<std::unique_ptr>>>(
+				[](auto &&_e, const auto &_f){
+					if(_e)
+						_f.template operator()<fake::view_t<"value">>(*_e);
+				}
+			);
+			
+			for_each::config::emplace_visitor<vest, token_t<_ConfigToken>, adaptor<fake::generic<std::optional>>>(
+				[](auto &&_e, const auto &_f){
+					if(_e)
+						_f.template operator()<fake::view_t<"value">>(*_e);
+				}
+			);
+			
+			for_each::config::emplace_visitor<vest, token_t<_ConfigToken>, adaptor<fake::generic<std::variant>>>(
+				[](auto &&_e, const auto &_f){
+					if(_e.index() != std::variant_npos){
+						_f.template operator()<fake::view_t<"index">>(_e.index());
+						std::visit([&_f](auto &&_e){_f.template operator()<fake::view_t<"value">>(_e);}, _e);
+					}
+				}
+			);
+			
+			// 'std containers'. 
 			constexpr auto visitor = [](auto &&_e, const auto &_f){
 				for(auto &&e : _e)
 					_f.template operator()<fake::view<>>(e);
 			};
+			
+			using std_array_g = fake::pattern_t<std::array<int, 1>>;
+			for_each::config::emplace_visitor<vest, token_t<_ConfigToken>, adaptor<std_array_g>>(visitor);
+			using std_array_m = fake::mezz_t<[]<typename _T> requires (is_std_array_v<_T>) (fake::type_package<_T>){}>;
+			config::json::register_container<[]{}, _ConfigToken, std_array_m>();
 			
 			using vector_g = fake::pattern_t<fake::vector<int>>;
 			for_each::config::emplace_visitor<vest, token_t<_ConfigToken>, adaptor<vector_g>>(visitor);

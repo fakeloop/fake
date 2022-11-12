@@ -10,7 +10,9 @@
  *                                                       * 
 \*       0. You just DO WHAT THE FUCK YOU WANT TO.       */
 
+#include <array>
 #include <string>
+#include <memory>
 
 #include "view.h"
 #include "meta.h"
@@ -120,6 +122,17 @@ namespace fake::custom
 		};
 		
 	private:
+		template<typename>
+		struct is_std_array final : std::false_type{};
+		
+		template<template<typename, std::size_t> typename _Template, typename _Type, std::size_t _size>
+		requires std::same_as<_Template<_Type, _size>, std::array<_Type, _size>>
+		struct is_std_array<_Template<_Type, _size>> final : std::true_type{};
+		
+		template<typename _Type>
+		static constexpr bool is_std_array_v = is_std_array<std::remove_cvref_t<_Type>>::value;
+		
+	private:
 		template<typename _ConfigToken, auto _footprint, typename _Type>
 		requires
 			fake::meta::array_c<decltype(_footprint)> &&
@@ -134,7 +147,7 @@ namespace fake::custom
 		public:
 			static consteval auto view() noexcept{
 				using bare = fake::bare_t<_Type>;
-				using tuple = typename fake::template_info<bare>::args;
+				using info = fake::template_info<bare>;
 				constexpr std::string_view symbol = fake::symbol::string_view<_Type>();
 				constexpr std::size_t length = symbol.size();
 				constexpr std::string_view prefix = [](std::string_view _symbol){
@@ -154,18 +167,28 @@ namespace fake::custom
 				using max_t = fake::mezz_t<~std::size_t{}>;
 				constexpr std::size_t size = std::conditional_t<std::same_as<mezz, fake::null_t>, max_t, mezz>::value;
 				
-				return fake::view_v<fake::detail::view::string<prefix.size() + 1>{prefix.data()}> +
-					[]<std::size_t... _index>(std::index_sequence<_index...>){
-						return (
-							bracket_left + (
-								(
-									std::conditional_t<_index, fake::view_t<", ">, fake::view_t<"">>{} +
-									method<_ConfigToken, _footprint, std::tuple_element_t<_index, tuple>>()
-								) + ... + bracket_right
-							)
-						);
-					}(std::make_index_sequence<std::min(size, std::tuple_size_v<tuple>)>()) +
-					fake::view_v<fake::detail::view::string<suffix.size() + 1>{suffix.data()}>;
+				if constexpr(info::is_array_like){
+					using type = typename info::arg;
+					return fake::view_v<fake::detail::view::string<prefix.size() + 1>{prefix.data()}> +
+						bracket_left + method<_ConfigToken, _footprint, type>() +
+						fake::view_v<" ["> + fake::to_view_v<info::array_size> + fake::view_v<"]"> + bracket_right +
+						fake::view_v<fake::detail::view::string<suffix.size() + 1>{suffix.data()}>;
+				}
+				else{
+					using tuple = typename info::args;
+					return fake::view_v<fake::detail::view::string<prefix.size() + 1>{prefix.data()}> +
+						[]<std::size_t... _index>(std::index_sequence<_index...>){
+							return (
+								bracket_left + (
+									(
+										std::conditional_t<_index, fake::view_t<", ">, fake::view_t<"">>{} +
+										method<_ConfigToken, _footprint, std::tuple_element_t<_index, tuple>>()
+									) + ... + bracket_right
+								)
+							);
+						}(std::make_index_sequence<std::min(size, std::tuple_size_v<tuple>)>()) +
+						fake::view_v<fake::detail::view::string<suffix.size() + 1>{suffix.data()}>;
+				}
 			}
 		};
 		
@@ -210,6 +233,9 @@ namespace fake::custom
 					}
 				}
 			);
+			
+			using unique_ptr_g = fake::generic<std::unique_ptr>;
+			config::set_templace_trunc<[]{}, _ConfigToken, unique_ptr_g, 0x1>();
 			
 			using vector_g = fake::pattern_t<fake::vector<int>>;
 			config::set_templace_trunc<[]{}, _ConfigToken, vector_g, 0x1>();
@@ -263,7 +289,7 @@ namespace fake::custom
 			constexpr auto local = fake::take_v<configure.at<[]{}>(fake::pack_v<key<_ConfigToken>>)>;
 			if constexpr(local.template contains<[]{}>(fake::pack_v<type_t>))
 				return fake::take_v<local.template at<[]{}>(fake::pack_v<type_t>)>(fake::pack_v<_Type>);
-			else if constexpr(fake::is_template_v<type_t>){
+			else if constexpr(fake::is_template_v<type_t> || is_std_array_v<type_t>){
 				using generic_t = fake::pattern_t<type_t>;
 				if constexpr(local.template contains<[]{}>(fake::pack_v<generic_t>))
 					return fake::take_v<local.template at<[]{}>(fake::pack_v<generic_t>)>(fake::pack_v<_Type>);

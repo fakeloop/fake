@@ -23,6 +23,9 @@ namespace fake::tool
 	template<template<typename...> typename _Template>
 	struct adaptor<fake::generic<_Template>>{};
 	
+	template<template<typename, std::size_t> typename _Template>
+	struct adaptor<fake::array_like<_Template>>{};
+	
 	template<typename _Type>
 	concept adaptor_c = fake::trait_v<adaptor, _Type>;
 	
@@ -253,10 +256,17 @@ namespace fake::custom
 				return true;
 			}
 			
+			template<typename _Type>
+			static constexpr decltype(auto) evil_cast() noexcept{
+				union eval_union{std::nullptr_t null; _Type* type;};
+				
+				return *eval_union{nullptr}.type;
+			};
+			
 		public:
 			template<typename _Type>
 			requires fake::to_trait_c<record<_Type>()>
-			consteval operator _Type() const noexcept;
+			constexpr operator _Type() const noexcept{return std::move(evil_cast<_Type>());}
 		};
 		
 		template<typename _Aggr, std::size_t... _index>

@@ -94,6 +94,12 @@ namespace fake
 		using type = _Template<_Parameters...>;
 	};
 	
+	template<template<typename, std::size_t> typename _Template>
+	struct array_like{
+		template<typename _T, std::size_t _s>
+		using type = _Template<_T, _s>;
+	};
+	
 	template<template<typename...> typename _Template>
 	constexpr generic<_Template> gene_v{};
 	
@@ -102,6 +108,9 @@ namespace fake
 	
 	template<template<typename...> typename _Template>
 	struct is_generic<generic<_Template>> : std::true_type{};
+	
+	template<template<typename, std::size_t> typename _Template>
+	struct is_generic<array_like<_Template>> : std::true_type{};
 	
 	template<typename _Type>
 	constexpr bool is_generic_v = is_generic<std::remove_cvref_t<_Type>>::value;
@@ -119,6 +128,12 @@ namespace fake
 	struct pattern<_Template<_Parameters...>>
 	{
 		using type = generic<_Template>;
+	};
+	
+	template<template<typename, std::size_t> typename _Template, typename _Type, std::size_t _size>
+	struct pattern<_Template<_Type, _size>>
+	{
+		using type = array_like<_Template>;
 	};
 	
 	template<typename _Type>
