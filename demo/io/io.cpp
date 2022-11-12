@@ -49,9 +49,7 @@ int main(int _argc, char* _argv[])
 	using namespace std::string_literals;
 	
 	bar<std::string> var{
-		{{114, 514.0, {1919, 893},
-		{{"ya", 8},
-		{"ju", 10}}}, "MGR", "YUH"},
+		{{114, 514.0, {1919, 893}, {{"ya", 8}, {"ju", 10}}}, "MGR", "YUH"},
 		{"SZ", "JOKER"},
 		"DIYUSI"s,
 		"NEL"s
