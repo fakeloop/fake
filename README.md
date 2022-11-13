@@ -463,8 +463,8 @@ the `standard template container libraries` are `<vector>` `<list>` `<forward_li
 ***使用方法:***
 
 ```c++
-// #include <vector.h>
-// #include <list.h>
+// #include <vector>
+// #include <list>
 // ...
 
 #include "type_format.h"
