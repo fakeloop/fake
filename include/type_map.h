@@ -173,7 +173,7 @@ namespace fake::type_map
 		}
 		
 		template<typename _Key, std::size_t _Index, typename _Lambda>
-		requires (fake::type_map::detail::queryer<_Lambda, _Key, _Index>(existed_t{}))
+		requires requires{fake::type_map::detail::queryer<_Lambda, _Key, _Index>(existed_t{});}
 		constexpr bool has() noexcept{
 			return fake::type_map::detail::queryer<_Lambda, _Key, _Index>(existed_t{});
 		}

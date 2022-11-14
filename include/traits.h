@@ -455,11 +455,26 @@ namespace fake
 	template<template<typename...> typename _Template, typename... _Type>
 	concept deducible_c = requires{typename _Template<_Type...>;};
 	
+	template<std::size_t _size, auto _concept>
+	requires fake::mezz_c<decltype(_concept)>
+	struct concept_sequence{
+		static constexpr bool value = []<std::size_t... _index>(std::index_sequence<_index...>){
+			return (_concept.value(fake::mezz_v<_index>) && ...);
+		}(std::make_index_sequence<_size>());
+	};
+	
+	template<std::size_t _size, auto _concept>
+	requires fake::mezz_c<decltype(_concept)>
+	constexpr bool concept_sequence_v = concept_sequence<_size, _concept>::value;
+	
+	template<std::size_t _size, auto _concept>
+	concept concept_sequence_c = concept_sequence_v<_size, _concept>;
+	
 	template<typename _Functor, typename _Tuple>
 	concept applicable_c = fake::tuple_c<_Tuple> && requires(_Functor _functor, _Tuple _tuple){
-		[]<std::size_t... _Index>(std::index_sequence<_Index...>) -> fake::type_t<
-			decltype(_functor(std::get<_Index>(_tuple)...))
-		>{}(std::make_index_sequence<std::tuple_size_v<std::remove_cvref_t<_Tuple>>>());
+		requires []<std::size_t... _index>(std::index_sequence<_index...>){
+			return requires{_functor(std::get<_index>(_tuple)...);};
+		}(std::make_index_sequence<std::tuple_size_v<std::remove_cvref_t<_Tuple>>>());
 	};
 	
 	template<typename _Functor, typename _Tuple>
