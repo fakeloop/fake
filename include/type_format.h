@@ -1,5 +1,5 @@
-#ifndef __FAKE_CPO_TYPEPRINT_H__
-#define __FAKE_CPO_TYPEPRINT_H__
+#ifndef __FAKE_CPO_TYPEFORMAT_H__
+#define __FAKE_CPO_TYPEFORMAT_H__
 
 /*    This project is licensed under the terms of the    *\
  *      DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE      * 
@@ -791,4 +791,4 @@ namespace fake::io
 	
 }
 
-#endif /*__FAKE_CPO_TYPEPRINT_H__*/ 
+#endif /*__FAKE_CPO_TYPEFORMAT_H__*/ 

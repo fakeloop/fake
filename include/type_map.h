@@ -107,57 +107,42 @@ namespace fake::type_map
 		using existed_t = fake::sfinae<1>;
 		
 		template<typename _Key, std::size_t _Index>
-		struct flag
-		{
+		struct flag{
 			// self-contained poison-pill. 
 			friend constexpr auto anonymous(flag<_Key, _Index>) noexcept;
 		};
 		
 		template<typename _Key, std::size_t _Index, typename _TypeName>
-		struct record
-		{
+		struct record{
 			friend constexpr auto anonymous(flag<_Key, _Index>) noexcept{
 				return fake::pack_v<_TypeName>;
 			}
 		};
 		
 		template<typename _Lambda, typename _Key, std::size_t _Index>
-		constexpr bool queryer(default_t) noexcept
-		{
+		constexpr bool queryer(default_t) noexcept{
 			return false;
 		}
 		
-		template<
-			typename _Lambda,
-			typename _Key,
-			std::size_t _Index,
-			typename _Result = decltype(anonymous(flag<_Key, _Index>{}))
-		>
-		constexpr bool queryer(existed_t) noexcept
-		{
+		template<typename _Lambda, typename _Key, std::size_t _Index>
+		requires requires{anonymous(flag<_Key, _Index>{});}
+		constexpr bool queryer(existed_t) noexcept{
 			return true;
 		}
 		
 		template<typename _Lambda, typename _Key, std::size_t _Index>
-		constexpr auto reader(default_t) noexcept
-		{
+		constexpr auto reader(default_t) noexcept{
 			return fake::pack_v<fake::null_t>;
 		}
 		
-		template<
-			typename _Lambda,
-			typename _Key,
-			std::size_t _Index,
-			typename _Result = decltype(anonymous(flag<_Key, _Index>{}))
-		>
-		constexpr auto reader(existed_t) noexcept
-		{
-			return _Result{};
+		template<typename _Lambda, typename _Key, std::size_t _Index>
+		requires requires{anonymous(flag<_Key, _Index>{});}
+		constexpr auto reader(existed_t) noexcept{
+			return anonymous(flag<_Key, _Index>{});
 		}
 		
 		template<typename _Lambda, typename _Key, std::size_t _Index = std::size_t{}>
-		constexpr std::size_t counter(default_t, flag<_Key, _Index> = {}) noexcept
-		{
+		constexpr std::size_t counter(default_t, flag<_Key, _Index> = {}) noexcept{
 			return _Index;
 		}
 		
@@ -171,103 +156,66 @@ namespace fake::type_map
 			existed_t,
 			flag<_Key, _Index> = {},
 			std::size_t _Value = counter<_Lambda>(existed_t{}, flag<_Key, _Index + 1>{})
-		) noexcept
-		{
+		) noexcept{
 			return _Value;
 		}
 		
-		template<
-			typename _Lambda,
-			typename _Key,
-			std::size_t _Index,
-			typename _TypeName
-		>
-		constexpr auto writer(default_t) noexcept
-		{
+		template<typename _Lambda, typename _Key, std::size_t _Index, typename _TypeName>
+		constexpr auto writer(default_t) noexcept{
 			return fake::pack_v<fake::null_t>;
 		}
 		
-		template<
-			typename _Lambda,
-			typename _Key,
-			std::size_t _Index,
-			typename _TypeName,
-			typename = std::enable_if_t<queryer<_Lambda, _Key, _Index>(existed_t{}) == false>,
-			typename _Record = decltype(record<_Key, _Index, _TypeName>{})
-		>
-		constexpr auto writer(existed_t) noexcept
-		{
+		template<typename _Lambda, typename _Key, std::size_t _Index, typename _TypeName>
+		requires (queryer<_Lambda, _Key, _Index>(existed_t{}) == false)
+		constexpr auto writer(existed_t) noexcept{
+			sizeof(record<_Key, _Index, _TypeName>);
 			return fake::pack_v<_TypeName>;
 		}
 		
-		template<
-			typename _Key,
-			std::size_t _Index,
-			typename _Lambda,
-			bool _Result = detail::queryer<_Lambda, _Key, _Index>(existed_t{})
-		>
-		constexpr bool has() noexcept
-		{
-			return _Result;
+		template<typename _Key, std::size_t _Index, typename _Lambda>
+		requires (fake::type_map::detail::queryer<_Lambda, _Key, _Index>(existed_t{}))
+		constexpr bool has() noexcept{
+			return fake::type_map::detail::queryer<_Lambda, _Key, _Index>(existed_t{});
 		}
 		
-		template<
-			typename _Key,
-			std::size_t _Index,
-			typename _Lambda,
-			typename _Result = decltype(fake::type_map::detail::reader<_Lambda, _Key, _Index>(existed_t{}))
-		>
-		constexpr auto read() noexcept
-		{
-			return _Result{};
+		template<typename _Key, std::size_t _Index, typename _Lambda>
+		requires requires{fake::type_map::detail::reader<_Lambda, _Key, _Index>(existed_t{});}
+		constexpr auto read() noexcept{
+			return fake::type_map::detail::reader<_Lambda, _Key, _Index>(existed_t{});
 		}
 		
-		template<
-			typename _Key,
-			std::size_t _Index,
-			typename _TypeName,
-			typename _Lambda,
-			typename _Result = decltype(detail::writer<_Lambda, _Key, _Index, _TypeName>(existed_t{}))
-		>
-		constexpr auto write() noexcept
-		{
-			return _Result{};
+		template<typename _Key, std::size_t _Index, typename _TypeName, typename _Lambda>
+		requires requires{fake::type_map::detail::writer<_Lambda, _Key, _Index, _TypeName>(existed_t{});}
+		constexpr auto write() noexcept{
+			return fake::type_map::detail::writer<_Lambda, _Key, _Index, _TypeName>(existed_t{});
 		}
 		
-		template<
-			typename _Key,
-			typename _Lambda,
-			std::size_t _Result = fake::type_map::detail::counter<_Lambda, _Key>(existed_t{})
-		>
-		constexpr std::size_t size() noexcept
-		{
-			return _Result;
+		template<typename _Key, typename _Lambda>
+		requires requires{fake::type_map::detail::counter<_Lambda, _Key>(existed_t{});}
+		constexpr std::size_t size() noexcept{
+			return fake::type_map::detail::counter<_Lambda, _Key>(existed_t{});
 		}
 		
 	}
 	
-	template<typename _Key, std::size_t _Index, typename _Lambda>
-	constexpr bool has(_Lambda&&) noexcept
-	{
-		return detail::has<_Key, _Index, _Lambda>();
+	template<typename _Key, std::size_t _Index>
+	constexpr bool has(auto _lambda) noexcept{
+		return fake::type_map::detail::has<_Key, _Index, decltype(_lambda)>();
 	}
 	
-	template<typename _Key, std::size_t _Index, typename _Lambda>
-	constexpr auto read(_Lambda&&) noexcept
-	{
-		return detail::read<_Key, _Index, _Lambda>();
+	template<typename _Key, std::size_t _Index>
+	constexpr auto read(auto _lambda) noexcept{
+		return fake::type_map::detail::read<_Key, _Index, decltype(_lambda)>();
 	}
 	
-	template<typename _Key, std::size_t _Index, typename _TypeName, typename _Lambda>
-	constexpr auto write(_Lambda&&) noexcept
-	{
-		return detail::write<_Key, _Index, _TypeName, _Lambda>();
+	template<typename _Key, std::size_t _Index, typename _TypeName>
+	constexpr auto write(auto _lambda) noexcept{
+		return fake::type_map::detail::write<_Key, _Index, _TypeName, decltype(_lambda)>();
 	}
 	
-	template<typename _Key, typename _Lambda>
-	constexpr std::size_t size(_Lambda&&) noexcept
-	{
-		return detail::size<_Key, _Lambda>();
+	template<typename _Key>
+	constexpr std::size_t size(auto _lambda) noexcept{
+		return fake::type_map::detail::size<_Key, decltype(_lambda)>();
 	}
 	
 }

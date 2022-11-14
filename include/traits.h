@@ -11,7 +11,6 @@
 \*       0. You just DO WHAT THE FUCK YOU WANT TO.       */
 
 #include <cstdint>
-#include <utility>
 #include <type_traits>
 #include <tuple>
 #include <optional>
@@ -101,15 +100,15 @@ namespace fake
 		else if constexpr(std::is_integral_v<type_t>){
 			constexpr std::size_t half_v = sizeof(_e) >> 1;
 			constexpr type_t mask = 0xFF;
-			return [&]<std::size_t... _Index>(std::index_sequence<_Index...>) -> type_t{
-				return (((_e & mask << (_Index << 3)) << ((half_v - _Index << 1) - 1 << 3)) | ...) |
-					(((_e & mask << (half_v + _Index << 3)) >> ((_Index << 1) + 1 << 3)) | ...);
+			return [&]<std::size_t... _index>(std::index_sequence<_index...>) -> type_t{
+				return (((_e & mask << (_index << 3)) << ((half_v - _index << 1) - 1 << 3)) | ...) |
+					(((_e & mask << (half_v + _index << 3)) >> ((_index << 1) + 1 << 3)) | ...);
 			}(std::make_index_sequence<half_v>());
 		}
 		else{
 			constexpr std::size_t size_v = type_t::size;
-			return [&]<std::size_t... _Index>(std::index_sequence<_Index...>) -> type_t{
-				return {_e.data[size_v - _Index - 1]...};
+			return [&]<std::size_t... _index>(std::index_sequence<_index...>) -> type_t{
+				return {_e.data[size_v - _index - 1]...};
 			}(std::make_index_sequence<size_v>());
 		}
 	};

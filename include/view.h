@@ -25,8 +25,8 @@ namespace fake
 		
 		template<std::size_t _Size>
 		struct string{
-			constexpr string(const char (&_str)[_Size]) noexcept{std::ranges::copy(_str, buffer);};
-			explicit constexpr string(const char* _str) noexcept{std::ranges::copy_n(_str, _Size, buffer);};
+			constexpr string(const char (&_str)[_Size]) noexcept{std::ranges::copy(_str, buffer);}
+			explicit constexpr string(const char* _str) noexcept{std::ranges::copy_n(_str, _Size, buffer);}
 			
 			constexpr std::size_t size() const noexcept{return _Size;}
 			constexpr std::size_t length() const noexcept{return _Size;}
