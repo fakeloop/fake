@@ -168,7 +168,7 @@ the following headers contain **black magic**: `include/type_map.h` `include/met
 
 C++ 标准可能会在未来放弃对该特性的支持, 虽然目前该议题处于开放状态。
 
-这些头文件包含 **black magic**: `include/type_map.h` `include/meta.h` `include/type_name.h` `include/type_info.h` `include/type_stream.h` `include/type_format.h`。
+这些头文件包含 **黑魔法**: `include/type_map.h` `include/meta.h` `include/type_name.h` `include/type_info.h` `include/type_stream.h` `include/type_format.h`。
 
 ---
 
