@@ -57,7 +57,7 @@ namespace fake
 	)::template type<_Element, _Args...>;
 	
 	template<typename _Type>
-	concept vector_c = fake::trait_v<vector, _Type>;
+	concept vector_c = fake::trait_v<vector, std::remove_cvref_t<_Type>>;
 	
 	template<typename _Element>
 	concept include_vector_c = container::null_c<vector<_Element>> == false;
@@ -83,7 +83,7 @@ namespace fake
 	)::template type<_Element, _Args...>;
 	
 	template<typename _Type>
-	concept deque_c = fake::trait_v<deque, _Type>;
+	concept deque_c = fake::trait_v<deque, std::remove_cvref_t<_Type>>;
 	
 	template<typename _Element>
 	concept include_deque_c = container::null_c<deque<_Element>> == false;
@@ -109,7 +109,7 @@ namespace fake
 	)::template type<_Element, _Args...>;
 	
 	template<typename _Type>
-	concept forward_list_c = fake::trait_v<forward_list, _Type>;
+	concept forward_list_c = fake::trait_v<forward_list, std::remove_cvref_t<_Type>>;
 	
 	template<typename _Element>
 	concept include_forward_list_c = container::null_c<forward_list<_Element>> == false;
@@ -135,7 +135,7 @@ namespace fake
 	)::template type<_Element, _Args...>;
 	
 	template<typename _Type>
-	concept list_c = fake::trait_v<list, _Type>;
+	concept list_c = fake::trait_v<list, std::remove_cvref_t<_Type>>;
 	
 	template<typename _Element>
 	concept include_list_c = container::null_c<list<_Element>> == false;
@@ -161,7 +161,7 @@ namespace fake
 	)::template type<_Element, _Args...>;
 	
 	template<typename _Type>
-	concept set_c = fake::trait_v<set, _Type>;
+	concept set_c = fake::trait_v<set, std::remove_cvref_t<_Type>>;
 	
 	template<typename _Element>
 	concept include_set_c = container::null_c<set<_Element>> == false;
@@ -187,7 +187,7 @@ namespace fake
 	)::template type<_Element, _Args...>;
 	
 	template<typename _Type>
-	concept multiset_c = fake::trait_v<multiset, _Type>;
+	concept multiset_c = fake::trait_v<multiset, std::remove_cvref_t<_Type>>;
 	
 	template<typename _Element>
 	concept include_multiset_c = container::null_c<multiset<_Element>> == false;
@@ -213,7 +213,7 @@ namespace fake
 	)::template type<_Element, _Args...>;
 	
 	template<typename _Type>
-	concept unordered_set_c = fake::trait_v<unordered_set, _Type>;
+	concept unordered_set_c = fake::trait_v<unordered_set, std::remove_cvref_t<_Type>>;
 	
 	template<typename _Element>
 	concept include_unordered_set_c = container::null_c<unordered_set<_Element>> == false;
@@ -239,7 +239,7 @@ namespace fake
 	)::template type<_Element, _Args...>;
 	
 	template<typename _Type>
-	concept unordered_multiset_c = fake::trait_v<unordered_multiset, _Type>;
+	concept unordered_multiset_c = fake::trait_v<unordered_multiset, std::remove_cvref_t<_Type>>;
 	
 	template<typename _Element>
 	concept include_unordered_multiset_c = container::null_c<unordered_multiset<_Element>> == false;
@@ -265,7 +265,7 @@ namespace fake
 	)::template type<_Key, _Mapped, _Args...>;
 	
 	template<typename _Type>
-	concept map_c = fake::trait_v<map, _Type>;
+	concept map_c = fake::trait_v<map, std::remove_cvref_t<_Type>>;
 	
 	template<typename _Key, typename _Mapped>
 	concept include_map_c = container::null_c<map<_Key, _Mapped>> == false;
@@ -291,7 +291,7 @@ namespace fake
 	)::template type<_Key, _Mapped, _Args...>;
 	
 	template<typename _Type>
-	concept multimap_c = fake::trait_v<multimap, _Type>;
+	concept multimap_c = fake::trait_v<multimap, std::remove_cvref_t<_Type>>;
 	
 	template<typename _Key, typename _Mapped>
 	concept include_multimap_c = container::null_c<multimap<_Key, _Mapped>> == false;
@@ -317,7 +317,7 @@ namespace fake
 	)::template type<_Key, _Mapped, _Args...>;
 	
 	template<typename _Type>
-	concept unordered_map_c = fake::trait_v<unordered_map, _Type>;
+	concept unordered_map_c = fake::trait_v<unordered_map, std::remove_cvref_t<_Type>>;
 	
 	template<typename _Key, typename _Mapped>
 	concept include_unordered_map_c = container::null_c<unordered_map<_Key, _Mapped>> == false;
@@ -345,10 +345,29 @@ namespace fake
 	)::template type<_Key, _Mapped, _Args...>;
 	
 	template<typename _Type>
-	concept unordered_multimap_c = fake::trait_v<unordered_multimap, _Type>;
+	concept unordered_multimap_c = fake::trait_v<unordered_multimap, std::remove_cvref_t<_Type>>;
 	
 	template<typename _Key, typename _Mapped>
 	concept include_unordered_multimap_c = container::null_c<unordered_multimap<_Key, _Mapped>> == false;
+	
+}
+
+namespace fake
+{
+	
+	template<typename _Type>
+	concept std_container_c = fake::vector_c<_Type> ||
+		fake::deque_c<_Type> ||
+		fake::forward_list_c<_Type> ||
+		fake::list_c<_Type> ||
+		fake::set_c<_Type> ||
+		fake::multiset_c<_Type> ||
+		fake::unordered_set_c<_Type> ||
+		fake::unordered_multiset_c<_Type> ||
+		fake::map_c<_Type> ||
+		fake::multimap_c<_Type> ||
+		fake::unordered_map_c<_Type> ||
+		fake::unordered_multimap_c<_Type>;
 	
 }
 

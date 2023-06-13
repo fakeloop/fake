@@ -59,6 +59,12 @@ namespace fake
 	struct functor_info<_Retn(_Class::*)(_Args...)>
 	{
 		static constexpr const char* name = "member_function_pointer";
+		static constexpr bool constant = false;
+		static constexpr bool volatility = false;
+		static constexpr bool exception = true;
+		static constexpr bool lvalue_reference = false;
+		static constexpr bool rvalue_reference = false;
+		using object = _Class;
 		using retn = _Retn;
 		using func = _Retn(_Args...);
 		template<std::size_t _Index>
@@ -71,6 +77,408 @@ namespace fake
 	struct functor_info<_Retn(_Class::*)(_Args...) const>
 	{
 		static constexpr const char* name = "member_function_pointer_const";
+		static constexpr bool constant = true;
+		static constexpr bool volatility = false;
+		static constexpr bool exception = true;
+		static constexpr bool lvalue_reference = false;
+		static constexpr bool rvalue_reference = false;
+		using object = _Class;
+		using retn = _Retn;
+		using func = _Retn(_Args...);
+		template<std::size_t _Index>
+		using args = fake::pack_index_t<_Index, _Args...>;
+		using tuple = std::tuple<_Args...>;
+		static constexpr std::size_t size = sizeof... (_Args);
+	};
+	
+	template<typename _Retn, typename _Class, typename... _Args>
+	struct functor_info<_Retn(_Class::*)(_Args...) volatile>
+	{
+		static constexpr const char* name = "member_function_pointer_volatile";
+		static constexpr bool constant = false;
+		static constexpr bool volatility = true;
+		static constexpr bool exception = true;
+		static constexpr bool lvalue_reference = false;
+		static constexpr bool rvalue_reference = false;
+		using object = _Class;
+		using retn = _Retn;
+		using func = _Retn(_Args...);
+		template<std::size_t _Index>
+		using args = fake::pack_index_t<_Index, _Args...>;
+		using tuple = std::tuple<_Args...>;
+		static constexpr std::size_t size = sizeof... (_Args);
+	};
+	
+	template<typename _Retn, typename _Class, typename... _Args>
+	struct functor_info<_Retn(_Class::*)(_Args...) const volatile>
+	{
+		static constexpr const char* name = "member_function_pointer_const_volatile";
+		static constexpr bool constant = true;
+		static constexpr bool volatility = true;
+		static constexpr bool exception = true;
+		static constexpr bool lvalue_reference = false;
+		static constexpr bool rvalue_reference = false;
+		using object = _Class;
+		using retn = _Retn;
+		using func = _Retn(_Args...);
+		template<std::size_t _Index>
+		using args = fake::pack_index_t<_Index, _Args...>;
+		using tuple = std::tuple<_Args...>;
+		static constexpr std::size_t size = sizeof... (_Args);
+	};
+	
+	template<typename _Retn, typename _Class, typename... _Args>
+	struct functor_info<_Retn(_Class::*)(_Args...) &>
+	{
+		static constexpr const char* name = "member_function_pointer_lvalue";
+		static constexpr bool constant = false;
+		static constexpr bool volatility = false;
+		static constexpr bool exception = true;
+		static constexpr bool lvalue_reference = true;
+		static constexpr bool rvalue_reference = false;
+		using object = _Class;
+		using retn = _Retn;
+		using func = _Retn(_Args...);
+		template<std::size_t _Index>
+		using args = fake::pack_index_t<_Index, _Args...>;
+		using tuple = std::tuple<_Args...>;
+		static constexpr std::size_t size = sizeof... (_Args);
+	};
+	
+	template<typename _Retn, typename _Class, typename... _Args>
+	struct functor_info<_Retn(_Class::*)(_Args...) const &>
+	{
+		static constexpr const char* name = "member_function_pointer_const_lvalue";
+		static constexpr bool constant = true;
+		static constexpr bool volatility = false;
+		static constexpr bool exception = true;
+		static constexpr bool lvalue_reference = true;
+		static constexpr bool rvalue_reference = false;
+		using object = _Class;
+		using retn = _Retn;
+		using func = _Retn(_Args...);
+		template<std::size_t _Index>
+		using args = fake::pack_index_t<_Index, _Args...>;
+		using tuple = std::tuple<_Args...>;
+		static constexpr std::size_t size = sizeof... (_Args);
+	};
+	
+	template<typename _Retn, typename _Class, typename... _Args>
+	struct functor_info<_Retn(_Class::*)(_Args...) volatile &>
+	{
+		static constexpr const char* name = "member_function_pointer_volatile_lvalue";
+		static constexpr bool constant = false;
+		static constexpr bool volatility = true;
+		static constexpr bool exception = true;
+		static constexpr bool lvalue_reference = true;
+		static constexpr bool rvalue_reference = false;
+		using object = _Class;
+		using retn = _Retn;
+		using func = _Retn(_Args...);
+		template<std::size_t _Index>
+		using args = fake::pack_index_t<_Index, _Args...>;
+		using tuple = std::tuple<_Args...>;
+		static constexpr std::size_t size = sizeof... (_Args);
+	};
+	
+	template<typename _Retn, typename _Class, typename... _Args>
+	struct functor_info<_Retn(_Class::*)(_Args...) const volatile &>
+	{
+		static constexpr const char* name = "member_function_pointer_const_volatile_lvalue";
+		static constexpr bool constant = true;
+		static constexpr bool volatility = true;
+		static constexpr bool exception = true;
+		static constexpr bool lvalue_reference = true;
+		static constexpr bool rvalue_reference = false;
+		using object = _Class;
+		using retn = _Retn;
+		using func = _Retn(_Args...);
+		template<std::size_t _Index>
+		using args = fake::pack_index_t<_Index, _Args...>;
+		using tuple = std::tuple<_Args...>;
+		static constexpr std::size_t size = sizeof... (_Args);
+	};
+	
+	template<typename _Retn, typename _Class, typename... _Args>
+	struct functor_info<_Retn(_Class::*)(_Args...) &&>
+	{
+		static constexpr const char* name = "member_function_pointer_rvalue";
+		static constexpr bool constant = false;
+		static constexpr bool volatility = false;
+		static constexpr bool exception = true;
+		static constexpr bool lvalue_reference = false;
+		static constexpr bool rvalue_reference = true;
+		using object = _Class;
+		using retn = _Retn;
+		using func = _Retn(_Args...);
+		template<std::size_t _Index>
+		using args = fake::pack_index_t<_Index, _Args...>;
+		using tuple = std::tuple<_Args...>;
+		static constexpr std::size_t size = sizeof... (_Args);
+	};
+	
+	template<typename _Retn, typename _Class, typename... _Args>
+	struct functor_info<_Retn(_Class::*)(_Args...) const &&>
+	{
+		static constexpr const char* name = "member_function_pointer_const_rvalue";
+		static constexpr bool constant = true;
+		static constexpr bool volatility = false;
+		static constexpr bool exception = true;
+		static constexpr bool lvalue_reference = false;
+		static constexpr bool rvalue_reference = true;
+		using object = _Class;
+		using retn = _Retn;
+		using func = _Retn(_Args...);
+		template<std::size_t _Index>
+		using args = fake::pack_index_t<_Index, _Args...>;
+		using tuple = std::tuple<_Args...>;
+		static constexpr std::size_t size = sizeof... (_Args);
+	};
+	
+	template<typename _Retn, typename _Class, typename... _Args>
+	struct functor_info<_Retn(_Class::*)(_Args...) volatile &&>
+	{
+		static constexpr const char* name = "member_function_pointer_volatile_rvalue";
+		static constexpr bool constant = false;
+		static constexpr bool volatility = true;
+		static constexpr bool exception = true;
+		static constexpr bool lvalue_reference = false;
+		static constexpr bool rvalue_reference = true;
+		using object = _Class;
+		using retn = _Retn;
+		using func = _Retn(_Args...);
+		template<std::size_t _Index>
+		using args = fake::pack_index_t<_Index, _Args...>;
+		using tuple = std::tuple<_Args...>;
+		static constexpr std::size_t size = sizeof... (_Args);
+	};
+	
+	template<typename _Retn, typename _Class, typename... _Args>
+	struct functor_info<_Retn(_Class::*)(_Args...) const volatile &&>
+	{
+		static constexpr const char* name = "member_function_pointer_const_volatile_rvalue";
+		static constexpr bool constant = true;
+		static constexpr bool volatility = true;
+		static constexpr bool exception = true;
+		static constexpr bool lvalue_reference = false;
+		static constexpr bool rvalue_reference = true;
+		using object = _Class;
+		using retn = _Retn;
+		using func = _Retn(_Args...);
+		template<std::size_t _Index>
+		using args = fake::pack_index_t<_Index, _Args...>;
+		using tuple = std::tuple<_Args...>;
+		static constexpr std::size_t size = sizeof... (_Args);
+	};
+	
+	template<typename _Retn, typename _Class, typename... _Args>
+	struct functor_info<_Retn(_Class::*)(_Args...) noexcept>
+	{
+		static constexpr const char* name = "member_function_pointer_noexcept";
+		static constexpr bool constant = false;
+		static constexpr bool volatility = false;
+		static constexpr bool exception = false;
+		static constexpr bool lvalue_reference = false;
+		static constexpr bool rvalue_reference = false;
+		using object = _Class;
+		using retn = _Retn;
+		using func = _Retn(_Args...);
+		template<std::size_t _Index>
+		using args = fake::pack_index_t<_Index, _Args...>;
+		using tuple = std::tuple<_Args...>;
+		static constexpr std::size_t size = sizeof... (_Args);
+	};
+	
+	template<typename _Retn, typename _Class, typename... _Args>
+	struct functor_info<_Retn(_Class::*)(_Args...) const noexcept>
+	{
+		static constexpr const char* name = "member_function_pointer_const_noexcept";
+		static constexpr bool constant = true;
+		static constexpr bool volatility = false;
+		static constexpr bool exception = false;
+		static constexpr bool lvalue_reference = false;
+		static constexpr bool rvalue_reference = false;
+		using object = _Class;
+		using retn = _Retn;
+		using func = _Retn(_Args...);
+		template<std::size_t _Index>
+		using args = fake::pack_index_t<_Index, _Args...>;
+		using tuple = std::tuple<_Args...>;
+		static constexpr std::size_t size = sizeof... (_Args);
+	};
+	
+	template<typename _Retn, typename _Class, typename... _Args>
+	struct functor_info<_Retn(_Class::*)(_Args...) volatile noexcept>
+	{
+		static constexpr const char* name = "member_function_pointer_volatile_noexcept";
+		static constexpr bool constant = false;
+		static constexpr bool volatility = true;
+		static constexpr bool exception = false;
+		static constexpr bool lvalue_reference = false;
+		static constexpr bool rvalue_reference = false;
+		using object = _Class;
+		using retn = _Retn;
+		using func = _Retn(_Args...);
+		template<std::size_t _Index>
+		using args = fake::pack_index_t<_Index, _Args...>;
+		using tuple = std::tuple<_Args...>;
+		static constexpr std::size_t size = sizeof... (_Args);
+	};
+	
+	template<typename _Retn, typename _Class, typename... _Args>
+	struct functor_info<_Retn(_Class::*)(_Args...) const volatile noexcept>
+	{
+		static constexpr const char* name = "member_function_pointer_const_volatile_noexcept";
+		static constexpr bool constant = true;
+		static constexpr bool volatility = true;
+		static constexpr bool exception = false;
+		static constexpr bool lvalue_reference = false;
+		static constexpr bool rvalue_reference = false;
+		using object = _Class;
+		using retn = _Retn;
+		using func = _Retn(_Args...);
+		template<std::size_t _Index>
+		using args = fake::pack_index_t<_Index, _Args...>;
+		using tuple = std::tuple<_Args...>;
+		static constexpr std::size_t size = sizeof... (_Args);
+	};
+	
+	template<typename _Retn, typename _Class, typename... _Args>
+	struct functor_info<_Retn(_Class::*)(_Args...) & noexcept>
+	{
+		static constexpr const char* name = "member_function_pointer_lvalue_noexcept";
+		static constexpr bool constant = false;
+		static constexpr bool volatility = false;
+		static constexpr bool exception = false;
+		static constexpr bool lvalue_reference = true;
+		static constexpr bool rvalue_reference = false;
+		using object = _Class;
+		using retn = _Retn;
+		using func = _Retn(_Args...);
+		template<std::size_t _Index>
+		using args = fake::pack_index_t<_Index, _Args...>;
+		using tuple = std::tuple<_Args...>;
+		static constexpr std::size_t size = sizeof... (_Args);
+	};
+	
+	template<typename _Retn, typename _Class, typename... _Args>
+	struct functor_info<_Retn(_Class::*)(_Args...) const & noexcept>
+	{
+		static constexpr const char* name = "member_function_pointer_const_lvalue_noexcept";
+		static constexpr bool constant = true;
+		static constexpr bool volatility = false;
+		static constexpr bool exception = false;
+		static constexpr bool lvalue_reference = true;
+		static constexpr bool rvalue_reference = false;
+		using object = _Class;
+		using retn = _Retn;
+		using func = _Retn(_Args...);
+		template<std::size_t _Index>
+		using args = fake::pack_index_t<_Index, _Args...>;
+		using tuple = std::tuple<_Args...>;
+		static constexpr std::size_t size = sizeof... (_Args);
+	};
+	
+	template<typename _Retn, typename _Class, typename... _Args>
+	struct functor_info<_Retn(_Class::*)(_Args...) volatile & noexcept>
+	{
+		static constexpr const char* name = "member_function_pointer_volatile_lvalue_noexcept";
+		static constexpr bool constant = false;
+		static constexpr bool volatility = true;
+		static constexpr bool exception = false;
+		static constexpr bool lvalue_reference = true;
+		static constexpr bool rvalue_reference = false;
+		using object = _Class;
+		using retn = _Retn;
+		using func = _Retn(_Args...);
+		template<std::size_t _Index>
+		using args = fake::pack_index_t<_Index, _Args...>;
+		using tuple = std::tuple<_Args...>;
+		static constexpr std::size_t size = sizeof... (_Args);
+	};
+	
+	template<typename _Retn, typename _Class, typename... _Args>
+	struct functor_info<_Retn(_Class::*)(_Args...) const volatile & noexcept>
+	{
+		static constexpr const char* name = "member_function_pointer_const_volatile_lvalue_noexcept";
+		static constexpr bool constant = true;
+		static constexpr bool volatility = true;
+		static constexpr bool exception = false;
+		static constexpr bool lvalue_reference = true;
+		static constexpr bool rvalue_reference = false;
+		using object = _Class;
+		using retn = _Retn;
+		using func = _Retn(_Args...);
+		template<std::size_t _Index>
+		using args = fake::pack_index_t<_Index, _Args...>;
+		using tuple = std::tuple<_Args...>;
+		static constexpr std::size_t size = sizeof... (_Args);
+	};
+	
+	template<typename _Retn, typename _Class, typename... _Args>
+	struct functor_info<_Retn(_Class::*)(_Args...) && noexcept>
+	{
+		static constexpr const char* name = "member_function_pointer_rvalue_noexcept";
+		static constexpr bool constant = false;
+		static constexpr bool volatility = false;
+		static constexpr bool exception = false;
+		static constexpr bool lvalue_reference = false;
+		static constexpr bool rvalue_reference = true;
+		using object = _Class;
+		using retn = _Retn;
+		using func = _Retn(_Args...);
+		template<std::size_t _Index>
+		using args = fake::pack_index_t<_Index, _Args...>;
+		using tuple = std::tuple<_Args...>;
+		static constexpr std::size_t size = sizeof... (_Args);
+	};
+	
+	template<typename _Retn, typename _Class, typename... _Args>
+	struct functor_info<_Retn(_Class::*)(_Args...) const && noexcept>
+	{
+		static constexpr const char* name = "member_function_pointer_const_rvalue_noexcept";
+		static constexpr bool constant = true;
+		static constexpr bool volatility = false;
+		static constexpr bool exception = false;
+		static constexpr bool lvalue_reference = false;
+		static constexpr bool rvalue_reference = true;
+		using object = _Class;
+		using retn = _Retn;
+		using func = _Retn(_Args...);
+		template<std::size_t _Index>
+		using args = fake::pack_index_t<_Index, _Args...>;
+		using tuple = std::tuple<_Args...>;
+		static constexpr std::size_t size = sizeof... (_Args);
+	};
+	
+	template<typename _Retn, typename _Class, typename... _Args>
+	struct functor_info<_Retn(_Class::*)(_Args...) volatile && noexcept>
+	{
+		static constexpr const char* name = "member_function_pointer_volatile_rvalue_noexcept";
+		static constexpr bool constant = false;
+		static constexpr bool volatility = true;
+		static constexpr bool exception = false;
+		static constexpr bool lvalue_reference = false;
+		static constexpr bool rvalue_reference = true;
+		using object = _Class;
+		using retn = _Retn;
+		using func = _Retn(_Args...);
+		template<std::size_t _Index>
+		using args = fake::pack_index_t<_Index, _Args...>;
+		using tuple = std::tuple<_Args...>;
+		static constexpr std::size_t size = sizeof... (_Args);
+	};
+	
+	template<typename _Retn, typename _Class, typename... _Args>
+	struct functor_info<_Retn(_Class::*)(_Args...) const volatile && noexcept>
+	{
+		static constexpr const char* name = "member_function_pointer_const_volatile_rvalue_noexcept";
+		static constexpr bool constant = true;
+		static constexpr bool volatility = true;
+		static constexpr bool exception = false;
+		static constexpr bool lvalue_reference = false;
+		static constexpr bool rvalue_reference = true;
+		using object = _Class;
 		using retn = _Retn;
 		using func = _Retn(_Args...);
 		template<std::size_t _Index>

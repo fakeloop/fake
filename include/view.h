@@ -10,7 +10,6 @@
  *                                                       * 
 \*       0. You just DO WHAT THE FUCK YOU WANT TO.       */
 
-#include <type_traits>
 #include <algorithm>
 #include <ostream>
 
@@ -80,6 +79,20 @@ namespace fake
 		
 		static constexpr bool empty() noexcept{
 			return sizeof...(_Chars) == 0;
+		}
+		
+		// FNV-1a 64 bit hash
+		static constexpr unsigned long long hash() noexcept{
+			constexpr char local[]{_Chars...};
+			
+			constexpr unsigned long long basis = 14695981039346656037ull;
+			constexpr unsigned long long prime = 1099511628211ull;
+			
+			unsigned long long hash = basis;
+			for(const char e : local)
+				hash = (hash ^ e) * prime;
+			
+			return hash;
 		}
 		
 	private:
@@ -311,6 +324,11 @@ namespace fake
 		friend std::basic_ostream<char>& operator<<(std::basic_ostream<char> &_os, view _view){
 			return _os << _view.data();
 		}
+		
+	public:
+		operator std::string_view() const{
+			return buffer;
+		}
 	};
 	
 	template<char... _Lhs, char... _Rhs>
@@ -385,13 +403,18 @@ namespace fake
 	requires requires{{to_view<_integral, _base>()} -> view_c;}
 	constexpr auto to_view_v = to_view<_integral, _base>();
 	
-	constexpr auto type_view(pack_c auto _pack) noexcept{
-		constexpr auto symbol = fake::symbol::string_view<fake::take_t<_pack>>();
+	constexpr auto type_view(fake::pack_c auto _pack) noexcept{
+		constexpr auto symbol = fake::symbol::string_view<fake::take_t<decltype(_pack){}>>();
 		return fake::view_v<fake::detail::view::string<symbol.size() + 1>{symbol.data()}>;
 	}
 	
 	constexpr auto type_view(auto _type) noexcept{
 		constexpr auto symbol = fake::symbol::string_view<decltype(_type)>();
+		return fake::view_v<fake::detail::view::string<symbol.size() + 1>{symbol.data()}>;
+	}
+	
+	constexpr auto value_view(fake::mezz_c auto _mezz) noexcept{
+		constexpr auto symbol = fake::symbol::string_view<_mezz.value>();
 		return fake::view_v<fake::detail::view::string<symbol.size() + 1>{symbol.data()}>;
 	}
 	

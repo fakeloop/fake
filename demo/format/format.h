@@ -106,7 +106,13 @@ namespace fake
 				using sequence = _Sequence;
 				using mapping = _Mapping;
 				
-				using reference_sequence = std::tuple<const std::remove_cvref_t<_References>&...>;
+				using reference_sequence = std::tuple<
+					std::conditional_t<
+						std::is_rvalue_reference_v<_References>,
+						std::remove_reference_t<_References>,
+						_References
+					>...
+				>;
 				constexpr stream(_References &&..._references) noexcept:
 					references{std::forward<_References>(_references)...}{}
 				

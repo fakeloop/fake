@@ -473,7 +473,7 @@ namespace fake
 	namespace custom
 	{
 		
-		template<execution::topology::info_c, execution::topology::info_c, template<typename...> typename>
+		template<execution::topology::info_c, execution::topology::info_c, template<typename...> typename, bool>
 		struct acyclic;
 		
 		namespace tool::acyclic
@@ -701,7 +701,8 @@ namespace fake
 					if(aspect.delegate.consume() == fake::atomic::ultimatum::signal::overflow)
 						throw fake::exception::acyclic{fake::exception::acyclic::invoke_interface::await_aspect};
 					aspect.handle = _handle;
-					aspect.handle = [](auto _handle, auto &_use, auto _self)->tool::acyclic::coroutine<void>{
+					aspect.handle = [](auto _handle, auto &_use, auto _self)->tool::acyclic::coroutine<void>
+					{
 						_use.produce();
 						
 						co_yield std::nullopt;
@@ -728,7 +729,8 @@ namespace fake
 						auto &_aspcet,
 						auto &_use,
 						auto _self
-					)->tool::acyclic::coroutine<void>{
+					)->tool::acyclic::coroutine<void>
+					{
 						_use.produce();
 						
 						co_yield std::nullopt;
@@ -762,7 +764,8 @@ namespace fake
 					
 					return [&vars = callee.vars]<typename... _Vars>(
 						fake::type_package<std::tuple<_Vars...>>
-					)->decltype(auto){
+					)->decltype(auto)
+					{
 						return std::make_tuple(std::move(std::get<_Vars>(vars).storage.value())...);
 					}(fake::pack_v<resume_t>);
 				}
@@ -780,10 +783,13 @@ namespace fake
 		template<
 			execution::topology::info_c _Topology,
 			execution::topology::info_c _Decorate,
-			template<typename...> typename _Coroutine
+			template<typename...> typename _Coroutine,
+			bool _sfinae_friendly
 		>
 		struct acyclic final
 		{
+			static constexpr bool sfinae_friendly = _sfinae_friendly;
+			
 			template<pack_c _Callee, pack_c _Aspect>
 			struct delegate final{
 			private:
@@ -1257,7 +1263,8 @@ namespace fake
 						using pass_t = fake::tuple::find_if_t<typename aspect_t::storage_t, query_pass>;
 						using lambda_t = typename pass_t::value_t;
 						
-						constexpr auto broker = []<typename _Arg>(_Arg &&_arg)->decltype(auto){
+						constexpr auto broker = []<typename _Arg>(_Arg &&_arg)->decltype(auto)
+						{
 							return transform<node_t>(std::forward<_Arg>(_arg));
 						};
 						
@@ -1431,7 +1438,8 @@ namespace fake
 								// then deduce the invoke result of current pass. 
 								using lambda_t = typename pass_t::value_t;
 								
-								constexpr auto broker = []<typename _Arg>(_Arg &&_arg)->decltype(auto){
+								constexpr auto broker = []<typename _Arg>(_Arg &&_arg)->decltype(auto)
+								{
 									return transform<node_t>(std::forward<_Arg>(_arg));
 								};
 								
@@ -2012,7 +2020,7 @@ namespace fake
 					strict_meta_enum_valid(),
 					[](auto _b){
 						static_assert(
-							_b,
+							sfinae_friendly || _b.value,
 							"\e[33;48merror<fake::acyclic>: there are topology metas with invalid enum.\e[0m"
 						);
 					}
@@ -2021,7 +2029,7 @@ namespace fake
 					strict_nodes_unique(),
 					[](auto _b){
 						static_assert(
-							_b,
+							sfinae_friendly || _b.value,
 							"\e[33;48merror<fake::acyclic>: the topology tokens are NOT unique.\e[0m"
 						);
 					}
@@ -2030,7 +2038,7 @@ namespace fake
 					strict_nodes_match(),
 					[](auto _b){
 						static_assert(
-							_b,
+							sfinae_friendly || _b.value,
 							"\e[33;48merror<fake::acyclic>: "
 							"the 'arguments' do NOT match against the 'results' in topology.\e[0m"
 						);
@@ -2040,7 +2048,7 @@ namespace fake
 					strict_acyclic(),
 					[](auto _b){
 						static_assert(
-							_b,
+							sfinae_friendly || _b.value,
 							"\e[33;48merror<fake::acyclic>: there are some loops in the topology.\e[0m"
 						);
 					}
@@ -2292,7 +2300,8 @@ namespace fake
 						auto &&_value,
 						auto &_broker,
 						fake::type_package<_Arg>
-					)->decltype(auto){
+					)->decltype(auto)
+					{
 						constexpr auto functor = []<typename _Functor>(fake::type_package<_Functor>){
 							return std::is_same_v<typename _Functor::meta::token, _Arg>;
 						};
@@ -2325,7 +2334,8 @@ namespace fake
 						constexpr auto observe = []<typename _Prev = _Arg>(
 							auto &&_value,
 							auto &_broker
-						)->decltype(auto){
+						)->decltype(auto)
+						{
 							if constexpr(std::is_same_v<tuple_top, _Graph>){
 								using broker_t = std::remove_cvref_t<decltype(_broker)>;
 								using ref_t = std::add_lvalue_reference_t<std::remove_cvref_t<decltype(_value)>>;
@@ -2666,7 +2676,8 @@ namespace fake
 					namespace concepts = fake::acyclic::concepts;
 					using scheduler_t = _Scheduler;
 					
-					constexpr auto awaitable = []<typename _Ex>(_Ex &&_ex)->decltype(auto){
+					constexpr auto awaitable = []<typename _Ex>(_Ex &&_ex)->decltype(auto)
+					{
 						using token_t = _Token;
 						using expr_t = _Ex;
 						
@@ -2695,7 +2706,8 @@ namespace fake
 						}
 					};
 					
-					constexpr auto awaiter = []<concepts::awaitable_c _Aw>(_Aw &&_aw)->decltype(auto){
+					constexpr auto awaiter = []<concepts::awaitable_c _Aw>(_Aw &&_aw)->decltype(auto)
+					{
 						using awaitable_t = _Aw;
 						
 						if constexpr(concepts::awaitable_to_awaiter_via_member_operator_co_await_c<awaitable_t>)
@@ -2718,7 +2730,8 @@ namespace fake
 					namespace concepts = fake::acyclic::concepts;
 					using token_t = std::remove_cvref_t<decltype(_expr)>::token_t;
 					
-					constexpr auto scheduler = []<typename _Ex>(_Ex &&_ex)->decltype(auto){
+					constexpr auto scheduler = []<typename _Ex>(_Ex &&_ex)->decltype(auto)
+					{
 						using expr_t = _Ex;
 						
 						if constexpr(concepts::token_with_execution_c<token_t>){
@@ -2889,7 +2902,8 @@ namespace fake
 									auto _handle,
 									auto &_work,
 									auto &_atomic
-								)->coroutine_t<ref_t>{
+								)->coroutine_t<ref_t>
+								{
 									tool::acyclic::guard_t guard{_handle, _work, _atomic};
 									
 									co_yield std::ref(_await);
@@ -2957,7 +2971,8 @@ namespace fake
 									auto _handle,
 									auto &_work,
 									auto &_atomic
-								)->coroutine_t<ref_t>{
+								)->coroutine_t<ref_t>
+								{
 									tool::acyclic::guard_t guard{_handle, _work, _atomic};
 									
 									co_yield std::ref(_await);
@@ -3232,7 +3247,8 @@ namespace fake
 									auto &_aspect,
 									auto &_vars,
 									fake::type_package<std::tuple<_Args...>>
-								)->decltype(auto){
+								)->decltype(auto)
+								{
 									return recur_inline_invoke<_Graph, _Deduce, node_t, invoke_e::propagate, _Voids>(
 										_storage,
 										_aspect,
@@ -3267,7 +3283,8 @@ namespace fake
 											auto _handle,
 											auto &_work,
 											auto &_atomic
-										)->coroutine_t<ref_t>{
+										)->coroutine_t<ref_t>
+										{
 											tool::acyclic::guard_t guard{_handle, _work, _atomic};
 											
 											co_yield std::ref(_await);
@@ -3331,7 +3348,8 @@ namespace fake
 											auto _handle,
 											auto &_work,
 											auto &_atomic
-										)->coroutine_t<ref_t>{
+										)->coroutine_t<ref_t>
+										{
 											tool::acyclic::guard_t guard{_handle, _work, _atomic};
 											
 											co_yield std::ref(_await);
@@ -3557,7 +3575,7 @@ namespace fake
 					strict_args_unique<std::remove_cvref_t<_Params>...>(),
 					[](auto _b){
 						static_assert(
-							_b,
+							sfinae_friendly || _b.value,
 							"\e[33;48merror<fake::acyclic::operator()>: the tokens of arguments are NOT unique.\e[0m"
 						);
 					}
@@ -3566,7 +3584,7 @@ namespace fake
 					strict_args_match_entries<std::tuple<_Params...>, typename deduce_t::entries_t>(),
 					[](auto _b){
 						static_assert(
-							_b,
+							sfinae_friendly || _b.value,
 							"\e[33;48merror<fake::acyclic::operator()>: "
 							"arguments do NOT match against the entries.\e[0m"
 						);
@@ -3576,7 +3594,7 @@ namespace fake
 					strict_args_match_implementations<std::tuple<_Params...>>(),
 					[](auto _b){
 						static_assert(
-							_b,
+							sfinae_friendly || _b.value,
 							"\e[33;48merror<fake::acyclic::operator()>: "
 							"arguments are NOT invocable by the implementations.\e[0m"
 						);
@@ -3591,7 +3609,7 @@ namespace fake
 					strict_args_unique<std::remove_cvref_t<_Params>...>(),
 					[](auto _b){
 						static_assert(
-							_b,
+							sfinae_friendly || _b.value,
 							"\e[33;48merror<fake::acyclic::operator()>: the tokens of arguments are NOT unique.\e[0m"
 						);
 					}
@@ -3600,7 +3618,7 @@ namespace fake
 					strict_args_match_entries<std::tuple<_Params...>, typename deduce_t::entries_t>(),
 					[](auto _b){
 						static_assert(
-							_b,
+							sfinae_friendly || _b.value,
 							"\e[33;48merror<fake::acyclic::operator()>: "
 							"arguments do NOT match against the entries.\e[0m"
 						);
@@ -3610,7 +3628,7 @@ namespace fake
 					strict_args_match_implementations<std::tuple<_Params...>>(),
 					[](auto _b){
 						static_assert(
-							_b,
+							sfinae_friendly || _b.value,
 							"\e[33;48merror<fake::acyclic::operator()>: "
 							"arguments are NOT invocable by the implementations.\e[0m"
 						);
@@ -3685,7 +3703,7 @@ namespace fake
 				strict_bind_unique(fake::pack_v<typename std::remove_cvref_t<_C>::storage_t>),
 				[](auto _b){
 					static_assert(
-						_b,
+						sfinae_friendly || _b.value,
 						"\e[33;48merror<fake::acyclic::bind()>: "
 						"the tokens of the acyclic implementations are NOT unique.\e[0m"
 					);
@@ -3695,7 +3713,7 @@ namespace fake
 				strict_bind_unique(fake::pack_v<typename std::remove_cvref_t<_A>::storage_t>),
 				[](auto _b){
 					static_assert(
-						_b,
+						sfinae_friendly || _b.value,
 						"\e[33;48merror<fake::acyclic::bind()>: the tokens of the aspects packs are NOT unique.\e[0m"
 					);
 				}
@@ -3709,7 +3727,7 @@ namespace fake
 				),
 				[](auto _b){
 					static_assert(
-						_b,
+						sfinae_friendly || _b.value,
 						"\e[33;48merror<fake::acyclic::bind()>: some tokens are bound without implementation.\e[0m"
 					);
 				}
@@ -3718,7 +3736,7 @@ namespace fake
 				strict_bind_entries_deducible(fake::pack_v<typename std::remove_cvref_t<_C>::storage_t>),
 				[](auto _b){
 					static_assert(
-						_b,
+						sfinae_friendly || _b.value,
 						"\e[33;48merror<fake::acyclic::bind()>: some entris are NOT deducible. "
 						"check if the entry node is NOT a functor, or being with 'auto' or 'template' parameters.\e[0m"
 					);
@@ -3737,7 +3755,7 @@ namespace fake
 		template<typename...> typename _Coroutine = custom::tool::acyclic::coroutine
 	>
 	auto bind(auto &&_e){
-		using acyclic_t = custom::acyclic<_Topology, _Decorate, _Coroutine>;
+		using acyclic_t = custom::acyclic<_Topology, _Decorate, _Coroutine, true>;
 		return acyclic_t::bind(std::forward<decltype(_e)>(_e));
 	}
 	
@@ -3747,7 +3765,29 @@ namespace fake
 		template<typename...> typename _Coroutine = custom::tool::acyclic::coroutine
 	>
 	auto bind(auto &&_e, auto &&_f){
-		using acyclic_t = custom::acyclic<_Topology, _Decorate, _Coroutine>;
+		using acyclic_t = custom::acyclic<_Topology, _Decorate, _Coroutine, true>;
+		return acyclic_t::bind(std::forward<decltype(_e)>(_e), std::forward<decltype(_f)>(_f));
+	}
+	
+	template<
+		fake::debug_c _Label,
+		execution::topology::info_c _Topology,
+		execution::topology::info_c _Decorate = fake::top::info<>,
+		template<typename...> typename _Coroutine = custom::tool::acyclic::coroutine
+	>
+	auto bind(auto &&_e){
+		using acyclic_t = custom::acyclic<_Topology, _Decorate, _Coroutine, false>;
+		return acyclic_t::bind(std::forward<decltype(_e)>(_e));
+	}
+	
+	template<
+		fake::debug_c _Label,
+		execution::topology::info_c _Topology,
+		execution::topology::info_c _Decorate = fake::top::info<>,
+		template<typename...> typename _Coroutine = custom::tool::acyclic::coroutine
+	>
+	auto bind(auto &&_e, auto &&_f){
+		using acyclic_t = custom::acyclic<_Topology, _Decorate, _Coroutine, false>;
 		return acyclic_t::bind(std::forward<decltype(_e)>(_e), std::forward<decltype(_f)>(_f));
 	}
 	

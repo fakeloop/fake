@@ -38,17 +38,17 @@ namespace fake::custom
 		struct forbid final{};
 		
 	public:
-		template<template<typename, auto, typename> typename _Template>
+		template<template<typename, auto, typename, typename> typename _Template>
 		struct adaptor final{
-			template<typename _ConfigToken, auto _footprint, typename _Type>
-			requires fake::meta::array_c<decltype(_footprint)>
-			using type = _Template<_ConfigToken, _footprint, _Type>;
+			template<typename _ConfigToken, auto _footprint, typename _Type, typename _Init = const fake::null_t>
+			requires fake::meta::array_c<decltype(_footprint)> || std::same_as<decltype(_footprint), unsigned long long>
+			using type = _Template<_ConfigToken, _footprint, _Type, _Init>;
 		};
 		
 		template<typename>
 		struct is_adaptor final : std::false_type{};
 		
-		template<template<typename, auto, typename> typename _Template>
+		template<template<typename, auto, typename, typename> typename _Template>
 		struct is_adaptor<adaptor<_Template>> final : std::true_type{};
 		
 		template<typename _Type>
@@ -158,21 +158,36 @@ namespace fake::custom
 			requires(fake::take_t<configure.at<[]{}>(fake::pack_v<key<_ConfigToken>>)> _local){
 				requires _local.template contains<[]{}>(fake::pack_v<stream>);
 			}
-		inline static constexpr auto method(const _Type &_e){
+		inline static constexpr auto method(_Type &_e){
 			constexpr fake::take_t<configure.at<[]{}>(fake::pack_v<key<_ConfigToken>>)> local;
 			using stream_t = fake::take_t<local.template at<[]{}>(fake::pack_v<stream>)>;
+			constexpr auto hash = fake::type_view(_footprint).hash();
 			
-			return typename stream_t::template type<_ConfigToken, _footprint, _Type>{_e};
+			return typename stream_t::template type<_ConfigToken, hash, _Type>{_e};
+		}
+		
+		template<typename _ConfigToken, auto _footprint, typename _Type, typename _Init>
+		requires
+			fake::meta::array_c<decltype(_footprint)> &&
+			requires(fake::take_t<configure.at<[]{}>(fake::pack_v<key<_ConfigToken>>)> _local){
+				requires _local.template contains<[]{}>(fake::pack_v<stream>);
+			}
+		inline static constexpr auto method(_Type &_e, _Init &_i){
+			constexpr fake::take_t<configure.at<[]{}>(fake::pack_v<key<_ConfigToken>>)> local;
+			using stream_t = fake::take_t<local.template at<[]{}>(fake::pack_v<stream>)>;
+			constexpr auto hash = fake::type_view(_footprint).hash();
+			
+			return typename stream_t::template type<_ConfigToken, hash, _Type, _Init>{_e, _i};
 		}
 	};
 	
 	namespace detail::type_stream
 	{
 		
-		template<typename _ConfigToken, auto _footprint, typename _Type>
-		concept invocable_c = requires(const _Type &_e){
+		template<typename _ConfigToken, auto _footprint, typename... _Type>
+		concept invocable_c = requires(_Type &..._e){
 			requires fake::meta::array_c<decltype(_footprint)>;
-			custom::type_stream::method<_ConfigToken, _footprint>(_e);
+			custom::type_stream::method<_ConfigToken, _footprint>(_e...);
 		};
 		
 		// currying broker. 
@@ -183,8 +198,14 @@ namespace fake::custom
 		public:
 			template<typename _Type>
 			requires invocable_c<_ConfigToken, _footprint, _Type>
-			inline constexpr auto operator()(const _Type &_e) const{
+			inline constexpr auto operator()(_Type &_e) const{
 				return custom::type_stream::method<_ConfigToken, _footprint>(_e);
+			}
+			
+			template<typename _Type, typename _Init>
+			requires invocable_c<_ConfigToken, _footprint, _Type, _Init>
+			inline constexpr auto operator()(_Type &_e, _Init &_i) const{
+				return custom::type_stream::method<_ConfigToken, _footprint>(_e, _i);
 			}
 		};
 		

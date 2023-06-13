@@ -43,6 +43,9 @@ namespace fake
 	template<template<auto...> typename _Tamplate, typename _Type>
 	constexpr bool trait_auto_v = trait_auto<_Tamplate, _Type>::value;
 	
+	template<typename _Type, template<auto...> typename _Tamplate>
+	concept trait_auto_c = trait_auto_v<_Tamplate, _Type>;
+	
 	template<bool _Condition>
 	concept to_trait_c = _Condition;
 	
@@ -100,6 +103,12 @@ namespace fake
 		using type = _Template<_T, _s>;
 	};
 	
+	template<template<char...> typename _Template>
+	struct view_like{
+		template<char... _c>
+		using type = _Template<_c...>;
+	};
+	
 	template<template<typename...> typename _Template>
 	constexpr generic<_Template> gene_v{};
 	
@@ -111,6 +120,9 @@ namespace fake
 	
 	template<template<typename, std::size_t> typename _Template>
 	struct is_generic<array_like<_Template>> : std::true_type{};
+	
+	template<template<char...> typename _Template>
+	struct is_generic<view_like<_Template>> : std::true_type{};
 	
 	template<typename _Type>
 	constexpr bool is_generic_v = is_generic<std::remove_cvref_t<_Type>>::value;
@@ -134,6 +146,12 @@ namespace fake
 	struct pattern<_Template<_Type, _size>>
 	{
 		using type = array_like<_Template>;
+	};
+	
+	template<template<char...> typename _Template, char... _c>
+	struct pattern<_Template<_c...>>
+	{
+		using type = view_like<_Template>;
 	};
 	
 	template<typename _Type>

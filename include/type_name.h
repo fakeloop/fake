@@ -167,15 +167,21 @@ namespace fake::custom
 				using max_t = fake::mezz_t<~std::size_t{}>;
 				constexpr std::size_t size = std::conditional_t<std::same_as<mezz, fake::null_t>, max_t, mezz>::value;
 				
-				if constexpr(info::is_array_like){
-					using type = typename info::arg;
+				if constexpr(info::is_view_like){
+					constexpr auto value = info::self.template replace<"\\", "\\\\">().template replace<"\"", "\\\"">();
+					return fake::view_v<fake::detail::view::string<prefix.size() + 1>{prefix.data()}> +
+						bracket_left + fake::view_v<"\'"> + value + fake::view_v<"\'"> + bracket_right +
+						fake::view_v<fake::detail::view::string<suffix.size() + 1>{suffix.data()}>;
+				}
+				else if constexpr(info::is_array_like){
+					using type = typename info::remove_cvref_arg;
 					return fake::view_v<fake::detail::view::string<prefix.size() + 1>{prefix.data()}> +
 						bracket_left + method<_ConfigToken, _footprint, type>() +
 						fake::view_v<" ["> + fake::to_view_v<info::array_size> + fake::view_v<"]"> + bracket_right +
 						fake::view_v<fake::detail::view::string<suffix.size() + 1>{suffix.data()}>;
 				}
 				else{
-					using tuple = typename info::args;
+					using tuple = typename info::remove_cvref_args;
 					return fake::view_v<fake::detail::view::string<prefix.size() + 1>{prefix.data()}> +
 						[]<std::size_t... _index>(std::index_sequence<_index...>){
 							return (

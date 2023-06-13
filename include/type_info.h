@@ -12,7 +12,6 @@
 
 #include "view.h"
 #include "meta.h"
-#include "container.h"
 
 namespace fake::tool
 {
@@ -25,6 +24,9 @@ namespace fake::tool
 	
 	template<template<typename, std::size_t> typename _Template>
 	struct adaptor<fake::array_like<_Template>>{};
+	
+	template<template<char...> typename _Template>
+	struct adaptor<fake::view_like<_Template>>{};
 	
 	template<typename _Type>
 	concept adaptor_c = fake::trait_v<adaptor, _Type>;

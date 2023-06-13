@@ -84,6 +84,39 @@ namespace fake::meta
 	template<array_c _Array>
 	inline constexpr std::size_t array_size_v = _Array::size;
 	
+	template<std::size_t _row, typename... _Types>
+	requires (sizeof...(_Types) % _row == 0)
+	struct reorder final{
+	private:
+		using origin_t = fake::meta::array<_Types...>;
+		
+		template<std::size_t... _group>
+		static consteval auto row(auto _offset, std::index_sequence<_group...>){
+			return fake::pack_v<
+				fake::meta::array<
+					fake::meta::array_element_t<_group * _row + _offset, origin_t>...
+				>
+			>;
+		}
+		
+		template<std::size_t... _offset>
+		static consteval auto impl(std::index_sequence<_offset...>){
+			return fake::pack_v<
+				fake::meta::array_cat_t<
+					fake::take_t<
+						row(fake::index_v<_offset>, std::make_index_sequence<sizeof...(_Types) / _row>())
+					>...
+				>
+			>;
+		};
+		
+	public:
+		using types = fake::take_t<impl(std::make_index_sequence<_row>())>;
+	};
+	
+	template<std::size_t _row, typename... _Types>
+	using reorder_t = typename reorder<_row, _Types...>::types;
+	
 	template<typename = void>
 	struct make{};
 	

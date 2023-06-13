@@ -12,6 +12,7 @@
 
 #include <cstdint>
 #include <type_traits>
+#include <array>
 #include <tuple>
 #include <optional>
 #include <variant>
@@ -24,6 +25,11 @@ namespace fake
 	
 	template<typename _T>
 	constexpr auto echo_v = fake::take_v<fake::pack_v<_T>>;
+	
+	struct debug final{};
+	
+	template<typename _Type>
+	concept debug_c = std::same_as<fake::debug, std::remove_cvref_t<_Type>>;
 	
 	template<typename = void, typename = void>
 	struct aligned_int{};
@@ -100,14 +106,16 @@ namespace fake
 		else if constexpr(std::is_integral_v<type_t>){
 			constexpr std::size_t half_v = sizeof(_e) >> 1;
 			constexpr type_t mask = 0xFF;
-			return [&]<std::size_t... _index>(std::index_sequence<_index...>) -> type_t{
+			return [&]<std::size_t... _index>(std::index_sequence<_index...>) -> type_t
+			{
 				return (((_e & mask << (_index << 3)) << ((half_v - _index << 1) - 1 << 3)) | ...) |
 					(((_e & mask << (half_v + _index << 3)) >> ((_index << 1) + 1 << 3)) | ...);
 			}(std::make_index_sequence<half_v>());
 		}
 		else{
 			constexpr std::size_t size_v = type_t::size;
-			return [&]<std::size_t... _index>(std::index_sequence<_index...>) -> type_t{
+			return [&]<std::size_t... _index>(std::index_sequence<_index...>) -> type_t
+			{
 				return {_e.data[size_v - _index - 1]...};
 			}(std::make_index_sequence<size_v>());
 		}
@@ -148,6 +156,66 @@ namespace fake
 		detail::traits::bool_package<true, _args...>,
 		detail::traits::bool_package<_args..., true>
 	>;
+	
+	template<typename... _Types>
+	struct merge;
+	
+	template<>
+	struct merge<> final{};
+	
+	template<typename _Head, std::same_as<_Head>... _Types>
+	struct merge<_Head, _Types...> final{
+		using type = _Head;
+	};
+	
+	template<typename... _Types>
+	using merge_t = typename merge<_Types...>::type;
+	
+	template<typename... _Types>
+	struct common_base;
+	
+	template<typename _Type>
+	struct common_base<_Type> final{
+		using type = _Type;
+	};
+	
+	template<typename _Lhs, std::derived_from<_Lhs> _Rhs, typename... _Types>
+	requires requires{requires std::same_as<_Lhs, _Rhs> == false; typename common_base<_Rhs, _Types...>::type;}
+	struct common_base<_Lhs, _Rhs, _Types...> final{
+		using type = typename common_base<_Lhs, _Types...>::type;
+	};
+	
+	template<typename _Lhs, typename _Rhs, typename... _Types>
+	requires std::derived_from<_Lhs, _Rhs> && requires{typename common_base<_Lhs, _Types...>::type;}
+	struct common_base<_Lhs, _Rhs, _Types...> final{
+		using type = typename common_base<_Rhs, _Types...>::type;
+	};
+	
+	template<typename... _Types>
+	using common_base_t = typename common_base<_Types...>::type;
+	
+	template<typename... _Types>
+	struct common_derive;
+	
+	template<typename _Type>
+	struct common_derive<_Type> final{
+		using type = _Type;
+	};
+	
+	template<typename _Lhs, std::derived_from<_Lhs> _Rhs, typename... _Types>
+	requires requires{requires std::same_as<_Lhs, _Rhs> == false; typename common_derive<_Rhs, _Types...>::type;}
+	struct common_derive<_Lhs, _Rhs, _Types...> final{
+		using type = typename common_derive<_Rhs, _Types...>::type;
+	};
+	
+	template<typename _Lhs, typename _Rhs, typename... _Types>
+	requires std::derived_from<_Lhs, _Rhs> && requires{typename common_derive<_Lhs, _Types...>::type;}
+	struct common_derive<_Lhs, _Rhs, _Types...> final{
+		using type = typename common_derive<_Lhs, _Types...>::type;
+	};
+	
+	template<typename... _Types>
+	using common_derive_t = typename common_derive<_Types...>::type;
 	
 	template<typename... _Lambda>
 	struct branch : public _Lambda...
@@ -248,6 +316,12 @@ namespace fake
 		template<typename _Type, std::size_t _Size>
 		static const auto impl(_Type (&)[_Size]){return fake::pack_v<_Type>;}
 		
+		template<typename _Type>
+		static const auto impl(_Type (&)[0]){return fake::pack_v<_Type>;}
+		
+		template<typename _Type>
+		static const auto impl(_Type (&)[]){return fake::pack_v<_Type>;}
+		
 	public:
 		using type = fake::take_t<decltype(impl(std::declval<ref_t>())){}>;
 	};
@@ -277,6 +351,19 @@ namespace fake
 	
 	template<array_c _Array>
 	constexpr std::size_t array_size_v = array_size<_Array>::value;
+	
+	template<typename>
+	struct is_std_array final : std::false_type{};
+	
+	template<template<typename, std::size_t> typename _Template, typename _Type, std::size_t _size>
+	requires std::same_as<_Template<_Type, _size>, std::array<_Type, _size>>
+	struct is_std_array<_Template<_Type, _size>> final : std::true_type{};
+	
+	template<typename _Type>
+	constexpr bool is_std_array_v = is_std_array<std::remove_cvref_t<_Type>>::value;
+	
+	template<typename _Type>
+	concept std_array_c = is_std_array_v<_Type>;
 	
 	template<typename _T>
 	constexpr bool is_container()
@@ -351,7 +438,9 @@ namespace fake
 	struct template_info<_Template<_Types...>>{
 		static constexpr bool value = true;
 		static constexpr bool is_array_like = false;
+		static constexpr bool is_view_like = false;
 		using args = std::tuple<_Types...>;
+		using remove_cvref_args = std::tuple<std::remove_cvref_t<_Types>...>;
 		static constexpr std::size_t size = sizeof...(_Types);
 		template<typename... _Args>
 		using type = _Template<_Args...>;
@@ -361,10 +450,23 @@ namespace fake
 	struct template_info<_Template<_Type, _size>>{
 		static constexpr bool value = true;
 		static constexpr bool is_array_like = true;
+		static constexpr bool is_view_like = false;
 		using arg = _Type;
+		using remove_cvref_arg = std::remove_cvref_t<_Type>;
 		static constexpr std::size_t array_size = _size;
 		template<typename _Arg, std::size_t _s>
 		using type = _Template<_Arg, _s>;
+	};
+	
+	template<template<char...> typename _Template, char... _char>
+	struct template_info<_Template<_char...>>{
+		static constexpr bool value = true;
+		static constexpr bool is_array_like = false;
+		static constexpr bool is_view_like = true;
+		static constexpr _Template<_char...> self{};
+		static constexpr std::size_t size = sizeof...(_char);
+		template<char... _c>
+		using type = _Template<_c...>;
 	};
 	
 	template<typename _T>
@@ -509,10 +611,23 @@ namespace fake
 	struct mimic{};
 	
 	template<template<typename...> typename _From, template<typename...> typename _To, typename... _Args>
+	requires requires{typename _To<_Args...>;}
 	struct mimic<_From<_Args...>, _To>{using type = _To<_Args...>;};
 	
 	template<typename _From, template<typename...> typename _To>
 	using mimic_t = typename mimic<std::remove_cvref_t<_From>, _To>::type;
+	
+	template<typename, typename, template<typename...> typename>
+	struct gemma{};
+	
+	template<std::size_t... _index, typename _Arg, template<typename...> typename _Template>
+	requires requires{typename _Template<fake::type_t<fake::mezz_t<_index>, _Arg>...>;}
+	struct gemma<std::index_sequence<_index...>, _Arg, _Template>{
+		using type = _Template<fake::type_t<fake::mezz_t<_index>, _Arg>...>;
+	};
+	
+	template<std::size_t _size, typename _Arg, template<typename...> typename _Template>
+	using gemma_t = typename gemma<std::make_index_sequence<_size>, std::remove_cvref_t<_Arg>, _Template>::type;
 	
 }
 

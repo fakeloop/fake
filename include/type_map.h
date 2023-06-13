@@ -394,35 +394,35 @@ namespace fake::cpo
 		}
 		
 		template<typename _Token, typename _Lambda, std::size_t _Index>
-		constexpr auto assert_implement() noexcept
+		constexpr auto affirm_implement() noexcept
 		{
 			if constexpr(_Index){
 				using storage = typename decltype(
 					fake::type_map::detail::reader<_Lambda, _Token, _Index - 1>(existed_t{})
 				)::type;
 				
-				constexpr auto assert = fake::is_valid(
-					[](auto _p)->decltype(decltype(_p)::type::type::assert()){}
+				constexpr auto affirm = fake::is_valid(
+					[](auto _p) -> decltype(decltype(_p)::type::type::affirm()) {}
 				);
 				constexpr auto alert = fake::is_valid(
-					[](auto _p)->decltype(decltype(_p)::type::type::alert(std::bool_constant<true>{})){}
+					[](auto _p) -> decltype(decltype(_p)::type::type::alert(std::bool_constant<true>{})) {}
 				);
-				constexpr bool has_assert = assert(fake::pack_v<storage>);
+				constexpr bool has_affirm = affirm(fake::pack_v<storage>);
 				constexpr bool has_alert = alert(fake::pack_v<storage>);
 				
 				static_assert(
-					has_assert && has_alert,
+					has_affirm && has_alert,
 					"\n-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-\n"
-					"\nerror<fake::cpo::assert>: for registered implementations:\n"
-					"\tshould have 'impl::alert(impl::assert() == false)'.\n"
+					"\nerror<fake::cpo::affirm>: for registered implementations:\n"
+					"\tshould have 'impl::alert(impl::affirm() == false)'.\n"
 					"\n-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-\n"
 				);
 				
-				if constexpr(has_assert && has_alert){
-					constexpr bool result = storage::type::assert();
+				if constexpr(has_affirm && has_alert){
+					constexpr bool result = storage::type::affirm();
 					storage::type::alert(std::bool_constant<result>{});
 					
-					return result && assert_implement<_Token, _Lambda, _Index - 1>();
+					return result && affirm_implement<_Token, _Lambda, _Index - 1>();
 				}
 				else{
 					return false;
@@ -434,9 +434,9 @@ namespace fake::cpo
 		}
 		
 		template<typename _Token, typename _Lambda>
-		constexpr auto assert() noexcept
+		constexpr auto affirm() noexcept
 		{
-			return assert_implement<
+			return affirm_implement<
 				_Token,
 				_Lambda,
 				fake::type_map::detail::counter<_Lambda, _Token>(existed_t{})
@@ -486,7 +486,7 @@ namespace fake::cpo
 			template<typename _Package>
 			constexpr auto operator()(_Package _package) const noexcept{
 				constexpr auto cpo = shrink::method<target>(
-					[](auto _p)->decltype(decltype(_p)::type::shrink(_package)){}
+					[](auto _p) -> decltype(decltype(_p)::type::shrink(_package)) {}
 				);
 				if constexpr(std::is_same_v<typename decltype(cpo)::type, fake::null_t>)
 					return _package;
@@ -504,7 +504,7 @@ namespace fake::cpo
 		};
 		
 		template<typename _Type>
-		struct assert
+		struct affirm
 		{
 			template<typename _Implement>
 			static constexpr void emplace(_Implement) noexcept{
@@ -513,7 +513,7 @@ namespace fake::cpo
 			
 			template<typename = void>
 			constexpr auto operator()() const noexcept{
-				return assert::method<target>([]{});
+				return affirm::method<target>([]{});
 			}
 			
 		private:
@@ -521,14 +521,14 @@ namespace fake::cpo
 			
 			template<typename _Target, typename _Condition>
 			static constexpr auto method(_Condition&&) noexcept{
-				return detail::assert<_Target, _Condition>();
+				return detail::affirm<_Target, _Condition>();
 			}
 		};
 		
 	}
 	
 	constexpr custom::shrink shrink;
-	template<typename _Type> constexpr custom::assert<_Type> assert;
+	template<typename _Type> constexpr custom::affirm<_Type> affirm;
 	
 }
 

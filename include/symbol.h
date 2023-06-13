@@ -10,7 +10,10 @@
  *                                                       * 
 \*       0. You just DO WHAT THE FUCK YOU WANT TO.       */
 
+#include <array>
 #include <string_view>
+
+#include "is_valid.h"
 
 namespace fake::symbol
 {
@@ -98,6 +101,32 @@ namespace fake::symbol
 	template<typename _Type>
 	constexpr std::string_view string_view() noexcept{
 		return fake::symbol::make_view<_Type>().to_string_view();
+	}
+	
+	namespace detail
+	{
+		
+		constexpr std::array<std::size_t, 2> fix = []{
+			std::string_view x = fake::symbol::string_view<fake::mezz_t<'x'>>();
+			std::string_view y = fake::symbol::string_view<fake::mezz_t<'y'>>();
+			std::size_t prefix, suffix;
+			for(prefix = 0; x[prefix] == y[prefix]; prefix++);
+			for(suffix = x.length() - 1; x[suffix] == y[suffix]; suffix--);
+			return std::array{prefix - 1, suffix - prefix + 1};
+		}();
+		
+	}
+	
+	template<auto _value>
+	constexpr view make_view() noexcept{
+		constexpr std::size_t prefix = detail::fix[0], suffix = detail::fix[1];
+		constexpr std::string_view raw = fake::symbol::string_view<fake::mezz_t<_value>>();
+		return fake::symbol::view(raw.data() + prefix, raw.size() - prefix - suffix);
+	}
+	
+	template<auto _value>
+	constexpr std::string_view string_view() noexcept{
+		return fake::symbol::make_view<_value>().to_string_view();
 	}
 	
 	template<typename _Lambda>
