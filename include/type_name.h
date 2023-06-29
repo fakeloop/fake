@@ -168,7 +168,8 @@ namespace fake::custom
 				constexpr std::size_t size = std::conditional_t<std::same_as<mezz, fake::null_t>, max_t, mezz>::value;
 				
 				if constexpr(info::is_view_like){
-					constexpr auto value = info::self.template replace<"\\", "\\\\">().template replace<"\"", "\\\"">();
+					constexpr auto value = info::self.template replace<"\\", "\\\\">().template replace<"\"", "\\\"">()
+						.template replace<"\'", "\\\'">();
 					return fake::view_v<fake::detail::view::string<prefix.size() + 1>{prefix.data()}> +
 						bracket_left + fake::view_v<"\'"> + value + fake::view_v<"\'"> + bracket_right +
 						fake::view_v<fake::detail::view::string<suffix.size() + 1>{suffix.data()}>;

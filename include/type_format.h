@@ -705,7 +705,7 @@ namespace fake::custom
 						if constexpr(json && _element.value)
 							return ""_v;
 						else
-							return _json_quote + decorate<map.type>(escape(type_name(fake::pack_v<type>))) + _space +
+							return _json_quote + decorate<map.type>(type_name(fake::pack_v<type>)) + _space +
 								decorate<map.member, context::index, _layer>(escape(_name)) + _json_quote +
 								decorate<map.colon>(" : "_v);
 					}(name, space, json_quote, fake::mezz_v<element>);
@@ -814,14 +814,14 @@ namespace fake::custom
 							return fake::ensure(""_v);
 						else if constexpr(_json_quote.empty())
 							return scoper<
-								fake::ensure(decorate<map.type>(escape(type_name(fake::pack_v<type>)))),
+								fake::ensure(decorate<map.type>(type_name(fake::pack_v<type>))),
 								fake::ensure(decorate<map.member, context::index, _layer>(escape(_name))),
 								fake::ensure(decorate<map.colon>(":"_v))
 							>{};
 						else
 							return scoper<
 								fake::ensure(
-									_json_quote + decorate<map.type>(escape(type_name(fake::pack_v<type>))) + _space +
+									_json_quote + decorate<map.type>(type_name(fake::pack_v<type>)) + _space +
 										decorate<map.member, context::index, _layer>(escape(_name)) + _json_quote
 								),
 								fake::ensure(decorate<map.colon>(":"_v))
