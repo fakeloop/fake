@@ -854,7 +854,7 @@ namespace fake::custom
 							if constexpr(requires{_e.clear();})
 								_e.clear();
 							
-							while(terminator.try_match(_is) == false){
+							for(std::size_t index = 0; terminator.try_match(_is) == false; index++){
 								const auto make_element = [&_self, &i]{
 									value_type value{};
 									_self.template operator()<fake::view<>, _layer + 1, current>(_self, i, value);
@@ -866,6 +866,8 @@ namespace fake::custom
 									_e.emplace(make_element());
 								else if constexpr(requires{_e.emplace_back(value_type{});})
 									_e.emplace_back(make_element());
+								else
+									_e[index] = make_element();
 							}
 						}
 						else if constexpr(
