@@ -32,6 +32,21 @@ namespace fake
 			inline const char* what() const noexcept override{return msg;};
 			
 		public:
+			inline static mismatch make(fake::view_c auto _message, std::basic_istream<char> &_is){
+				const std::streampos pos = _is.tellg();
+				_is.seekg(0);
+				std::size_t line = 1, row = 1;
+				for(std::streampos i = 0; i < pos; i += 1)
+					if(_is.get() == '\n')
+						line++, row = 1;
+					else
+						row++;
+				_is.seekg(pos);
+				
+				return {_message.data(), line, row};
+			}
+			
+		public:
 			const std::size_t line;
 			const std::size_t row;
 			
@@ -92,18 +107,10 @@ namespace fake
 				
 				for(const char e : sv){
 					if(_is.good() == false || _is.get() != e){
-						const std::streampos pos = _is.tellg();
-						_is.seekg(0);
-						std::size_t line = 1, row = 1;
-						for(std::streampos i = 0; i < pos; i += 1)
-							if(_is.get() == '\n')
-								line++, row = 1;
-							else
-								row++;
-						_is.seekg(pos);
-						
+						const auto exception = fake::exception::mismatch::make(error_message, _is);
 						_is.unget();
-						throw fake::exception::mismatch{error_message.data(), line, row};
+						
+						throw exception;
 					}
 				}
 				

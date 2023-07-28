@@ -862,12 +862,20 @@ namespace fake::custom
 									return value;
 								};
 								
-								if constexpr(requires{_e.emplace(value_type{});})
+								if constexpr(requires{_e.emplace(value_type{});}){
 									_e.emplace(make_element());
-								else if constexpr(requires{_e.emplace_back(value_type{});})
+								}
+								else if constexpr(requires{_e.emplace_back(value_type{});}){
 									_e.emplace_back(make_element());
-								else
+								}
+								else if constexpr(requires{std::tuple_size<type>::value;}){
+									if(index >= std::tuple_size_v<type>)
+										throw fake::exception::mismatch::make("match failed: [out of range]"_v, _is);
 									_e[index] = make_element();
+								}
+								else{
+									static_assert(sizeof(type*) == 0, "type matches 'for_each' but miss modifier.");
+								}
 							}
 						}
 						else if constexpr(
