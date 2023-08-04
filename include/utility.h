@@ -32,7 +32,8 @@ namespace fake
 			inline const char* what() const noexcept override{return msg;};
 			
 		public:
-			inline static mismatch make(fake::view_c auto _message, std::basic_istream<char> &_is){
+			template<std::same_as<std::basic_istream<char>> _Stream>
+			inline static mismatch make(fake::view_c auto _message, _Stream &_is){
 				const std::streampos pos = _is.tellg();
 				_is.seekg(0);
 				std::size_t line = 1, row = 1;

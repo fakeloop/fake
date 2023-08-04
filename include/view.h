@@ -317,8 +317,11 @@ namespace fake
 		
 		static constexpr decltype(auto) c_str() noexcept{return (buffer);}
 		
+		static constexpr decltype(auto) utf8() noexcept{return (utf8_buffer);}
+		
 	private:
 		static constexpr char buffer[]{_Chars..., '\0'};
+		static constexpr char8_t utf8_buffer[]{char8_t(_Chars)..., char8_t{}};
 		
 	private:
 		friend std::basic_ostream<char>& operator<<(std::basic_ostream<char> &_os, view _view){
