@@ -28,7 +28,7 @@ namespace fake
 		using retn = typename functor_info<decltype(&_Lambda::operator())>::retn;
 		using func = typename functor_info<decltype(&_Lambda::operator())>::func;
 		template<std::size_t _Index>
-		using args = typename functor_info<decltype(&_Lambda::operator())>::args<_Index>;
+		using args = typename functor_info<decltype(&_Lambda::operator())>::template args<_Index>;
 		using tuple = typename functor_info<decltype(&_Lambda::operator())>::tuple;
 		static constexpr std::size_t size = functor_info<decltype(&_Lambda::operator())>::size;
 	};
@@ -43,7 +43,7 @@ namespace fake
 		using rec_retn = typename functor_info<_Functor>::retn;
 		using rec_func = typename functor_info<_Functor>::func;
 		template<std::size_t _Index>
-		using rec_args = typename functor_info<_Functor>::args<_Index>;
+		using rec_args = typename functor_info<_Functor>::template args<_Index>;
 		using rec_tuple = typename functor_info<_Functor>::tuple;
 		static constexpr std::size_t rec_size = functor_info<_Functor>::size;
 		

@@ -189,7 +189,7 @@ namespace fake::custom
 								bracket_left + (
 									(
 										std::conditional_t<_index, fake::view_t<", ">, fake::view_t<"">>{} +
-										method<_ConfigToken, _footprint, std::tuple_element_t<_index, tuple>>()
+										method<_ConfigToken, _footprint, fake::element_index_t<_index, tuple>>()
 									) + ... + bracket_right
 								)
 							);

@@ -31,6 +31,7 @@ namespace fake::custom
 			struct color final{};
 			struct map final{};
 			struct decorate final{};
+			struct type final{};
 			struct member final{};
 			struct json final{};
 			struct container final{};
@@ -141,6 +142,20 @@ namespace fake::custom
 				}
 				static consteval auto decorator() noexcept{
 					return access<_ConfigToken>::template emplace<_vest, key::decorate, _Decorator>();
+				}
+			};
+			
+			struct type final{
+				template<auto _vest, typename _ConfigToken>
+				requires requires{access<_ConfigToken>::template emplace<_vest, key::type, fake::mezz_t<true>>();}
+				static consteval auto enable() noexcept{
+					return access<_ConfigToken>::template emplace<_vest, key::type, fake::mezz_t<true>>();
+				}
+				
+				template<auto _vest, typename _ConfigToken>
+				requires requires{access<_ConfigToken>::template emplace<_vest, key::type, fake::mezz_t<false>>();}
+				static consteval auto disable() noexcept{
+					return access<_ConfigToken>::template emplace<_vest, key::type, fake::mezz_t<false>>();
 				}
 			};
 			
@@ -290,6 +305,15 @@ namespace fake::custom
 					return fake::pack_v<colorization>;
 				else
 					return fake::pack_v<decorator_t>;
+			}
+			
+			template<typename _ConfigToken>
+			static consteval auto type() noexcept{
+				using member_t = fake::take_t<access<_ConfigToken>::template query<[]{}, key::type>()>;
+				if constexpr(std::same_as<member_t, fake::null_t>)
+					return true;
+				else
+					return member_t::value;
 			}
 			
 			template<typename _ConfigToken>
@@ -491,7 +515,13 @@ namespace fake::custom
 			using init_t = _Init;
 			
 		private:
-			static constexpr auto type_name = fake::type_name<typename _ConfigToken::type>;
+			static constexpr bool enable_type = query::type<typename _ConfigToken::type>();
+			static constexpr auto type_name = []{
+				if constexpr(enable_type)
+					return fake::type_name<typename _ConfigToken::type>;
+				else
+					return [](const fake::pack_c auto){return fake::view_v<"">;};
+			}();
 			static constexpr fake::view_c auto tab = query::tab<typename _ConfigToken::type>();
 			static constexpr fake::view_c auto endl = query::endl<typename _ConfigToken::type>();
 			static constexpr bool color = query::color<typename _ConfigToken::type>();
@@ -681,7 +711,9 @@ namespace fake::custom
 					using status = _Status;
 					using parent = fake::meta::array_element_t<0, status>;
 					using current = fake::meta::array_cat_t<fake::meta::array<type>, status>;
-					constexpr fake::view_c auto space = std::conditional_t<_View::empty(), _View, fake::view<' '>>{};
+					constexpr bool sole = _View::empty() || enable_type == false;
+					constexpr bool bare = _View::empty() && enable_type == false;
+					constexpr fake::view_c auto space = std::conditional_t<sole, fake::view<>, fake::view<' '>>{};
 					constexpr fake::view_c auto name = std::conditional_t<member, _View, fake::view<>>{};
 					constexpr bool contain = json && container(fake::pack_v<type>);
 					constexpr bool element = container(fake::pack_v<parent>);
@@ -701,14 +733,14 @@ namespace fake::custom
 					constexpr fake::view_c auto char_quote = decorate<map.quote>("'"_v);
 					constexpr fake::view_c auto json_quote = std::conditional_t<json, decltype(quote), fake::view<>>{};
 					
-					constexpr fake::view title = [](auto _name, auto _space, auto _json_quote, auto _element){
-						if constexpr(json && _element.value)
+					constexpr fake::view title = [](auto _name, auto _space, auto _json_quote, auto _ignore){
+						if constexpr(json && _ignore.value)
 							return ""_v;
 						else
 							return _json_quote + decorate<map.type>(type_name(fake::pack_v<type>)) + _space +
 								decorate<map.member, context::index, _layer>(escape(_name)) + _json_quote +
 								decorate<map.colon>(" : "_v);
-					}(name, space, json_quote, fake::mezz_v<element>);
+					}(name, space, json_quote, fake::mezz_v<element || bare>);
 					
 					constexpr fake::view_c auto l = std::conditional_t<contain, fake::view_t<"[">, fake::view_t<"{">>{};
 					constexpr fake::view_c auto r = std::conditional_t<contain, fake::view_t<"]">, fake::view_t<"}">>{};
@@ -756,14 +788,17 @@ namespace fake::custom
 					}
 				};
 				
-				if constexpr(json)
+				using type = std::remove_cvref_t<decltype(_stream.data)>;
+				constexpr bool object = json && (enable_type || container(fake::pack_v<type>) == false);
+				
+				if constexpr(object)
 					_os << decorate<map.bracket, context::bracket, 0x0>(fake::view_v<"{">) + endl + indent<tab, 0x1>();
 				
 				std::size_t index = 0;
 				using status = fake::meta::array<fake::null_t>;
-				impl.template operator()<fake::view<>, std::size_t{json}, status>(impl, index, _stream.data);
+				impl.template operator()<fake::view<>, std::size_t{object}, status>(impl, index, _stream.data);
 				
-				if constexpr(json)
+				if constexpr(object)
 					_os << endl + decorate<map.bracket, context::bracket, 0x0>(fake::view_v<"}">);
 				
 				return _os;
@@ -784,7 +819,9 @@ namespace fake::custom
 					using status = _Status;
 					using parent = fake::meta::array_element_t<0, status>;
 					using current = fake::meta::array_cat_t<fake::meta::array<type>, status>;
-					constexpr fake::view_c auto space = std::conditional_t<_View::empty(), _View, fake::view<' '>>{};
+					constexpr bool sole = _View::empty() || enable_type == false;
+					constexpr bool bare = _View::empty() && enable_type == false;
+					constexpr fake::view_c auto space = std::conditional_t<sole, fake::view<>, fake::view<' '>>{};
 					constexpr fake::view_c auto name = std::conditional_t<member, _View, fake::view<>>{};
 					constexpr bool contain = json && container(fake::pack_v<type>);
 					constexpr bool element = container(fake::pack_v<parent>);
@@ -808,9 +845,9 @@ namespace fake::custom
 					constexpr fake::view_c auto char_quote = decorate<map.quote>("'"_v);
 					constexpr fake::view_c auto json_quote = std::conditional_t<json, decltype(quote), fake::view<>>{};
 					
-					constexpr auto title = [](auto _name, auto _space, auto _json_quote, auto _element, auto _type){
+					constexpr auto title = [](auto _name, auto _space, auto _json_quote, auto _ignore, auto _type){
 						using type = fake::take_t<decltype(_type){}>;
-						if constexpr(json && _element.value)
+						if constexpr(json && _ignore.value)
 							return fake::ensure(""_v);
 						else if constexpr(_json_quote.empty())
 							return scoper<
@@ -826,7 +863,7 @@ namespace fake::custom
 								),
 								fake::ensure(decorate<map.colon>(":"_v))
 							>{};
-					}(name, space, json_quote, fake::mezz_v<element>, fake::pack_v<type>);
+					}(name, space, json_quote, fake::mezz_v<element || bare>, fake::pack_v<type>);
 					
 					constexpr fake::view_c auto l = std::conditional_t<contain, fake::view_t<"[">, fake::view_t<"{">>{};
 					constexpr fake::view_c auto r = std::conditional_t<contain, fake::view_t<"]">, fake::view_t<"}">>{};
@@ -973,15 +1010,18 @@ namespace fake::custom
 					}
 				};
 				
-				if constexpr(json)
+				using type = std::remove_cvref_t<decltype(_stream.data)>;
+				constexpr bool object = json && (enable_type || container(fake::pack_v<type>) == false);
+				
+				if constexpr(object)
 					_is >> fake::ensure(decorate<map.bracket, context::bracket, 0x0>(fake::view_v<"{">))
 						>> fake::ensure(endl) >> indenter<tab, 0x1>{};
 				
 				std::size_t index = 0;
 				using status = fake::meta::array<fake::null_t>;
-				impl.template operator()<fake::view<>, std::size_t{json}, status>(impl, index, _stream.data);
+				impl.template operator()<fake::view<>, std::size_t{object}, status>(impl, index, _stream.data);
 				
-				if constexpr(json)
+				if constexpr(object)
 					_is >> fake::ensure(endl)
 						>> fake::ensure(decorate<map.bracket, context::bracket, 0x0>(fake::view_v<"}">));
 				

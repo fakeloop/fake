@@ -16,11 +16,11 @@
 
 ## ***compile:***
 
-all codes passed the compilation test on `gcc-11.2.0` `gcc-11.2.1` `gcc-12.2.0`.
+all codes passed the compilation test on `gcc-12.2.0`.
 
 ## ***编译:***
 
-所有代码已于 `gcc-11.2.0` `gcc-11.2.1` `gcc-12.2.0` 通过编译测试。
+所有代码已于 `gcc-12.2.0` 通过编译测试。
 
 ---
 
@@ -396,13 +396,13 @@ int main(int _argc, char* _argv[])
 }
 ```
 
-**Node: The compiler would only do one AST generation for a function or type, so be careful when writing some compile-time functions, as well as when invoking them for multiple times. If you expect to run a compile-time program, you should always write the compile-time code in some functions like `template<auto> auto demo()`, and invoke them by writing `demo<[]{}>()`. The function you invoked each time would be a different specialization of the template function `demo()`, since every `[]{}` has a different type. The compiler could never skip the AST generation process of the function `demo()`, since the return type `auto` could only be deduced by compiling the definition of the function body.**
+**Note: The compiler would only do one AST generation for a function or type, so be careful when writing some compile-time functions, as well as when invoking them for multiple times. If you expect to run a compile-time program, you should always write the compile-time code in some functions like `template<auto> auto demo()`, and invoke them by writing `demo<[]{}>()`. The function you invoked each time would be a different specialization of the template function `demo()`, since every `[]{}` has a different type. The compiler could never skip the AST generation process of the function `demo()`, since the return type `auto` could only be deduced by compiling the definition of the function body.**
 
-*The template functions and template member functions defined in this header `"meta.h"` may take a dummy parameter `[]{}` in order to force the compiler to generate a new specialization. The template parameter `[]{}` is necessary for `gcc-12.x.x`, but not necessary for `gcc-11.x.x` when invoking these template functions in another template context. It is usually the first parameter of the template, taking something like `template<auto = refresh(tool::token{}, key{}), ...>` by default.*
+*The template functions and template member functions defined in this header `"meta.h"` may take a dummy parameter `[]{}` in order to force the compiler to generate a new specialization. The template parameter `[]{}` is necessary for `gcc-12.x.x` when invoking these template functions in another template context. It is usually the first parameter of the template, taking something like `template<auto = refresh(tool::token{}, key{}), ...>` by default.*
 
 **注意: 编译器只会为某个函数或类型进行一次语法树生成, 因此在编写并多次调用编译期函数时请小心。如果您希望运行一个编译期程序, 您永远应该在类似 `template<auto> auto demo()` 的函数内部编写这些编译期代码, 并且通过 `demo<[]{}>()` 调用它们。每次您所调用的都将是 `demo()` 模板函数的一个不同特化, 这是由于每个 `[]{}` 都拥有不同的类型。编译器永远无法跳过 `demo()` 函数的语法树生成过程, 因为要推导出返回值类型 `auto` 就必须编译函数体定义。**
 
-*本头文件 `"meta.h"` 中定义的模板函数和模板成员函数可以接收一个伪参数 `[]{}`, 目的是强制编译器重新进行特化。如要在其他模板上下文中调用这些模板函数, 在使用 `gcc-12.x.x` 时, 模板参数 `[]{}` 是必须的, 但使用 `gcc-11.x.x` 时不是必须的。其通常为首个模板参数, 默认接收 `template<auto = refresh(tool::token{}, key{}), ...>`。*
+*本头文件 `"meta.h"` 中定义的模板函数和模板成员函数可以接收一个伪参数 `[]{}`, 目的是强制编译器重新进行特化。如要在其他模板上下文中调用这些模板函数, 在使用 `gcc-12.x.x` 时模板参数 `[]{}` 是必须的。其通常为首个模板参数, 默认接收 `template<auto = refresh(tool::token{}, key{}), ...>`。*
 
 ***example:***
 

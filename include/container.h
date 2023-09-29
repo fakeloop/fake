@@ -41,12 +41,17 @@ namespace fake
 		
 		template<typename _Element>
 		static consteval auto vector_t() noexcept{
-			using init_t = std::initializer_list<std::remove_cvref_t<_Element>>;
-			using namespace std;
-			if constexpr(requires{vector(init_t{});})
-				return fake::gene_v<fake::template_info<decltype(vector(init_t{}))>::template type>;
-			else
+			if constexpr(std::same_as<_Element, void>){
 				return fake::gene_v<fake::container::null_t>;
+			}
+			else{
+				using init = std::initializer_list<std::remove_cvref_t<_Element>>;
+				using namespace std;
+				if constexpr(requires{vector(init{});})
+					return fake::gene_v<fake::template_info<decltype(vector(init{}))>::template type>;
+				else
+					return fake::gene_v<fake::container::null_t>;
+			}
 		}
 		
 	}
@@ -67,12 +72,17 @@ namespace fake
 		
 		template<typename _Element>
 		static consteval auto deque_t() noexcept{
-			using init_t = std::initializer_list<std::remove_cvref_t<_Element>>;
-			using namespace std;
-			if constexpr(requires{deque(init_t{});})
-				return fake::gene_v<fake::template_info<decltype(deque(init_t{}))>::template type>;
-			else
+			if constexpr(std::same_as<_Element, void>){
 				return fake::gene_v<fake::container::null_t>;
+			}
+			else{
+				using init = std::initializer_list<std::remove_cvref_t<_Element>>;
+				using namespace std;
+				if constexpr(requires{deque(init{});})
+					return fake::gene_v<fake::template_info<decltype(deque(init{}))>::template type>;
+				else
+					return fake::gene_v<fake::container::null_t>;
+			}
 		}
 		
 	}
@@ -93,12 +103,17 @@ namespace fake
 		
 		template<typename _Element>
 		static consteval auto forward_list_t() noexcept{
-			using init_t = std::initializer_list<std::remove_cvref_t<_Element>>;
-			using namespace std;
-			if constexpr(requires{forward_list(init_t{});})
-				return fake::gene_v<fake::template_info<decltype(forward_list(init_t{}))>::template type>;
-			else
+			if constexpr(std::same_as<_Element, void>){
 				return fake::gene_v<fake::container::null_t>;
+			}
+			else{
+				using init = std::initializer_list<std::remove_cvref_t<_Element>>;
+				using namespace std;
+				if constexpr(requires{forward_list(init{});})
+					return fake::gene_v<fake::template_info<decltype(forward_list(init{}))>::template type>;
+				else
+					return fake::gene_v<fake::container::null_t>;
+			}
 		}
 		
 	}
@@ -119,12 +134,17 @@ namespace fake
 		
 		template<typename _Element>
 		static consteval auto list_t() noexcept{
-			using init_t = std::initializer_list<std::remove_cvref_t<_Element>>;
-			using namespace std;
-			if constexpr(requires{list(init_t{});})
-				return fake::gene_v<fake::template_info<decltype(list(init_t{}))>::template type>;
-			else
+			if constexpr(std::same_as<_Element, void>){
 				return fake::gene_v<fake::container::null_t>;
+			}
+			else{
+				using init = std::initializer_list<std::remove_cvref_t<_Element>>;
+				using namespace std;
+				if constexpr(requires{list(init{});})
+					return fake::gene_v<fake::template_info<decltype(list(init{}))>::template type>;
+				else
+					return fake::gene_v<fake::container::null_t>;
+			}
 		}
 		
 	}
@@ -145,12 +165,17 @@ namespace fake
 		
 		template<typename _Element>
 		static consteval auto set_t() noexcept{
-			using init_t = std::initializer_list<std::remove_cvref_t<_Element>>;
-			using namespace std;
-			if constexpr(requires{set(init_t{});})
-				return fake::gene_v<fake::template_info<decltype(set(init_t{}))>::template type>;
-			else
+			if constexpr(std::same_as<_Element, void>){
 				return fake::gene_v<fake::container::null_t>;
+			}
+			else{
+				using init = std::initializer_list<std::remove_cvref_t<_Element>>;
+				using namespace std;
+				if constexpr(requires{set(init{});})
+					return fake::gene_v<fake::template_info<decltype(set(init{}))>::template type>;
+				else
+					return fake::gene_v<fake::container::null_t>;
+			}
 		}
 		
 	}
@@ -171,12 +196,17 @@ namespace fake
 		
 		template<typename _Element>
 		static consteval auto multiset_t() noexcept{
-			using init_t = std::initializer_list<std::remove_cvref_t<_Element>>;
-			using namespace std;
-			if constexpr(requires{multiset(init_t{});})
-				return fake::gene_v<fake::template_info<decltype(multiset(init_t{}))>::template type>;
-			else
+			if constexpr(std::same_as<_Element, void>){
 				return fake::gene_v<fake::container::null_t>;
+			}
+			else{
+				using init = std::initializer_list<std::remove_cvref_t<_Element>>;
+				using namespace std;
+				if constexpr(requires{multiset(init{});})
+					return fake::gene_v<fake::template_info<decltype(multiset(init{}))>::template type>;
+				else
+					return fake::gene_v<fake::container::null_t>;
+			}
 		}
 		
 	}
@@ -197,12 +227,17 @@ namespace fake
 		
 		template<typename _Element>
 		static consteval auto unordered_set_t() noexcept{
-			using init_t = std::initializer_list<std::remove_cvref_t<_Element>>;
-			using namespace std;
-			if constexpr(requires{unordered_set(init_t{});})
-				return fake::gene_v<fake::template_info<decltype(unordered_set(init_t{}))>::template type>;
-			else
+			if constexpr(std::same_as<_Element, void>){
 				return fake::gene_v<fake::container::null_t>;
+			}
+			else{
+				using init = std::initializer_list<std::remove_cvref_t<_Element>>;
+				using namespace std;
+				if constexpr(requires{unordered_set(init{});})
+					return fake::gene_v<fake::template_info<decltype(unordered_set(init{}))>::template type>;
+				else
+					return fake::gene_v<fake::container::null_t>;
+			}
 		}
 		
 	}
@@ -223,12 +258,17 @@ namespace fake
 		
 		template<typename _Element>
 		static consteval auto unordered_multiset_t() noexcept{
-			using init_t = std::initializer_list<std::remove_cvref_t<_Element>>;
-			using namespace std;
-			if constexpr(requires{unordered_multiset(init_t{});})
-				return fake::gene_v<fake::template_info<decltype(unordered_multiset(init_t{}))>::template type>;
-			else
+			if constexpr(std::same_as<_Element, void>){
 				return fake::gene_v<fake::container::null_t>;
+			}
+			else{
+				using init = std::initializer_list<std::remove_cvref_t<_Element>>;
+				using namespace std;
+				if constexpr(requires{unordered_multiset(init{});})
+					return fake::gene_v<fake::template_info<decltype(unordered_multiset(init{}))>::template type>;
+				else
+					return fake::gene_v<fake::container::null_t>;
+			}
 		}
 		
 	}
@@ -249,12 +289,17 @@ namespace fake
 		
 		template<typename _Key, typename _Mapped>
 		static consteval auto map_t() noexcept{
-			using init_t = std::initializer_list<std::pair<const _Key, _Mapped>>;
-			using namespace std;
-			if constexpr(requires{map(init_t{});})
-				return fake::gene_v<fake::template_info<decltype(map(init_t{}))>::template type>;
-			else
+			if constexpr(std::same_as<_Key, void> || std::same_as<_Mapped, void>){
 				return fake::gene_v<fake::container::null_t>;
+			}
+			else{
+				using init = std::initializer_list<std::pair<const _Key, _Mapped>>;
+				using namespace std;
+				if constexpr(requires{map(init{});})
+					return fake::gene_v<fake::template_info<decltype(map(init{}))>::template type>;
+				else
+					return fake::gene_v<fake::container::null_t>;
+			}
 		}
 		
 	}
@@ -275,12 +320,17 @@ namespace fake
 		
 		template<typename _Key, typename _Mapped>
 		static consteval auto multimap_t() noexcept{
-			using init_t = std::initializer_list<std::pair<const _Key, _Mapped>>;
-			using namespace std;
-			if constexpr(requires{multimap(init_t{});})
-				return fake::gene_v<fake::template_info<decltype(multimap(init_t{}))>::template type>;
-			else
+			if constexpr(std::same_as<_Key, void> || std::same_as<_Mapped, void>){
 				return fake::gene_v<fake::container::null_t>;
+			}
+			else{
+				using init = std::initializer_list<std::pair<const _Key, _Mapped>>;
+				using namespace std;
+				if constexpr(requires{multimap(init{});})
+					return fake::gene_v<fake::template_info<decltype(multimap(init{}))>::template type>;
+				else
+					return fake::gene_v<fake::container::null_t>;
+			}
 		}
 		
 	}
@@ -301,12 +351,17 @@ namespace fake
 		
 		template<typename _Key, typename _Mapped>
 		static consteval auto unordered_map_t() noexcept{
-			using init_t = std::initializer_list<std::pair<const _Key, _Mapped>>;
-			using namespace std;
-			if constexpr(requires{unordered_map(init_t{}, 0, hash{});})
-				return fake::gene_v<fake::template_info<decltype(unordered_map(init_t{}, 0, hash{}))>::template type>;
-			else
+			if constexpr(std::same_as<_Key, void> || std::same_as<_Mapped, void>){
 				return fake::gene_v<fake::container::null_t>;
+			}
+			else{
+				using init = std::initializer_list<std::pair<const _Key, _Mapped>>;
+				using namespace std;
+				if constexpr(requires{unordered_map(init{}, 0, hash{});})
+					return fake::gene_v<fake::template_info<decltype(unordered_map(init{}, 0, hash{}))>::template type>;
+				else
+					return fake::gene_v<fake::container::null_t>;
+			}
 		}
 		
 	}
@@ -327,14 +382,19 @@ namespace fake
 		
 		template<typename _Key, typename _Mapped>
 		static consteval auto unordered_multimap_t() noexcept{
-			using init_t = std::initializer_list<std::pair<const _Key, _Mapped>>;
-			using namespace std;
-			if constexpr(requires{unordered_multimap(init_t{}, 0, hash{});})
-				return fake::gene_v<
-					fake::template_info<decltype(unordered_multimap(init_t{}, 0, hash{}))>::template type
-				>;
-			else
+			if constexpr(std::same_as<_Key, void> || std::same_as<_Mapped, void>){
 				return fake::gene_v<fake::container::null_t>;
+			}
+			else{
+				using init = std::initializer_list<std::pair<const _Key, _Mapped>>;
+				using namespace std;
+				if constexpr(requires{unordered_multimap(init{}, 0, hash{});})
+					return fake::gene_v<
+						fake::template_info<decltype(unordered_multimap(init{}, 0, hash{}))>::template type
+					>;
+				else
+					return fake::gene_v<fake::container::null_t>;
+			}
 		}
 		
 	}

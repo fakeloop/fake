@@ -25,6 +25,9 @@ namespace fake
 		
 		first_type first;
 		second_type second;
+		
+	private:
+		friend constexpr auto operator<=>(const mate&, const mate&) = default;
 	};
 	
 	template<fake::mezz_c _First, typename _Second>
@@ -34,6 +37,9 @@ namespace fake
 		
 		static constexpr first_type first{};
 		second_type second;
+		
+	private:
+		friend constexpr auto operator<=>(const mate&, const mate&) = default;
 	};
 	
 	template<typename _Second>
@@ -42,6 +48,9 @@ namespace fake
 		using second_type = _Second;
 		
 		second_type second;
+		
+	private:
+		friend constexpr auto operator<=>(const mate&, const mate&) = default;
 	};
 	
 	template<typename _First>
@@ -50,6 +59,9 @@ namespace fake
 		using second_type = void;
 		
 		first_type first;
+		
+	private:
+		friend constexpr auto operator<=>(const mate&, const mate&) = default;
 	};
 	
 	template<fake::mezz_c _First>
@@ -58,12 +70,18 @@ namespace fake
 		using second_type = void;
 		
 		static constexpr first_type first{};
+		
+	private:
+		friend constexpr auto operator<=>(const mate&, const mate&) = default;
 	};
 	
 	template<>
 	struct mate<void, void>{
 		using first_type = void;
 		using second_type = void;
+		
+	private:
+		friend constexpr auto operator<=>(const mate&, const mate&) = default;
 	};
 	
 	template<typename _Type>
@@ -76,7 +94,10 @@ namespace fake
 		struct broker;
 		
 		template<std::size_t... _index, typename... _Args>
-		struct broker<std::index_sequence<_index...>, _Args...> : public fake::mate<fake::mezz_t<_index>, _Args>...{};
+		struct broker<std::index_sequence<_index...>, _Args...> : public fake::mate<fake::mezz_t<_index>, _Args>...{
+		private:
+			friend constexpr auto operator<=>(const broker&, const broker&) = default;
+		};
 		
 		template<typename... _Types>
 		requires ((requires{sizeof(_Types);} || std::same_as<_Types, void>) && ...)
@@ -206,6 +227,9 @@ namespace fake
 		template<typename _Type>
 		requires (std::same_as<_Type, void> && requires(flat _flat){ref<_Type>(_flat);})
 		constexpr void value() const noexcept{}
+		
+	private:
+		friend constexpr auto operator<=>(const flat&, const flat&) = default;
 	};
 	
 	template<typename _Type>
@@ -488,6 +512,9 @@ namespace fake
 		requires requires{ref<_First>(*this);}{
 			return ref<_First>(std::move(*this)).second;
 		}
+		
+	private:
+		friend constexpr auto operator<=>(const query&, const query&) = default;
 	};
 	
 	template<typename _Type>
