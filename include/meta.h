@@ -36,7 +36,7 @@ namespace fake::meta
 				bool valid;
 			};
 			
-			constexpr auto parse = []<std::size_t _size>(const char (&_string)[_size]) -> result_t{
+			constexpr auto parse = []<std::size_t _size>(const char (&_string)[_size]) -> result_t {
 				constexpr auto is_bin = [](char _char){
 					return _char == '0' || _char == '1';
 				};

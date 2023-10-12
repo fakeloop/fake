@@ -725,6 +725,69 @@ namespace fake::tuple
 	template<fake::tuple_c _Tuple>
 	constexpr auto unique_v = fake::pack_v<unique_t<_Tuple>>;
 	
+	template<fake::tuple_c _Tuple, typename _Init, auto _functor>
+	struct for_each final{
+	private:
+		static constexpr std::size_t size = std::tuple_size_v<_Tuple>;
+		
+		static consteval auto impl(){
+			constexpr auto recur = [](fake::mezz_c auto _self, fake::pack_c auto _state, fake::mezz_c auto _index){
+				if constexpr(_index.value == size){
+					return _state;
+				}
+				else{
+					using type = std::tuple_element_t<_index.value, _Tuple>;
+					constexpr auto result = _functor(_state, _index, fake::pack_v<type>);
+					
+					if constexpr(std::same_as<std::remove_cvref_t<decltype(result)>, fake::null_t>)
+						return _state;
+					else
+						return _self.value(_self, result, fake::mezz_v<_index.value + 1>);
+				}
+			};
+			
+			return recur(fake::mezz_v<recur>, fake::pack_v<_Init>, fake::mezz_v<std::size_t{}>);
+		}
+		
+	public:
+		using type = fake::take_t<impl()>;
+	};
+	
+	template<fake::tuple_c _Tuple, typename _Init, auto _functor>
+	using for_each_t = typename for_each<_Tuple, _Init, _functor>::type;
+	
+	template<fake::tuple_c _Tuple, typename _Init, auto _functor>
+	constexpr auto for_each_v = fake::pack_v<for_each_t<_Tuple, _Init, _functor>>;
+	
+	template<fake::tuple_c... _Tuples>
+	struct zip final{
+	private:
+		static constexpr std::array sizes{std::tuple_size_v<_Tuples>...};
+		static constexpr std::size_t size = std::ranges::min(sizes);
+		
+		static consteval auto impl(){
+			return []<std::size_t... _index>(std::index_sequence<_index...>){
+				constexpr auto index = [](fake::mezz_c auto _i){
+					if constexpr(sizeof...(_Tuples) == 0x2)
+						return fake::pack_v<std::pair<std::tuple_element_t<_i.value, _Tuples>...>>;
+					else
+						return fake::pack_v<std::tuple<std::tuple_element_t<_i.value, _Tuples>...>>;
+				};
+				
+				return fake::pack_v<std::tuple<fake::take_t<index(fake::mezz_v<_index>)>...>>;
+			}(std::make_index_sequence<size>());
+		}
+		
+	public:
+		using type = fake::take_t<impl()>;
+	};
+	
+	template<fake::tuple_c... _Tuples>
+	using zip_t = typename zip<_Tuples...>::type;
+	
+	template<fake::tuple_c... _Tuples>
+	constexpr auto zip_v = fake::pack_v<zip_t<_Tuples...>>;
+	
 	template<typename... _Mix>
 	using make_tuple_t = std::tuple<
 		std::conditional_t<

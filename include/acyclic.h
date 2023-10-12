@@ -691,6 +691,12 @@ namespace fake
 				{}
 				
 			public:
+				using result_type = fake::tuple::transform_t<
+					resume_t,
+					[](fake::pack_c auto _pack){return fake::pack_v<typename fake::take_t<_pack.echo>::type_t>;}
+				>;
+				
+			public:
 				instance_t(const instance_t &_e) noexcept: callee(_e.callee), aspect(_e.aspect){}
 				instance_t(instance_t &&_e) noexcept: callee(_e.callee), aspect(_e.aspect){}
 				~instance_t(){}
@@ -2250,6 +2256,12 @@ namespace fake
 				
 				using deduce_t = typename fake::take_t<deduce_wrapper_t::deduce_v>::deducer;
 				
+			public:
+				using result_type = typename tool::acyclic::instance_t<
+					typename deduce_t::relay_t,
+					typename deduce_t::resume_t
+				>::result_type;
+				
 			private:
 				enum struct invoke_e : bool{entry, propagate};
 				
@@ -3507,7 +3519,8 @@ namespace fake
 						auto &&_callee,
 						auto &&_aspect,
 						_Args ..._args
-					)->coroutine_t<tool::acyclic::instance_t<relay_t, resume_t>>{
+					)->coroutine_t<tool::acyclic::instance_t<relay_t, resume_t>>
+					{
 						invoker_t callee = {std::forward<decltype(_callee)>(_callee)};
 						broker_t aspect = {std::forward<decltype(_aspect)>(_aspect)};
 						

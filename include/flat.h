@@ -570,6 +570,45 @@ namespace fake
 		return std::forward<decltype(_query)>(_query).template value<_Type>();
 	}
 	
+	template<query_c _Query, auto _key, typename _Value>
+	struct query_rebind final{
+	private:
+		static consteval auto impl() noexcept{
+			using query_t = std::remove_cvref_t<_Query>;
+			using replace_t = std::remove_cvref_t<decltype(_key)>;
+			return []<std::size_t... _index>(std::index_sequence<_index...>){
+				constexpr auto exist = [](fake::mezz_c auto _i){
+					using first_type = std::tuple_element_t<_i.value, typename query_t::first_types>;
+					using second_type = std::tuple_element_t<_i.value, typename query_t::second_types>;
+					
+					return std::same_as<replace_t, std::remove_cvref_t<first_type>>;
+				};
+				
+				static_assert((exist(fake::mezz_v<_index>) || ...), "fake::query_rebind_t: key does NOT exist.");
+				
+				constexpr auto each = [](fake::mezz_c auto _i){
+					using first_type = std::tuple_element_t<_i.value, typename query_t::first_types>;
+					using second_type = std::tuple_element_t<_i.value, typename query_t::second_types>;
+					
+					if constexpr(std::same_as<replace_t, std::remove_cvref_t<first_type>>)
+						return fake::pack_v<fake::mate<first_type, _Value>>;
+					else
+						return fake::pack_v<fake::mate<first_type, second_type>>;
+				};
+				using first_types = typename query_t::first_types;
+				using second_types = typename query_t::second_types;
+				
+				return fake::pack_v<fake::query<fake::take_t<each(fake::mezz_v<_index>)>...>>;
+			}(std::make_index_sequence<query_t::size>());
+		}
+		
+	public:
+		using type = fake::take_t<impl()>;
+	};
+	
+	template<query_c _Query, auto _key, typename _Value>
+	using query_rebind_t = typename query_rebind<_Query, _key, _Value>::type;
+	
 }
 
 template<template<typename...> typename _Template, typename... _Args>
