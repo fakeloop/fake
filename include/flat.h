@@ -435,7 +435,7 @@ namespace fake
 	private:
 		template<typename _First, typename _Type>
 		static consteval fake::pack_c auto extract(fake::mate<_First, _Type>) noexcept{
-			return fake::pack_v<_Type>;
+			return fake::pack_v<fake::mate<_First, _Type>>;
 		}
 		
 		template<typename _First, typename _Type>
@@ -462,7 +462,15 @@ namespace fake
 		template<typename _First>
 		requires requires(query _query){extract<_First>(_query);}
 		static consteval fake::pack_c auto type() noexcept{
-			return decltype(extract<_First>(std::declval<query>())){};
+			using mate_t = fake::take_t<decltype(extract<_First>(std::declval<query>())){}>;
+			return fake::pack_v<typename mate_t::second_type>;
+		}
+		
+		template<typename _First>
+		requires requires(query _query){extract<_First>(_query);}
+		static consteval fake::pack_c auto mate() noexcept{
+			using mate_t = fake::take_t<decltype(extract<_First>(std::declval<query>())){}>;
+			return fake::pack_v<mate_t>;
 		}
 		
 		template<typename _First>
@@ -564,6 +572,18 @@ namespace fake
 		return std::forward<decltype(_query)>(_query).template value<std::remove_cvref_t<decltype(_key)>>();
 	}
 	
+	template<std::size_t _index>
+	inline constexpr decltype(auto) get(fake::query_c auto &&_query) noexcept
+	requires requires{
+		std::forward<decltype(_query)>(_query).template value<
+			fake::take_t<std::remove_cvref_t<decltype(_query)>::first_types::type(fake::index_v<_index>)>
+		>();
+	}
+	{
+		using key = fake::take_t<std::remove_cvref_t<decltype(_query)>::first_types::type(fake::index_v<_index>)>;
+		return std::forward<decltype(_query)>(_query).template value<key>();
+	}
+	
 	template<typename _Type>
 	inline constexpr decltype(auto) get(fake::query_c auto &&_query) noexcept
 	requires requires{std::forward<decltype(_query)>(_query).template value<_Type>();}{
@@ -619,5 +639,20 @@ template<std::size_t _index, template<typename...> typename _Template, typename.
 requires (_index < sizeof...(_Args) && fake::flat_based_c<_Template<_Args...>>)
 struct std::tuple_element<_index, _Template<_Args...>> :
 	public fake::type_package<fake::take_t<_Template<_Args...>::type(fake::index_v<_index>)>>{};
+
+template<template<typename...> typename _Template, typename... _Args>
+requires fake::query_c<_Template<_Args...>>
+struct std::tuple_size<_Template<_Args...>> : public std::integral_constant<std::size_t, sizeof...(_Args)>{};
+
+template<std::size_t _index, template<typename...> typename _Template, typename... _Args>
+requires (_index < sizeof...(_Args) && fake::query_c<_Template<_Args...>>)
+struct std::tuple_element<_index, _Template<_Args...>> :
+	public fake::type_package<
+		fake::take_t<
+			_Template<_Args...>::template mate<
+				fake::take_t<_Template<_Args...>::first_types::type(fake::index_v<_index>)>
+			>()
+		>
+	>{};
 
 #endif /* __FAKE_FLAT_H__ */ 
