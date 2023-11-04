@@ -53,7 +53,6 @@ namespace fake
 	struct type_package
 	{
 		using type = _Type;
-		static constexpr type_package echo{};
 	};
 	
 	template<typename _Type>

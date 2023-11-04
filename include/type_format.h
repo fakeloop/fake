@@ -1151,7 +1151,7 @@ namespace fake::custom
 			
 			using std_array_g = fake::pattern_t<std::array<int, 1>>;
 			for_each::config::emplace_visitor<vest, token_t<_ConfigToken>, adaptor<std_array_g>>(visitor);
-			using std_array_m = fake::mezz_t<[]<typename _T> requires (is_std_array_v<_T>) (fake::type_package<_T>){}>;
+			using std_array_m = fake::mezz_t<[]<typename _T>(fake::type_package<_T>) requires is_std_array_v<_T> {}>;
 			config::json::register_container<[]{}, _ConfigToken, std_array_m>();
 			
 			using vector_g = fake::pattern_t<fake::vector<int>>;

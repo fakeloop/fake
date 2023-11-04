@@ -693,7 +693,7 @@ namespace fake
 			public:
 				using result_type = fake::tuple::transform_t<
 					resume_t,
-					[](fake::pack_c auto _pack){return fake::pack_v<typename fake::take_t<_pack.echo>::type_t>;}
+					[](fake::pack_c auto _pack){return fake::pack_v<typename fake::take_t<decltype(_pack){}>::type_t>;}
 				>;
 				
 			public:
