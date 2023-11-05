@@ -30,9 +30,8 @@ namespace fake
 	namespace detail::container
 	{
 		
-		struct hash final{
-			constexpr std::size_t operator()(const auto&) const noexcept{return 0;}
-		};
+		template<typename _Hash, typename _Type>
+		concept hash_c = requires(const _Type &_e, _Hash &_hash){{_hash(_e)} -> std::same_as<std::size_t>;};
 		
 	}
 	
@@ -225,16 +224,18 @@ namespace fake
 	namespace detail::container
 	{
 		
-		template<typename _Element>
+		template<typename _Element, typename _Hash>
 		static consteval auto unordered_set_t() noexcept{
-			if constexpr(std::same_as<_Element, void>){
+			if constexpr(std::same_as<_Element, void> || detail::container::hash_c<_Hash, _Element> == false){
 				return fake::gene_v<fake::container::null_t>;
 			}
 			else{
 				using init = std::initializer_list<std::remove_cvref_t<_Element>>;
 				using namespace std;
-				if constexpr(requires{unordered_set(init{});})
-					return fake::gene_v<fake::template_info<decltype(unordered_set(init{}))>::template type>;
+				if constexpr(requires{unordered_set(init{}, 0, _Hash{});})
+					return fake::gene_v<
+						fake::template_info<decltype(unordered_set(init{}, 0, _Hash{}))>::template type
+					>;
 				else
 					return fake::gene_v<fake::container::null_t>;
 			}
@@ -242,9 +243,9 @@ namespace fake
 		
 	}
 	
-	template<typename _Element, typename... _Args>
+	template<typename _Element, typename _Hash = std::hash<_Element>, typename... _Args>
 	using unordered_set = typename decltype(
-		detail::container::unordered_set_t<_Element>()
+		detail::container::unordered_set_t<_Element, _Hash>()
 	)::template type<_Element, _Args...>;
 	
 	template<typename _Type>
@@ -256,16 +257,18 @@ namespace fake
 	namespace detail::container
 	{
 		
-		template<typename _Element>
+		template<typename _Element, typename _Hash>
 		static consteval auto unordered_multiset_t() noexcept{
-			if constexpr(std::same_as<_Element, void>){
+			if constexpr(std::same_as<_Element, void> || detail::container::hash_c<_Hash, _Element> == false){
 				return fake::gene_v<fake::container::null_t>;
 			}
 			else{
 				using init = std::initializer_list<std::remove_cvref_t<_Element>>;
 				using namespace std;
-				if constexpr(requires{unordered_multiset(init{});})
-					return fake::gene_v<fake::template_info<decltype(unordered_multiset(init{}))>::template type>;
+				if constexpr(requires{unordered_multiset(init{}, 0, _Hash{});})
+					return fake::gene_v<
+						fake::template_info<decltype(unordered_multiset(init{}, 0, _Hash{}))>::template type
+					>;
 				else
 					return fake::gene_v<fake::container::null_t>;
 			}
@@ -273,9 +276,9 @@ namespace fake
 		
 	}
 	
-	template<typename _Element, typename... _Args>
+	template<typename _Element, typename _Hash = std::hash<_Element>, typename... _Args>
 	using unordered_multiset = typename decltype(
-		detail::container::unordered_multiset_t<_Element>()
+		detail::container::unordered_multiset_t<_Element, _Hash>()
 	)::template type<_Element, _Args...>;
 	
 	template<typename _Type>
@@ -349,16 +352,22 @@ namespace fake
 	namespace detail::container
 	{
 		
-		template<typename _Key, typename _Mapped>
+		template<typename _Key, typename _Mapped, typename _Hash>
 		static consteval auto unordered_map_t() noexcept{
-			if constexpr(std::same_as<_Key, void> || std::same_as<_Mapped, void>){
+			if constexpr(
+				std::same_as<_Key, void> ||
+				std::same_as<_Mapped, void> ||
+				detail::container::hash_c<_Hash, _Key> == false
+			){
 				return fake::gene_v<fake::container::null_t>;
 			}
 			else{
 				using init = std::initializer_list<std::pair<const _Key, _Mapped>>;
 				using namespace std;
-				if constexpr(requires{unordered_map(init{}, 0, hash{});})
-					return fake::gene_v<fake::template_info<decltype(unordered_map(init{}, 0, hash{}))>::template type>;
+				if constexpr(requires{unordered_map(init{}, 0, _Hash{});})
+					return fake::gene_v<
+						fake::template_info<decltype(unordered_map(init{}, 0, _Hash{}))>::template type
+					>;
 				else
 					return fake::gene_v<fake::container::null_t>;
 			}
@@ -366,9 +375,9 @@ namespace fake
 		
 	}
 	
-	template<typename _Key, typename _Mapped, typename... _Args>
+	template<typename _Key, typename _Mapped, typename _Hash = std::hash<_Key>, typename... _Args>
 	using unordered_map = typename decltype(
-		detail::container::unordered_map_t<_Key, _Mapped>()
+		detail::container::unordered_map_t<_Key, _Mapped, _Hash>()
 	)::template type<_Key, _Mapped, _Args...>;
 	
 	template<typename _Type>
@@ -380,17 +389,21 @@ namespace fake
 	namespace detail::container
 	{
 		
-		template<typename _Key, typename _Mapped>
+		template<typename _Key, typename _Mapped, typename _Hash>
 		static consteval auto unordered_multimap_t() noexcept{
-			if constexpr(std::same_as<_Key, void> || std::same_as<_Mapped, void>){
+			if constexpr(
+				std::same_as<_Key, void> ||
+				std::same_as<_Mapped, void> ||
+				detail::container::hash_c<_Hash, _Key> == false
+			){
 				return fake::gene_v<fake::container::null_t>;
 			}
 			else{
 				using init = std::initializer_list<std::pair<const _Key, _Mapped>>;
 				using namespace std;
-				if constexpr(requires{unordered_multimap(init{}, 0, hash{});})
+				if constexpr(requires{unordered_multimap(init{}, 0, _Hash{});})
 					return fake::gene_v<
-						fake::template_info<decltype(unordered_multimap(init{}, 0, hash{}))>::template type
+						fake::template_info<decltype(unordered_multimap(init{}, 0, _Hash{}))>::template type
 					>;
 				else
 					return fake::gene_v<fake::container::null_t>;
@@ -399,9 +412,9 @@ namespace fake
 		
 	}
 	
-	template<typename _Key, typename _Mapped, typename... _Args>
+	template<typename _Key, typename _Mapped, typename _Hash = std::hash<_Key>, typename... _Args>
 	using unordered_multimap = typename decltype(
-		detail::container::unordered_multimap_t<_Key, _Mapped>()
+		detail::container::unordered_multimap_t<_Key, _Mapped, _Hash>()
 	)::template type<_Key, _Mapped, _Args...>;
 	
 	template<typename _Type>

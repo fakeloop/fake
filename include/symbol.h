@@ -95,7 +95,11 @@ namespace fake::symbol
 		constexpr std::size_t pre = view::prefix(void_v.str, null_v.str);
 		constexpr std::size_t suf = view::suffix(void_v.str, void_v.length, null_v.str, null_v.length);
 		constexpr view type_v = view::symbol_extractor<_Type>();
-		return fake::symbol::view(type_v.str + pre, type_v.length - pre - suf);
+		
+		// make clang happy. 
+		constexpr std::size_t pre_v = pre + (type_v.str[pre] == '(');
+		
+		return fake::symbol::view(type_v.str + pre_v, type_v.length - pre_v - suf);
 	}
 	
 	template<typename _Type>
@@ -139,7 +143,10 @@ namespace fake::symbol
 		constexpr std::size_t suf = view::suffix(foo::name.str, foo::name.length, bar::name.str, bar::name.length);
 		constexpr view lambda_v = view::symbol_extractor<_Lambda>();
 		
-		return fake::symbol::view(lambda_v.str + pre, lambda_v.length - pre - suf);
+		// make clang happy. 
+		constexpr std::size_t pre_v = pre + (lambda_v.str[pre] == '(');
+		
+		return fake::symbol::view(lambda_v.str + pre_v, lambda_v.length - pre_v - suf);
 	}
 	
 	template<typename _Lambda>

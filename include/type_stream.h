@@ -156,7 +156,7 @@ namespace fake::custom
 		requires
 			fake::meta::array_c<decltype(_footprint)> &&
 			requires(fake::take_t<configure.at<[]{}>(fake::pack_v<key<_ConfigToken>>)> _local){
-				requires _local.template contains<[]{}>(fake::pack_v<stream>);
+				requires decltype(_local){}.template contains<[]{}>(fake::pack_v<stream>);
 			}
 		inline static constexpr auto method(_Type &_e){
 			constexpr fake::take_t<configure.at<[]{}>(fake::pack_v<key<_ConfigToken>>)> local;
@@ -170,7 +170,7 @@ namespace fake::custom
 		requires
 			fake::meta::array_c<decltype(_footprint)> &&
 			requires(fake::take_t<configure.at<[]{}>(fake::pack_v<key<_ConfigToken>>)> _local){
-				requires _local.template contains<[]{}>(fake::pack_v<stream>);
+				requires decltype(_local){}.template contains<[]{}>(fake::pack_v<stream>);
 			}
 		inline static constexpr auto method(_Type &_e, _Init &_i){
 			constexpr fake::take_t<configure.at<[]{}>(fake::pack_v<key<_ConfigToken>>)> local;

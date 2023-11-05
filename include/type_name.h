@@ -160,6 +160,7 @@ namespace fake::custom
 					for(std::size_t i = length; i; i--)
 						if(_symbol[i - 1] == '>')
 							return _symbol.substr(i);
+					return _symbol;
 				}(symbol);
 				
 				using mezz = fake::take_t<local.template at<[]{}>(fake::pack_v<trunc<fake::pattern_t<bare>>>)>;

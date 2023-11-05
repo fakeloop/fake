@@ -1218,8 +1218,12 @@ namespace fake::custom
 		}
 		
 	public:
+		// separate define the constexpr 'fake::type_package<...>' to make clang happy. 
 		template<typename _ConfigToken>
-		using token = fake::take_t<inject<_ConfigToken>()>;
+		static constexpr auto inject_v = inject<_ConfigToken>();
+		
+		template<typename _ConfigToken>
+		using token = fake::take_t<inject_v<_ConfigToken>>;
 	};
 	
 }
