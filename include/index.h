@@ -10,6 +10,8 @@
  *                                                       * 
 \*       0. You just DO WHAT THE FUCK YOU WANT TO.       */
 
+#include "push.h"
+
 #include "is_valid.h"
 
 namespace fake::meta
@@ -166,5 +168,7 @@ namespace fake::meta
 	}
 	
 }
+
+#include "pop.h"
 
 #endif /*__FAKE_INDEX_H__*/ 

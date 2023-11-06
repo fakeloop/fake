@@ -10,6 +10,8 @@
  *                                                       * 
 \*       0. You just DO WHAT THE FUCK YOU WANT TO.       */
 
+#include "push.h"
+
 #include <type_traits>
 #include <tuple>
 
@@ -541,5 +543,7 @@ namespace fake::meta::tool
 	constexpr auto refresh(token, _key) noexcept{return fake::pack_v<_Lambda>;}
 	
 }
+
+#include "pop.h"
 
 #endif /*__FAKE_TYPE_MAP_H__*/ 

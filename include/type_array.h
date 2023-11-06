@@ -10,6 +10,8 @@
  *                                                       * 
 \*       0. You just DO WHAT THE FUCK YOU WANT TO.       */
 
+#include "push.h"
+
 #include "traits.h"
 
 namespace fake::meta
@@ -127,5 +129,7 @@ namespace fake::meta
 	using make_t = typename make<std::remove_cvref_t<_Type>>::type;
 	
 }
+
+#include "pop.h"
 
 #endif /*__FAKE_TYPE_ARRAY_H__*/ 

@@ -24,13 +24,9 @@ all codes passed the compilation test on `gcc-12.2.0`.
 
 ---
 
-### addtional parameters for `g++`
+### compile parameters
 
-### 额外的 `g++` 参数
-
-**`always` required:**
-
-**`必需` 参数:**
+### 编译参数
 
 ```sh
 -std=c++20 -iquote "fake/include"
@@ -38,26 +34,6 @@ all codes passed the compilation test on `gcc-12.2.0`.
 
 - *the `fake/include` is the directory of the headers in the `repository` you cloned.*
 - *`fake/include` 是 `仓库` 克隆目录内的头文件所在目录。*
-
----
-
-**parameter for the `stateful metaprogramming`:**
-
-**`有状态元编程` 所需参数:**
-
-```sh
--Wno-non-template-friend
-```
-
----
-
-**parameter for the `concurrency adapter`:**
-
-**`并发适配器` 所需参数:**
-
-```sh
--fcoroutines
-```
 
 ---
 
@@ -75,7 +51,7 @@ mkdir my_workspace
 cd my_workspace
 git clone https://github.com/fakeloop/fake
 cd fake/demo/io
-g++ io.cpp -std=c++20 -iquote "../../include/" -Wno-non-template-friend -o io.out
+g++ io.cpp -std=c++20 -iquote "../../include/" -o io.out
 ./io.out
 ```
 

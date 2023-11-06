@@ -10,6 +10,8 @@
  *                                                       * 
 \*       0. You just DO WHAT THE FUCK YOU WANT TO.       */
 
+#include "push.h"
+
 #include <concepts>
 #include <functional>
 
@@ -654,5 +656,7 @@ struct std::tuple_element<_index, _Template<_Args...>> :
 			>()
 		>
 	>{};
+
+#include "pop.h"
 
 #endif /* __FAKE_FLAT_H__ */ 

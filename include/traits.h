@@ -10,6 +10,8 @@
  *                                                       * 
 \*       0. You just DO WHAT THE FUCK YOU WANT TO.       */
 
+#include "push.h"
+
 #include <cstdint>
 #include <type_traits>
 #include <array>
@@ -630,5 +632,7 @@ namespace fake
 	using gemma_t = typename gemma<std::make_index_sequence<_size>, std::remove_cvref_t<_Arg>, _Template>::type;
 	
 }
+
+#include "pop.h"
 
 #endif /*__FAKE_TRAITS_H__*/ 

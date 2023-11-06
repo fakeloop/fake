@@ -10,6 +10,8 @@
  *                                                       * 
 \*       0. You just DO WHAT THE FUCK YOU WANT TO.       */
 
+#include "push.h"
+
 #include <utility>
 #include <stdexcept>
 
@@ -167,18 +169,28 @@ namespace fake
 		return detail::utility::view_matcher<fake::view<>>{};
 	}
 	
-	enum struct colors : std::size_t{black, red, green, yellow, blue, magenta, cyan, white};
+	enum struct colors : std::size_t{black, red, green, yellow, blue, magenta, cyan, white, undefine};
 	
 	namespace detail::utility
 	{
 		
-		template<colors _front, colors _back = colors::black>
+		template<colors _front, colors _back = colors::undefine>
 		consteval auto color() noexcept{
 			using namespace fake::literals;
-			constexpr char front = '0' + static_cast<std::underlying_type_t<colors>>(_front);
-			constexpr char back = '0' + static_cast<std::underlying_type_t<colors>>(_back);
 			
-			return "\e[3"_v + fake::view<front>{} + ";4"_v + fake::view<back>{} + "m"_v;
+			constexpr bool f = _front != colors::undefine;
+			constexpr bool b = _back != colors::undefine;
+			constexpr char fc = '0' + static_cast<std::underlying_type_t<colors>>(_front);
+			constexpr char bc = '0' + static_cast<std::underlying_type_t<colors>>(_back);
+			constexpr fake::view_c auto fv = "3"_v + fake::view<fc>{};
+			constexpr fake::view_c auto bv = "4"_v + fake::view<bc>{};
+			
+			constexpr fake::view_c auto front = std::conditional_t<f, decltype(fv), fake::view_t<"">>{};
+			constexpr fake::view_c auto semi = std::conditional_t<f && b, fake::view_t<";">, fake::view_t<"">>{};
+			constexpr fake::view_c auto back = std::conditional_t<b, decltype(bv), fake::view_t<"">>{};
+			constexpr fake::view_c auto reset = std::conditional_t<f || b, fake::view_t<"">, fake::view_t<"0">>{};
+			
+			return "\e["_v + front + semi + back + reset + "m"_v;
 		}
 		
 		consteval auto clear() noexcept{return fake::view_v<"\e[0m">;}
@@ -209,12 +221,12 @@ namespace fake
 		
 	}
 	
-	template<colors _front, colors _back = colors::black>
+	template<colors _front, colors _back = colors::undefine>
 	constexpr auto color(const fake::view_c auto &_view) noexcept{
 		return detail::utility::color<_front, _back>() + _view + detail::utility::clear();
 	}
 	
-	template<colors _front, colors _back = colors::black>
+	template<colors _front, colors _back = colors::undefine>
 	constexpr auto color(auto &&_data) requires (fake::view_c<decltype(_data)> == false){
 		return detail::utility::stream<decltype(_data), _front, _back>{std::forward<decltype(_data)>(_data)};
 	}
@@ -238,5 +250,7 @@ namespace fake
 	}
 	
 }
+
+#include "pop.h"
 
 #endif /*__FAKE_UTILITY_H__*/ 

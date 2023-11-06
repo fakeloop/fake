@@ -10,6 +10,8 @@
  *                                                       * 
 \*       0. You just DO WHAT THE FUCK YOU WANT TO.       */
 
+#include "push.h"
+
 #include <concepts>
 #include <coroutine>
 #include <exception>
@@ -3805,5 +3807,7 @@ namespace fake
 	}
 	
 }
+
+#include "pop.h"
 
 #endif /*__FAKE_ACYCLIC_H__*/ 

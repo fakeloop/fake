@@ -10,6 +10,8 @@
  *                                                       * 
 \*       0. You just DO WHAT THE FUCK YOU WANT TO.       */
 
+#include "push.h"
+
 #include <algorithm>
 
 #include "view.h"
@@ -48,5 +50,7 @@ namespace fake
 	inline constexpr fake::meta::detail::debug::cat_t<_args...> alert;
 	
 }
+
+#include "pop.h"
 
 #endif /*__FAKE_META_DEBUG_ALERT_H__*/ 

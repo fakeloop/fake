@@ -10,6 +10,8 @@
  *                                                       * 
 \*       0. You just DO WHAT THE FUCK YOU WANT TO.       */
 
+#include "push.h"
+
 #include <array>
 #include <string>
 #include <memory>
@@ -343,5 +345,7 @@ namespace fake
 	inline constexpr custom::detail::type_name::broker<_ConfigToken, _footprint> type_name;
 	
 }
+
+#include "pop.h"
 
 #endif /*__FAKE_CPO_TYPENAME_H__*/ 

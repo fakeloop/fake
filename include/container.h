@@ -10,6 +10,8 @@
  *                                                       * 
 \*       0. You just DO WHAT THE FUCK YOU WANT TO.       */
 
+#include "push.h"
+
 #include <initializer_list>
 
 #include "traits.h"
@@ -443,5 +445,7 @@ namespace fake
 		fake::unordered_multimap_c<_Type>;
 	
 }
+
+#include "pop.h"
 
 #endif /*__FAKE_CONTAINER_H__*/ 

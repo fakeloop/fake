@@ -10,6 +10,8 @@
  *                                                       * 
 \*       0. You just DO WHAT THE FUCK YOU WANT TO.       */
 
+#include "push.h"
+
 #include <utility>
 
 namespace fake
@@ -309,5 +311,7 @@ namespace fake
 	concept constraint_c = requires(_Args ..._args){requires _constraint.value(_args...);};
 	
 }
+
+#include "pop.h"
 
 #endif /*__FAKE_IS_VALID_H__*/ 

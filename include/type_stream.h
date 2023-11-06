@@ -10,6 +10,8 @@
  *                                                       * 
 \*       0. You just DO WHAT THE FUCK YOU WANT TO.       */
 
+#include "push.h"
+
 #include <iomanip>
 #include <ostream>
 
@@ -249,5 +251,7 @@ namespace fake
 	inline constexpr custom::detail::type_stream::broker<_ConfigToken, _footprint> type_stream;
 	
 }
+
+#include "pop.h"
 
 #endif /*__FAKE_CPO_TYPESTREAM_H__*/ 

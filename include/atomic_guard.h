@@ -10,6 +10,8 @@
  *                                                       * 
 \*       0. You just DO WHAT THE FUCK YOU WANT TO.       */
 
+#include "push.h"
+
 #include <atomic>
 
 namespace fake::atomic
@@ -146,5 +148,7 @@ namespace fake::atomic
 	};
 	
 }
+
+#include "pop.h"
 
 #endif /*__FAKE_ATOMIC_GUARD_H__*/ 

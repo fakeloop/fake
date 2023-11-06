@@ -10,6 +10,8 @@
  *                                                       * 
 \*       0. You just DO WHAT THE FUCK YOU WANT TO.       */
 
+#include "push.h"
+
 #include "view.h"
 #include "meta.h"
 
@@ -403,5 +405,7 @@ namespace fake
 	inline constexpr custom::detail::for_each::broker<_ConfigToken, _footprint> for_each;
 	
 }
+
+#include "pop.h"
 
 #endif /*__FAKE_CPO_TYPEINFO_H__*/ 

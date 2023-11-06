@@ -10,6 +10,8 @@
  *                                                       * 
 \*       0. You just DO WHAT THE FUCK YOU WANT TO.       */
 
+#include "push.h"
+
 #include "flat.h"
 #include "utility.h"
 #include "type_stream.h"
@@ -1396,5 +1398,7 @@ namespace fake::io
 	inline constexpr auto html = fake::format<token::html, _footprint>;
 	
 }
+
+#include "pop.h"
 
 #endif /*__FAKE_CPO_TYPEFORMAT_H__*/ 

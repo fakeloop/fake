@@ -10,6 +10,8 @@
  *                                                       * 
 \*       0. You just DO WHAT THE FUCK YOU WANT TO.       */
 
+#include "push.h"
+
 #include "type_array.h"
 #include "type_map.h"
 #include "traits.h"
@@ -2270,5 +2272,7 @@ namespace fake::meta
 	template<typename _Lamdba> void delay(_Lamdba _lambda){_lambda([]{});}
 	
 }
+
+#include "pop.h"
 
 #endif /*__FAKE_META_H__*/ 

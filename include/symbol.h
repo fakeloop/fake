@@ -10,6 +10,8 @@
  *                                                       * 
 \*       0. You just DO WHAT THE FUCK YOU WANT TO.       */
 
+#include "push.h"
+
 #include <array>
 #include <string_view>
 
@@ -155,5 +157,7 @@ namespace fake::symbol
 	}
 	
 }
+
+#include "pop.h"
 
 #endif /*__FAKE_SYMBOL_H__*/ 

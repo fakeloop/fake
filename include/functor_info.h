@@ -10,6 +10,8 @@
  *                                                       * 
 \*       0. You just DO WHAT THE FUCK YOU WANT TO.       */
 
+#include "push.h"
+
 #include <functional>
 
 #include "is_valid.h"
@@ -542,5 +544,7 @@ namespace fake
 	concept functor_c = is_functor_v<_Type>;
 	
 }
+
+#include "pop.h"
 
 #endif /*__FUNCTOR_INFO_H__*/ 

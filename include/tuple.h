@@ -10,6 +10,8 @@
  *                                                       * 
 \*       0. You just DO WHAT THE FUCK YOU WANT TO.       */
 
+#include "push.h"
+
 #include <array>
 #include <algorithm>
 
@@ -799,5 +801,7 @@ namespace fake::tuple
 	>;
 	
 }
+
+#include "pop.h"
 
 #endif /*__FAKE_TUPLE_H__*/ 
