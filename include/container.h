@@ -248,7 +248,7 @@ namespace fake
 	template<typename _Element, typename _Hash = std::hash<_Element>, typename... _Args>
 	using unordered_set = typename decltype(
 		detail::container::unordered_set_t<_Element, _Hash>()
-	)::template type<_Element, _Args...>;
+	)::template type<_Element, _Hash, _Args...>;
 	
 	template<typename _Type>
 	concept unordered_set_c = fake::trait_v<unordered_set, std::remove_cvref_t<_Type>>;
@@ -281,7 +281,7 @@ namespace fake
 	template<typename _Element, typename _Hash = std::hash<_Element>, typename... _Args>
 	using unordered_multiset = typename decltype(
 		detail::container::unordered_multiset_t<_Element, _Hash>()
-	)::template type<_Element, _Args...>;
+	)::template type<_Element, _Hash, _Args...>;
 	
 	template<typename _Type>
 	concept unordered_multiset_c = fake::trait_v<unordered_multiset, std::remove_cvref_t<_Type>>;
@@ -380,7 +380,7 @@ namespace fake
 	template<typename _Key, typename _Mapped, typename _Hash = std::hash<_Key>, typename... _Args>
 	using unordered_map = typename decltype(
 		detail::container::unordered_map_t<_Key, _Mapped, _Hash>()
-	)::template type<_Key, _Mapped, _Args...>;
+	)::template type<_Key, _Mapped, _Hash, _Args...>;
 	
 	template<typename _Type>
 	concept unordered_map_c = fake::trait_v<unordered_map, std::remove_cvref_t<_Type>>;
@@ -417,7 +417,7 @@ namespace fake
 	template<typename _Key, typename _Mapped, typename _Hash = std::hash<_Key>, typename... _Args>
 	using unordered_multimap = typename decltype(
 		detail::container::unordered_multimap_t<_Key, _Mapped, _Hash>()
-	)::template type<_Key, _Mapped, _Args...>;
+	)::template type<_Key, _Mapped, _Hash, _Args...>;
 	
 	template<typename _Type>
 	concept unordered_multimap_c = fake::trait_v<unordered_multimap, std::remove_cvref_t<_Type>>;

@@ -160,12 +160,12 @@ namespace fake::custom
 			requires(fake::take_t<configure.at<[]{}>(fake::pack_v<key<_ConfigToken>>)> _local){
 				requires decltype(_local){}.template contains<[]{}>(fake::pack_v<stream>);
 			}
-		inline static constexpr auto method(_Type &_e){
+		inline static constexpr auto method(_Type &&_e){
 			constexpr fake::take_t<configure.at<[]{}>(fake::pack_v<key<_ConfigToken>>)> local;
 			using stream_t = fake::take_t<local.template at<[]{}>(fake::pack_v<stream>)>;
 			constexpr auto hash = fake::type_view(_footprint).hash();
 			
-			return typename stream_t::template type<_ConfigToken, hash, _Type>{_e};
+			return typename stream_t::template type<_ConfigToken, hash, _Type>{std::forward<_Type>(_e)};
 		}
 		
 		template<typename _ConfigToken, auto _footprint, typename _Type, typename _Init>
@@ -174,12 +174,15 @@ namespace fake::custom
 			requires(fake::take_t<configure.at<[]{}>(fake::pack_v<key<_ConfigToken>>)> _local){
 				requires decltype(_local){}.template contains<[]{}>(fake::pack_v<stream>);
 			}
-		inline static constexpr auto method(_Type &_e, _Init &_i){
+		inline static constexpr auto method(_Type &&_e, _Init &&_i){
 			constexpr fake::take_t<configure.at<[]{}>(fake::pack_v<key<_ConfigToken>>)> local;
 			using stream_t = fake::take_t<local.template at<[]{}>(fake::pack_v<stream>)>;
 			constexpr auto hash = fake::type_view(_footprint).hash();
 			
-			return typename stream_t::template type<_ConfigToken, hash, _Type, _Init>{_e, _i};
+			return typename stream_t::template type<_ConfigToken, hash, _Type, _Init>{
+				std::forward<_Type>(_e),
+				std::forward<_Init>(_i)
+			};
 		}
 	};
 	
@@ -187,7 +190,7 @@ namespace fake::custom
 	{
 		
 		template<typename _ConfigToken, auto _footprint, typename... _Type>
-		concept invocable_c = requires(_Type &..._e){
+		concept invocable_c = requires(_Type ..._e){
 			requires fake::meta::array_c<decltype(_footprint)>;
 			custom::type_stream::method<_ConfigToken, _footprint>(_e...);
 		};
@@ -200,14 +203,17 @@ namespace fake::custom
 		public:
 			template<typename _Type>
 			requires invocable_c<_ConfigToken, _footprint, _Type>
-			inline constexpr auto operator()(_Type &_e) const{
-				return custom::type_stream::method<_ConfigToken, _footprint>(_e);
+			inline constexpr auto operator()(_Type &&_e) const{
+				return custom::type_stream::method<_ConfigToken, _footprint>(std::forward<_Type>(_e));
 			}
 			
 			template<typename _Type, typename _Init>
 			requires invocable_c<_ConfigToken, _footprint, _Type, _Init>
-			inline constexpr auto operator()(_Type &_e, _Init &_i) const{
-				return custom::type_stream::method<_ConfigToken, _footprint>(_e, _i);
+			inline constexpr auto operator()(_Type &&_e, _Init &&_i) const{
+				return custom::type_stream::method<_ConfigToken, _footprint>(
+					std::forward<_Type>(_e),
+					std::forward<_Init>(_i)
+				);
 			}
 		};
 		

@@ -514,7 +514,8 @@ namespace fake::custom
 		template<fake::trait_c<token_t> _ConfigToken, auto _footprint, typename _Type, typename _Init = decltype(null)>
 		requires fake::meta::array_c<decltype(_footprint)> || std::same_as<decltype(_footprint), unsigned long long>
 		struct stream final{
-			using init_t = _Init;
+			using type_t = fake::remove_rvalue_reference_t<_Type>;
+			using init_t = fake::remove_rvalue_reference_t<_Init>;
 			
 		private:
 			static constexpr bool enable_type = query::type<typename _ConfigToken::type>();
@@ -537,8 +538,16 @@ namespace fake::custom
 			static constexpr bool name = query::name<typename _ConfigToken::type>();
 			
 		public:
-			constexpr stream(_Type &_data) noexcept: data(_data), init(null){}
-			constexpr stream(_Type &_data, _Init &_init) noexcept: data(_data), init(_init){}
+			constexpr stream(std::convertible_to<type_t> auto &&_data) noexcept:
+				data(std::forward<decltype(_data)>(_data)), init(null)
+			{}
+			constexpr stream(
+				std::convertible_to<type_t> auto &&_data,
+				std::convertible_to<init_t> auto &&_init
+			) noexcept:
+				data(std::forward<decltype(_data)>(_data)),
+				init(std::forward<decltype(_init)>(_init))
+			{}
 			stream(const stream&) = delete;
 			stream& operator=(const stream&) = delete;
 			
@@ -952,12 +961,20 @@ namespace fake::custom
 											std::index_sequence<_index...>,
 											std::size_t _alt
 										){
-											using function = void(*)(type&, init_t &_init);
+											using cinit_t = std::conditional_t<
+												std::is_lvalue_reference_v<init_t>,
+												init_t,
+												std::add_const_t<init_t>
+											>;
+											
+											using function = void(*)(type&, cinit_t&);
 											constexpr function inits[std::variant_size_v<type>] = {
-												[](type &_v, init_t &_init){
+												[](type &_v, cinit_t &_init){
 													using element_t = std::variant_alternative_t<_index, type>;
 													
-													if constexpr(requires{init.template make<element_t>(_v);})
+													if constexpr(requires{init.template make<_index>(_v);})
+														_init.template make<_index>(_v);
+													else if constexpr(requires{init.template make<element_t>(_v);})
 														_init.template make<element_t>(_v);
 													else
 														_v.template emplace<_index>();
@@ -1040,8 +1057,8 @@ namespace fake::custom
 			}
 			
 		private:
-			_Type &data;
-			_Init &init;
+			type_t data;
+			init_t init;
 		};
 		
 	private:
