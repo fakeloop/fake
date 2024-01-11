@@ -271,7 +271,7 @@ namespace fake
 	using element_index_t = typename element<_Index, _Type>::type;
 	
 	template<typename _Type>
-	requires requires{element<0, _Type>::size;}
+	requires requires{element<0, std::remove_cvref_t<_Type>>::size;}
 	constexpr std::size_t element_size_v = element<0, std::remove_cvref_t<_Type>>::size;
 	
 	namespace detail::is_valid
