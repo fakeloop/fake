@@ -203,9 +203,34 @@ namespace fake::custom
 		};
 		
 	private:
+		static constexpr auto integral_tramsform = [](fake::pack_c auto _pack){
+			using namespace fake::literals;
+			using type = fake::take_t<decltype(_pack){}>;
+			constexpr fake::view_c auto unsigned_v = std::conditional_t<
+				std::is_integral_v<type>,
+				fake::view_t<"u">,
+				fake::view_t<"">
+			>{};
+			constexpr fake::view_c auto size_v = fake::value_view(fake::mezz_v<(sizeof(type) << 0x3)>);
+			
+			return unsigned_v + "int"_v + size_v + "_t"_v;
+		};
+		
+	private:
 		// register meta-implementations for token-based-cpo 'fake::type_name' at compile-time. 
 		template<auto, typename _ConfigToken>
 		static consteval auto inject() noexcept{
+			config::emplace_transform<[]{}, _ConfigToken, int8_t>(integral_tramsform);
+			config::emplace_transform<[]{}, _ConfigToken, uint8_t>(integral_tramsform);
+			config::emplace_transform<[]{}, _ConfigToken, int16_t>(integral_tramsform);
+			config::emplace_transform<[]{}, _ConfigToken, uint16_t>(integral_tramsform);
+			config::emplace_transform<[]{}, _ConfigToken, int16_t>(integral_tramsform);
+			config::emplace_transform<[]{}, _ConfigToken, uint16_t>(integral_tramsform);
+			config::emplace_transform<[]{}, _ConfigToken, int32_t>(integral_tramsform);
+			config::emplace_transform<[]{}, _ConfigToken, uint32_t>(integral_tramsform);
+			config::emplace_transform<[]{}, _ConfigToken, int64_t>(integral_tramsform);
+			config::emplace_transform<[]{}, _ConfigToken, uint64_t>(integral_tramsform);
+			
 			config::emplace_transform<[]{}, _ConfigToken, fake::generic<std::basic_string>>(
 				[](fake::pack_c auto _pack){
 					using namespace fake::literals;
