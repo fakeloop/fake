@@ -207,7 +207,7 @@ namespace fake::custom
 			using namespace fake::literals;
 			using type = fake::take_t<decltype(_pack){}>;
 			constexpr fake::view_c auto unsigned_v = std::conditional_t<
-				std::is_integral_v<type>,
+				std::is_unsigned_v<type>,
 				fake::view_t<"u">,
 				fake::view_t<"">
 			>{};
