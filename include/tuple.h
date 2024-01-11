@@ -494,8 +494,8 @@ namespace fake::tuple
 	constexpr auto pop_front_v = fake::pack_v<pop_front_t<_Tuple>>;
 	
 	template<fake::tuple_c _Tuple>
-	requires requires{typename erase_t<_Tuple, std::tuple_size_v<_Tuple>>;}
-	struct erase_back final{using type = erase_t<_Tuple, std::tuple_size_v<_Tuple>>;};
+	requires requires{typename erase_t<_Tuple, std::tuple_size_v<_Tuple> - 0x1>;}
+	struct erase_back final{using type = erase_t<_Tuple, std::tuple_size_v<_Tuple> - 0x1>;};
 	
 	template<fake::tuple_c _Tuple>
 	requires requires{typename erase_back<_Tuple>::type;}
@@ -564,6 +564,39 @@ namespace fake::tuple
 	template<fake::tuple_c _Tuple, std::size_t _Lhs, std::size_t _Rhs>
 	requires requires{typename swap_t<_Tuple, _Lhs, _Rhs>;}
 	constexpr auto swap_v = fake::pack_v<swap_t<_Tuple, _Lhs, _Rhs>>;
+	
+	template<fake::tuple_c _Tuple, std::size_t _index, typename _Type>
+	requires (_index < std::tuple_size_v<_Tuple>)
+	struct rebind final{
+	private:
+		static consteval auto impl(){
+			return []<std::size_t... _I>(std::index_sequence<_I...>){
+				constexpr auto each = [](fake::mezz_c auto _i, fake::pack_c auto _pack){
+					using type = fake::take_t<decltype(_pack){}>;
+					
+					if constexpr(_i.value == _index)
+						return fake::pack_v<_Type>;
+					else
+						return fake::pack_v<type>;
+				};
+				
+				return fake::pack_v<
+					std::tuple<fake::take_t<each(fake::mezz_v<_I>, fake::pack_v<std::tuple_element_t<_I, _Tuple>>)>...>
+				>;
+			}(std::make_index_sequence<std::tuple_size_v<_Tuple>>());
+		}
+		
+	public:
+		using type = fake::take_t<impl()>;
+	};
+	
+	template<fake::tuple_c _Tuple, std::size_t _index, typename _Type>
+	requires requires{typename rebind<_Tuple, _index, _Type>::type;}
+	using rebind_t = typename rebind<_Tuple, _index, _Type>::type;
+	
+	template<fake::tuple_c _Tuple, std::size_t _index, typename _Type>
+	requires requires{typename rebind_t<_Tuple, _index, _Type>;}
+	constexpr auto rebind_v = fake::pack_v<rebind_t<_Tuple, _index, _Type>>;
 	
 	template<fake::tuple_c _Tuple>
 	struct shrink final{
