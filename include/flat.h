@@ -530,7 +530,10 @@ namespace fake
 	template<typename _Type>
 	concept query_c = fake::trait_v<query, std::remove_cvref_t<_Type>>;
 	
-	template<query_c...>
+	template<typename _Query, typename _Key>
+	concept query_contains = fake::query_c<_Query> && requires{{_Query::template mate<_Key>()} -> fake::pack_c;};
+	
+	template<fake::query_c...>
 	struct query_cat_result;
 	
 	template<>
@@ -554,10 +557,10 @@ namespace fake
 		using type = typename query_cat_result<fake::query<_Lhs..., _Rhs...>, _Tail...>::type;
 	};
 	
-	template<query_c... _Segments>
+	template<fake::query_c... _Segments>
 	using query_cat_result_t = typename query_cat_result<_Segments...>::type;
 	
-	template<query_c>
+	template<fake::query_c>
 	struct query_size;
 	
 	template<fake::mate_c... _Args>
@@ -565,7 +568,7 @@ namespace fake
 		static constexpr std::size_t value = sizeof...(_Args);
 	};
 	
-	template<query_c _Query>
+	template<fake::query_c _Query>
 	constexpr std::size_t query_size_v = query_size<std::remove_cvref_t<_Query>>::value;
 	
 	template<auto _key>
@@ -582,7 +585,9 @@ namespace fake
 		>();
 	}
 	{
-		using key = fake::take_t<std::remove_cvref_t<decltype(_query)>::first_types::type(fake::index_v<_index>)>;
+		using key = fake::take_t<
+			decltype(std::remove_cvref_t<decltype(_query)>::first_types::type(fake::index_v<_index>)){}
+		>;
 		return std::forward<decltype(_query)>(_query).template value<key>();
 	}
 	
@@ -592,7 +597,7 @@ namespace fake
 		return std::forward<decltype(_query)>(_query).template value<_Type>();
 	}
 	
-	template<query_c _Query, auto _key, typename _Value>
+	template<fake::query_c _Query, auto _key, typename _Value>
 	struct query_rebind final{
 	private:
 		static consteval auto impl() noexcept{
@@ -628,8 +633,105 @@ namespace fake
 		using type = fake::take_t<impl()>;
 	};
 	
-	template<query_c _Query, auto _key, typename _Value>
+	template<fake::query_c _Query, auto _key, typename _Value>
 	using query_rebind_t = typename query_rebind<_Query, _key, _Value>::type;
+	
+	template<fake::query_c... _Lhs>
+	struct query_merge;
+	
+	template<fake::query_c _Query>
+	struct query_merge<_Query>{using type = _Query;};
+	
+	template<fake::query_c _Lhs, fake::query_c _Rhs>
+	struct query_merge<_Lhs, _Rhs>{
+	private:
+		static constexpr std::size_t rhs_size = std::tuple_size_v<_Rhs>;
+		
+		static consteval auto impl() noexcept{
+			constexpr auto rec = [](auto _self, fake::pack_c auto _current, fake::mezz_c auto _index){
+				if constexpr(_index.value < rhs_size){
+					using current = fake::take_t<decltype(_current){}>;
+					using mate = std::tuple_element_t<_index.value, _Rhs>;
+					using key = typename mate::first_type;
+					
+					if constexpr(query_contains<current, key>)
+						return _self(_self, _current, fake::mezz_v<_index.value + 0x1>);
+					else
+						return _self(
+							_self,
+							fake::pack_v<fake::query_cat_result_t<current, fake::query<mate>>>,
+							fake::mezz_v<_index.value + 0x1>
+						);
+				}
+				else{
+					return _current;
+				}
+			};
+			
+			return rec(rec, fake::pack_v<_Lhs>, fake::mezz_v<std::size_t{}>);
+		}
+		
+	public:
+		using type = fake::take_t<impl()>;
+	};
+	
+	template<fake::query_c _Lhs, fake::query_c _Rhs, fake::query_c... _Others>
+	struct query_merge<_Lhs, _Rhs, _Others...> : query_merge<typename query_merge<_Lhs, _Rhs>::type, _Others...>{};
+	
+	template<fake::query_c... _Query>
+	using query_merge_t = typename query_merge<_Query...>::type;
+	
+	template<fake::query_c _Lhs, fake::query_c _Rhs>
+	struct query_diff{
+	private:
+		static constexpr std::size_t lhs_size = std::tuple_size_v<_Lhs>;
+		using diff_t = std::remove_cvref_t<_Rhs>;
+		
+		static consteval auto impl() noexcept{
+			constexpr auto rec = [](auto _self, fake::pack_c auto _current, fake::mezz_c auto _index){
+				if constexpr(_index.value < lhs_size){
+					using current = fake::take_t<decltype(_current){}>;
+					using mate = std::tuple_element_t<_index.value, _Lhs>;
+					using key = typename mate::first_type;
+					
+					if constexpr(query_contains<diff_t, key>)
+						return _self(_self, _current, fake::mezz_v<_index.value + 0x1>);
+					else
+						return _self(
+							_self,
+							fake::pack_v<fake::query_cat_result_t<current, fake::query<mate>>>,
+							fake::mezz_v<_index.value + 0x1>
+						);
+				}
+				else{
+					return _current;
+				}
+			};
+			
+			return rec(rec, fake::pack_v<fake::query<>>, fake::mezz_v<std::size_t{}>);
+		}
+		
+	public:
+		using type = fake::take_t<impl()>;
+	};
+	
+	template<fake::query_c _Lhs, fake::query_c _Rhs>
+	using query_diff_t = typename query_diff<_Lhs, _Rhs>::type;
+	
+	template<fake::query_c... _Lhs>
+	struct query_roll;
+	
+	template<fake::query_c _Query>
+	struct query_roll<_Query>{using type = _Query;};
+	
+	template<fake::query_c _Lhs, fake::query_c _Rhs>
+	struct query_roll<_Lhs, _Rhs>{using type = query_merge_t<query_diff_t<_Lhs, _Rhs>, _Rhs>;};
+	
+	template<fake::query_c _Lhs, fake::query_c _Rhs, fake::query_c... _Others>
+	struct query_roll<_Lhs, _Rhs, _Others...> : query_roll<typename query_roll<_Lhs, _Rhs>::type, _Others...>{};
+	
+	template<fake::query_c... _Query>
+	using query_roll_t = typename query_roll<_Query...>::type;
 	
 }
 
