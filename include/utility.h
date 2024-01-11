@@ -207,12 +207,25 @@ namespace fake
 		private:
 			template<std::same_as<std::basic_ostream<char>> _Stream>
 			friend _Stream& operator<<(_Stream &_os, const stream &_view){
-				return _os << color<_front, _back>() << _view.data << clear();
+				using decay = std::make_unsigned_t<std::remove_cvref_t<type>>;
+				if constexpr(std::same_as<decay, uint8_t> || std::same_as<decay, std::byte>)
+					return _os << color<_front, _back>() << int32_t(_view.data) << clear();
+				else
+					return _os << color<_front, _back>() << _view.data << clear();
 			}
 			
 			template<std::same_as<std::basic_istream<char>> _Stream>
 			friend _Stream& operator>>(_Stream &_is, const stream &_view){
-				return _is >> fake::ensure(color<_front, _back>()) >> _view.data >> fake::ensure(clear());
+				using decay = std::make_unsigned_t<std::remove_cvref_t<type>>;
+				if constexpr(std::same_as<decay, uint8_t> || std::same_as<decay, std::byte>){
+					int32_t buffer = 0x0;
+					_is >> fake::ensure(color<_front, _back>()) >> buffer >> fake::ensure(clear());
+					_view.data = buffer;
+					return _is;
+				}
+				else{
+					return _is >> fake::ensure(color<_front, _back>()) >> _view.data >> fake::ensure(clear());
+				}
 			}
 			
 		private:
@@ -247,6 +260,13 @@ namespace fake
 				}()...
 			};
 		}(std::make_index_sequence<(sizeof(_Number) << 1)>());
+	}
+	
+	template<auto _vest>
+	inline void once(auto _lambda) noexcept(noexcept(_lambda())){
+		static bool flag = true;
+		if(flag)
+			_lambda(), flag = false;
 	}
 	
 }
