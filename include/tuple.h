@@ -94,7 +94,7 @@ namespace fake::tuple
 	template<typename _Type>
 	using make_t = typename make<std::remove_cvref_t<_Type>>::type;
 	
-	template<fake::tuple_c _Tuple, auto _functor>
+	template<fake::tuple_c _Tuple, auto _functor, bool _order = true>
 	struct match_index final{
 	private:
 		static consteval auto impl(){
@@ -104,9 +104,16 @@ namespace fake::tuple
 				constexpr std::array<bool, size> pick = {
 					_functor(fake::pack_v<std::tuple_element_t<_Index, _Tuple>>)...
 				};
-				for(std::size_t i = 0; i < size; i++)
-					if(pick[i])
-						return i;
+				if constexpr(_order){
+					for(std::size_t i = 0; i < size; i++)
+						if(pick[i])
+							return i;
+				}
+				else{
+					for(std::size_t i = size; i > 0; i--)
+						if(pick[i - 1])
+							return i - 1;
+				}
 				return size;
 			}(std::make_index_sequence<size>());
 			
@@ -122,6 +129,12 @@ namespace fake::tuple
 	
 	template<fake::tuple_c _Tuple, auto _functor>
 	using match_index_t = typename match_index<_Tuple, _functor>::type;
+	
+	template<fake::tuple_c _Tuple, auto _functor>
+	using first_index_t = typename match_index<_Tuple, _functor, true>::type;
+	
+	template<fake::tuple_c _Tuple, auto _functor>
+	using last_index_t = typename match_index<_Tuple, _functor, false>::type;
 	
 	template<fake::tuple_c _Tuple, auto _functor>
 	struct find_if final{
