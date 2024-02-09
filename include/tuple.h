@@ -137,6 +137,29 @@ namespace fake::tuple
 	using last_index_t = typename match_index<_Tuple, _functor, false>::type;
 	
 	template<fake::tuple_c _Tuple, auto _functor>
+	struct indices final{
+	private:
+		static consteval auto impl(){
+			constexpr std::size_t size = std::tuple_size_v<_Tuple>;
+			constexpr std::array mask = []<std::size_t... _Index>(std::index_sequence<_Index...>){
+				return std::array<bool, size>{_functor(fake::pack_v<std::tuple_element_t<_Index, _Tuple>>)...};
+			}(std::make_index_sequence<size>());
+			constexpr std::size_t count = std::ranges::count(mask, true);
+			std::array<std::size_t, count> indices;
+			for(std::size_t i = 0, j = 0; i < size; i++)
+				if(mask[i])
+					indices[j++] = i;
+			return indices;
+		}
+		
+	public:
+		static constexpr auto value = impl();
+	};
+	
+	template<fake::tuple_c _Tuple, auto _functor>
+	constexpr auto indices_v = indices<_Tuple, _functor>::value;
+	
+	template<fake::tuple_c _Tuple, auto _functor>
 	struct find_if final{
 	private:
 		static consteval auto impl(){
