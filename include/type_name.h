@@ -269,6 +269,11 @@ namespace fake::custom
 				}
 			);
 			
+			if constexpr(requires{typename fake::vector<bool>::reference;})
+				config::emplace_transform<[]{}, _ConfigToken, fake::vector<bool>::reference>(
+					[](fake::pack_c auto _pack){return fake::view_v<"bool">;}
+				);
+			
 			using unique_ptr_g = fake::generic<std::unique_ptr>;
 			config::set_templace_trunc<[]{}, _ConfigToken, unique_ptr_g, 0x1>();
 			
