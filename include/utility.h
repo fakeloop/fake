@@ -207,8 +207,9 @@ namespace fake
 		private:
 			template<std::same_as<std::basic_ostream<char>> _Stream>
 			friend _Stream& operator<<(_Stream &_os, const stream &_view){
-				if constexpr(std::is_integral_v<std::remove_cvref_t<type>>){
-					using decay = std::make_unsigned_t<std::remove_cvref_t<type>>;
+				using bare = std::remove_cvref_t<type>;
+				if constexpr(std::is_integral_v<bare> && std::is_same_v<bare, bool> == false){
+					using decay = std::make_unsigned_t<bare>;
 					if constexpr(std::same_as<decay, uint8_t> || std::same_as<decay, std::byte>)
 						return _os << color<_front, _back>() << int32_t(_view.data) << clear();
 					else
@@ -221,8 +222,9 @@ namespace fake
 			
 			template<std::same_as<std::basic_istream<char>> _Stream>
 			friend _Stream& operator>>(_Stream &_is, const stream &_view){
-				if constexpr(std::is_integral_v<std::remove_cvref_t<type>>){
-					using decay = std::make_unsigned_t<std::remove_cvref_t<type>>;
+				using bare = std::remove_cvref_t<type>;
+				if constexpr(std::is_integral_v<bare> && std::is_same_v<bare, bool> == false){
+					using decay = std::make_unsigned_t<bare>;
 					if constexpr(std::same_as<decay, uint8_t> || std::same_as<decay, std::byte>){
 						int32_t buffer = 0x0;
 						_is >> fake::ensure(color<_front, _back>()) >> buffer >> fake::ensure(clear());
