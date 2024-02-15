@@ -58,6 +58,9 @@ namespace fake
 	};
 	
 	template<typename _Type>
+	using pack_t = type_package<_Type>;
+	
+	template<typename _Type>
 	constexpr type_package<_Type> pack_v{};
 	
 	template<typename _Type>
@@ -91,6 +94,18 @@ namespace fake
 	
 	template<typename _Type>
 	concept mezz_c = trait_auto_v<value_mezzanine, std::remove_cvref_t<_Type>>;
+	
+	template<typename _Type>
+	struct package_mezzanine : value_mezzanine<fake::type_package<_Type>{}>{};
+	
+	template<typename _Type>
+	using pazz_t = package_mezzanine<_Type>;
+	
+	template<typename _Type>
+	constexpr package_mezzanine<_Type> pazz_v{};
+	
+	template<typename _Type>
+	concept pazz_c = trait_v<package_mezzanine, std::remove_cvref_t<_Type>>;
 	
 	template<template<typename...> typename _Template>
 	struct generic
