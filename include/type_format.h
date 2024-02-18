@@ -311,11 +311,11 @@ namespace fake::custom
 			
 			template<typename _ConfigToken>
 			static consteval auto type() noexcept{
-				using member_t = fake::take_t<access<_ConfigToken>::template query<[]{}, key::type>()>;
-				if constexpr(std::same_as<member_t, fake::null_t>)
+				using type_t = fake::take_t<access<_ConfigToken>::template query<[]{}, key::type>()>;
+				if constexpr(std::same_as<type_t, fake::null_t>)
 					return true;
 				else
-					return member_t::value;
+					return type_t::value;
 			}
 			
 			template<typename _ConfigToken>
@@ -365,11 +365,11 @@ namespace fake::custom
 			
 			template<typename _ConfigToken>
 			static consteval auto name() noexcept{
-				using bracket_t = fake::take_t<access<_ConfigToken>::template query<[]{}, key::name>()>;
-				if constexpr(std::same_as<bracket_t, fake::null_t>)
+				using name_t = fake::take_t<access<_ConfigToken>::template query<[]{}, key::name>()>;
+				if constexpr(std::same_as<name_t, fake::null_t>)
 					return false;
 				else
-					return bracket_t::value;
+					return name_t::value;
 			}
 		};
 		
