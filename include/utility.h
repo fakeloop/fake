@@ -259,19 +259,32 @@ namespace fake
 	template<typename _Number>
 	requires std::is_integral_v<_Number>
 	constexpr auto to_hex(_Number _number){
-		return [number = _number]<std::size_t... _Index>(std::index_sequence<_Index...>){
+		return [_number]<std::size_t... _Index>(std::index_sequence<_Index...>){
 			return std::array{
-				[number]{
+				[_number]{
 					constexpr std::size_t index = sizeof...(_Index) - _Index - 1;
-					static_assert(sizeof...(_Index) == 8);
-					static_assert(index < 8);
-					const char bits = (number >> (index << 2)) & 0xF;
+					const char bits = (_number >> (index << 2)) & 0xF;
 					const char mask = (-!(bits & 8)) | (-((bits & 8) && !(bits & 6)));
 					
 					return char((mask & (bits | '0')) | (~mask & ((bits - 9) | '@'))); //'@''A''B''C'... 
 				}()...
 			};
 		}(std::make_index_sequence<(sizeof(_Number) << 1)>());
+	}
+	
+	template<fake::std_array_c _Array>
+	requires std::same_as<char, typename _Array::value_type>
+	constexpr auto from_hex(const _Array &_array) -> fake::unsigned_bytes<(std::tuple_size_v<_Array> >> 0x1)>{
+		using result_t = fake::unsigned_bytes<(std::tuple_size_v<_Array> >> 0x1)>;
+		return [&_array]<std::size_t... _Index>(std::index_sequence<_Index...>){
+			return (
+				[](const char _e){
+					const result_t mask = result_t(bool(_e & '@')) - 0x1;
+					
+					return result_t(mask & _e - '0' | ~mask & _e + 9 - '@') << (_Index << 0x2);
+				}(_array[sizeof...(_Index) - _Index - 1]) | ...
+			);
+		}(std::make_index_sequence<std::tuple_size_v<_Array>>());
 	}
 	
 	template<auto _vest>
