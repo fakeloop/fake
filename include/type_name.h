@@ -134,6 +134,56 @@ namespace fake::custom
 		template<typename _Type>
 		static constexpr bool is_std_array_v = is_std_array<std::remove_cvref_t<_Type>>::value;
 		
+		template<char _e>
+		static consteval auto escape(fake::mezz_t<_e>) noexcept{
+			constexpr std::array alt{'0', 'b', 'e', 'f', 'r', 't', 'n', 'v', '\\', '\'', '\"'};
+			constexpr std::size_t index = []{
+				constexpr std::array code{'\0', '\b', '\e', '\f', '\r', '\t', '\n', '\v', '\\', '\'', '\"'};
+				for(std::size_t i = 0; i < code.size(); i++)
+					if(code[i] == _e)
+						return i;
+				return ~std::size_t{};
+			}();
+			if constexpr(index == ~std::size_t{})
+				return fake::view<_e>{};
+			else
+				return fake::view<'\\', alt[index]>{};
+		}
+		
+		static consteval auto escape(fake::view_c auto _e) noexcept{
+			using type = decltype(_e);
+			using code = fake::mezz_t<std::array{'\0', '\b', '\e', '\f', '\r', '\t', '\n', '\v', '\\', '\'', '\"'}>;
+			using alt = fake::mezz_t<std::array{'0', 'b', 'e', 'f', 'r', 't', 'n', 'v', '\\', '\'', '\"'}>;
+			
+			constexpr std::array string = []{
+				constexpr std::size_t size = []{
+					constexpr auto match = [](char _e){return std::ranges::count(code::value, _e) + 0x1;};
+					std::size_t size = 0;
+					for(std::size_t i = 0; i < type::size(); i++)
+						size += match(type::data()[i]);
+					return size;
+				}();
+				
+				std::array<char, size> array{};
+				for(std::size_t i = 0, j = 0; i < type::size(); i++){
+					const char e = type::data()[i];
+					const auto it = std::ranges::find(code::value, e);
+					if(it == code::value.end())
+						array[j++] = e;
+					else
+						array[j++] = '\\', array[j++] = alt::value[it - code::value.begin()];
+				}
+				
+				return std::move(array);
+			}();
+			
+			using view = fake::mezz_t<string>;
+			
+			return []<std::size_t... _index>(std::index_sequence<_index...>){
+				return fake::view<view::value[_index]...>{};
+			}(std::make_index_sequence<string.size()>());
+		}
+		
 	private:
 		template<typename _ConfigToken, auto _footprint, typename _Type>
 		requires
@@ -170,9 +220,13 @@ namespace fake::custom
 				using max_t = fake::mezz_t<~std::size_t{}>;
 				constexpr std::size_t size = std::conditional_t<std::same_as<mezz, fake::null_t>, max_t, mezz>::value;
 				
-				if constexpr(info::is_view_like){
-					constexpr auto value = info::self.template replace<"\\", "\\\\">().template replace<"\"", "\\\"">()
-						.template replace<"\'", "\\\'">();
+				if constexpr(info::is_view_like && fake::mezz_c<bare>){
+					return fake::view_v<fake::detail::view::string<prefix.size() + 1>{prefix.data()}> +
+						bracket_left + fake::view_v<"\'"> + escape(bare{}) + fake::view_v<"\'"> +
+						bracket_right + fake::view_v<fake::detail::view::string<suffix.size() + 1>{suffix.data()}>;
+				}
+				else if constexpr(info::is_view_like && fake::view_c<bare>){
+					constexpr fake::view_c auto value = escape(info::self);
 					return fake::view_v<fake::detail::view::string<prefix.size() + 1>{prefix.data()}> +
 						bracket_left + fake::view_v<"\'"> + value + fake::view_v<"\'"> + bracket_right +
 						fake::view_v<fake::detail::view::string<suffix.size() + 1>{suffix.data()}>;
