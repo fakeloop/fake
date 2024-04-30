@@ -1414,6 +1414,23 @@ namespace fake::io
 	requires fake::meta::array_c<decltype(_footprint)>
 	inline constexpr auto html = fake::format<token::html, _footprint>;
 	
+	// gcc bug workaround utility. 
+	template<auto _vest, auto _fp = custom::type_stream::config::footprint<fake::cpo::format<token::plain>>(_vest)>
+	requires fake::meta::array_c<decltype(_fp)>
+	inline constexpr auto plain_w = fake::format<token::plain, _fp>;
+	
+	template<auto _vest, auto _fp = custom::type_stream::config::footprint<fake::cpo::format<token::pretty>>(_vest)>
+	requires fake::meta::array_c<decltype(_fp)>
+	inline constexpr auto pretty_w = fake::format<token::pretty, _fp>;
+	
+	template<auto _vest, auto _fp = custom::type_stream::config::footprint<fake::cpo::format<token::json>>(_vest)>
+	requires fake::meta::array_c<decltype(_fp)>
+	inline constexpr auto json_w = fake::format<token::json, _fp>;
+	
+	template<auto _vest, auto _fp = custom::type_stream::config::footprint<fake::cpo::format<token::html>>(_vest)>
+	requires fake::meta::array_c<decltype(_fp)>
+	inline constexpr auto html_w = fake::format<token::html, _fp>;
+	
 }
 
 #include "pop.h"
