@@ -59,6 +59,34 @@ namespace fake
 	template<typename _T = void*>
 	constexpr std::size_t system_bit = sizeof(_T) << 3;
 	
+	template<std::size_t _bytes>
+	requires (_bytes != 0x0 && (_bytes & _bytes - 0x1) == 0x0 && _bytes <= 0x8)
+	using signed_bytes = std::conditional_t<
+		_bytes == 0x8,
+		int64_t,
+		std::conditional_t<
+			_bytes == 0x4,
+			int32_t,
+			std::conditional_t<
+				_bytes == 0x2,
+				int16_t,
+				int8_t
+			>
+		>
+	>;
+	
+	template<std::size_t _bytes>
+	requires requires{typename signed_bytes<_bytes>;}
+	using unsigned_bytes = std::make_unsigned_t<signed_bytes<_bytes>>;
+	
+	template<std::size_t _bits>
+	requires (_bits >= 0x8 && (_bits & _bits - 0x1) == 0x0) && requires{typename signed_bytes<(_bits >> 0x3)>;}
+	using signed_bits = signed_bytes<(_bits >> 0x3)>;
+	
+	template<std::size_t _bits>
+	requires requires{typename signed_bits<_bits>;}
+	using unsigned_bits = std::make_unsigned_t<signed_bits<_bits>>;
+	
 	template<typename _Type>
 	using remove_lvalue_reference_t = std::conditional_t<
 		std::is_lvalue_reference_v<_Type>,
@@ -630,6 +658,18 @@ namespace fake
 	
 	template<std::size_t _size, typename _Arg, template<typename...> typename _Template>
 	using gemma_t = typename gemma<std::make_index_sequence<_size>, std::remove_cvref_t<_Arg>, _Template>::type;
+	
+	template<typename _Type, typename _Target>
+	concept hold = std::same_as<std::remove_reference_t<_Type>, std::remove_reference_t<_Target>> || requires{
+		requires fake::mezz_c<_Target>;
+		requires _Target::value.template operator()<std::remove_reference_t<_Type>>();
+	};
+	
+	template<typename _Type, typename... _Targets>
+	concept meets = (std::same_as<_Type, _Targets> || ...);
+	
+	template<typename _Type, typename... _Targets>
+	concept holds = (fake::hold<_Type, _Targets> || ...);
 	
 }
 
