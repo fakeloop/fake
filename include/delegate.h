@@ -21,7 +21,7 @@
 
 #include "functor_info.h"
 #include "tuple.h"
-#include "view.h"
+#include "utility.h"
 
 namespace fake
 {
@@ -34,28 +34,6 @@ namespace fake
 		
 		template<typename _Type>
 		std::size_t index<_Type>::current = 0;
-		
-		inline constexpr std::tuple salt_v{
-			fake::view_v<"MGR">,
-			fake::view_v<"YUH">,
-			fake::view_v<"DIYUSI">,
-			fake::view_v<"NEL">
-		};
-		
-		using key = std::array<std::size_t, std::tuple_size_v<decltype(salt_v)>>;
-		
-		template<fake::view_c auto _view>
-		inline constexpr auto salt = []<std::size_t... _index>(std::index_sequence<_index...>){
-			return key{(std::get<_index>(salt_v) + fake::view_v<"@"> + _view).hash()...};
-		}(std::make_index_sequence<std::tuple_size_v<key>>());
-		
-		struct hash final{
-			constexpr std::size_t operator()(const fake::std_array_c auto &_e) const noexcept{
-				return [&_e]<std::size_t... _index>(std::index_sequence<_index...>){
-					return (0x0 ^ ... ^ std::rotl(_e[_index], _index));
-				}(std::make_index_sequence<std::tuple_size_v<key>>());
-			}
-		};
 		
 	}
 	
@@ -172,8 +150,8 @@ namespace fake
 	struct delegate<_Type>{
 		struct function_t final{
 			std::function<std::any(const std::any&)> function;
-			detail::delegate::key type;
-			detail::delegate::key result;
+			fake::signet_t type;
+			fake::signet_t result;
 		};
 		
 		template<fake::tuple_c>
@@ -219,11 +197,11 @@ namespace fake
 							return std::apply(f, std::any_cast<const args_t&>(_args));
 						}
 					},
-					detail::delegate::salt<arguments>,
-					detail::delegate::salt<result>
+					fake::signet_v<arguments>,
+					fake::signet_v<result>
 				}
 			);
-			parameters[detail::delegate::salt<arguments>].emplace(detail::delegate::index<void>::current);
+			parameters[fake::signet_v<arguments>].emplace(detail::delegate::index<void>::current);
 			
 			return detail::delegate::index<void>::current++;
 		}
@@ -237,10 +215,10 @@ namespace fake
 			using bare_t = std::tuple<std::remove_cvref_t<_Params>...>;
 			constexpr fake::view_c auto arguments = fake::type_view(fake::pack_v<bare_t>);
 			
-			if(parameters.contains(detail::delegate::salt<arguments>) == false)
+			if(parameters.contains(fake::signet_v<arguments>) == false)
 				return 0x0;
 			
-			return parameters.at(detail::delegate::salt<arguments>).size();
+			return parameters.at(fake::signet_v<arguments>).size();
 		}
 		
 		std::size_t amount(const auto &..._args) const{
@@ -255,15 +233,15 @@ namespace fake
 			constexpr fake::view_c auto arguments = fake::type_view(fake::pack_v<bare_t>);
 			constexpr fake::view_c auto result = fake::type_view(fake::pack_v<_Retn>);
 			
-			if(parameters.contains(detail::delegate::salt<arguments>) == false)
+			if(parameters.contains(fake::signet_v<arguments>) == false)
 				return {};
 			
-			const auto &broadcast = parameters.at(detail::delegate::salt<arguments>);
+			const auto &broadcast = parameters.at(fake::signet_v<arguments>);
 			
 			std::vector<std::pair<std::size_t, std::optional<_Retn>>> retn;
 			retn.reserve(broadcast.size());
 			
-			for(const detail::delegate::key signature{detail::delegate::salt<result>}; const std::size_t e : broadcast){
+			for(const fake::signet_t signature{fake::signet_v<result>}; const std::size_t e : broadcast){
 				const args_t refs = std::tie(_args...);
 				const auto &delegate = delegates.at(e);
 				
@@ -283,15 +261,15 @@ namespace fake
 			constexpr fake::view_c auto arguments = fake::type_view(fake::pack_v<bare_t>);
 			constexpr fake::view_c auto result = fake::type_view(fake::pack_v<_Retn>);
 			
-			if(parameters.contains(detail::delegate::salt<arguments>) == false)
+			if(parameters.contains(fake::signet_v<arguments>) == false)
 				return {};
 			
-			const auto &broadcast = parameters.at(detail::delegate::salt<arguments>);
+			const auto &broadcast = parameters.at(fake::signet_v<arguments>);
 			
 			std::vector<std::pair<std::size_t, bool>> retn;
 			retn.reserve(broadcast.size());
 			
-			for(const detail::delegate::key signature{detail::delegate::salt<result>}; const std::size_t e : broadcast){
+			for(const fake::signet_t signature{fake::signet_v<result>}; const std::size_t e : broadcast){
 				const args_t refs = std::tie(_args...);
 				const auto &delegate = delegates.at(e);
 				
@@ -310,21 +288,21 @@ namespace fake
 			constexpr fake::view_c auto arguments = fake::type_view(fake::pack_v<bare_t>);
 			constexpr fake::view_c auto result = fake::type_view(fake::pack_v<_Retn>);
 			
-			if(parameters.contains(detail::delegate::salt<arguments>) == false)
+			if(parameters.contains(fake::signet_v<arguments>) == false)
 				return {};
 			
-			const auto &broadcast = parameters.at(detail::delegate::salt<arguments>);
+			const auto &broadcast = parameters.at(fake::signet_v<arguments>);
 			
 			std::vector<std::pair<std::size_t, _Retn>> retn;
 			
 			std::size_t reserve = 0;
-			for(const detail::delegate::key signature{detail::delegate::salt<result>}; const std::size_t e : broadcast)
+			for(const fake::signet_t signature{fake::signet_v<result>}; const std::size_t e : broadcast)
 				if(delegates.at(e).result == signature)
 					reserve++;
 			
 			retn.reserve(reserve);
 			
-			for(const detail::delegate::key signature{detail::delegate::salt<result>}; const std::size_t e : broadcast){
+			for(const fake::signet_t signature{fake::signet_v<result>}; const std::size_t e : broadcast){
 				const args_t refs = std::tie(_args...);
 				const auto &delegate = delegates.at(e);
 				
@@ -342,21 +320,21 @@ namespace fake
 			constexpr fake::view_c auto arguments = fake::type_view(fake::pack_v<bare_t>);
 			constexpr fake::view_c auto result = fake::type_view(fake::pack_v<bool>);
 			
-			if(parameters.contains(detail::delegate::salt<arguments>) == false)
+			if(parameters.contains(fake::signet_v<arguments>) == false)
 				return {};
 			
-			const auto &broadcast = parameters.at(detail::delegate::salt<arguments>);
+			const auto &broadcast = parameters.at(fake::signet_v<arguments>);
 			
 			std::vector<std::size_t> retn;
 			
 			std::size_t reserve = 0;
-			for(const detail::delegate::key signature{detail::delegate::salt<result>}; const std::size_t e : broadcast)
+			for(const fake::signet_t signature{fake::signet_v<result>}; const std::size_t e : broadcast)
 				if(delegates.at(e).result == signature)
 					reserve++;
 			
 			retn.reserve(reserve);
 			
-			for(const detail::delegate::key signature{detail::delegate::salt<result>}; const std::size_t e : broadcast){
+			for(const fake::signet_t signature{fake::signet_v<result>}; const std::size_t e : broadcast){
 				const args_t refs = std::tie(_args...);
 				const auto &delegate = delegates.at(e);
 				
@@ -368,7 +346,8 @@ namespace fake
 		}
 		
 		template<typename _Retn>
-		requires std::constructible_from<_Retn> && std::same_as<std::remove_cvref_t<_Retn>, _Retn>
+		requires std::constructible_from<_Retn> && std::same_as<std::remove_cvref_t<_Retn>, _Retn> ||
+			std::same_as<_Retn, void>
 		_Retn mono(const auto &..._args) const{
 			using args_t = std::tuple<decltype(_args)...>;
 			using bare_t = std::tuple<std::remove_cvref_t<decltype(_args)>...>;
@@ -376,20 +355,24 @@ namespace fake
 			constexpr fake::view_c auto result = fake::type_view(fake::pack_v<_Retn>);
 			constexpr fake::view_c auto error = fake::view_v<"fake::delegate::mono<"> + result + fake::view_v<">()">;
 			
-			if(parameters.contains(detail::delegate::salt<arguments>) == false)
-				return {};
+			if(parameters.contains(fake::signet_v<arguments>) == false){
+				if constexpr(std::same_as<_Retn, void>)
+					return;
+				else
+					return {};
+			}
 			
-			const auto &broadcast = parameters.at(detail::delegate::salt<arguments>);
+			const auto &broadcast = parameters.at(fake::signet_v<arguments>);
 			
 			std::size_t reserve = 0;
-			for(const detail::delegate::key signature{detail::delegate::salt<result>}; const std::size_t e : broadcast)
+			for(const fake::signet_t signature{fake::signet_v<result>}; const std::size_t e : broadcast)
 				if(delegates.at(e).result == signature)
 					reserve++;
 			
 			if(reserve != 0x1)
 				throw std::runtime_error{(error + fake::view_v<": delegate is NOT unique.">).data()};
 			
-			for(const detail::delegate::key signature{detail::delegate::salt<result>}; const std::size_t e : broadcast){
+			for(const fake::signet_t signature{fake::signet_v<result>}; const std::size_t e : broadcast){
 				const args_t refs = std::tie(_args...);
 				const auto &delegate = delegates.at(e);
 				
@@ -413,20 +396,20 @@ namespace fake
 			constexpr fake::view_c auto result = fake::type_view(fake::pack_v<_Retn>);
 			constexpr fake::view_c auto error = fake::view_v<"fake::delegate::rash<"> + result + fake::view_v<">()">;
 			
-			if(parameters.contains(detail::delegate::salt<arguments>) == false)
+			if(parameters.contains(fake::signet_v<arguments>) == false)
 				throw std::runtime_error{(error + fake::view_v<": delegate does NOT exist.">).data()};;
 			
-			const auto &broadcast = parameters.at(detail::delegate::salt<arguments>);
+			const auto &broadcast = parameters.at(fake::signet_v<arguments>);
 			
 			std::size_t reserve = 0;
-			for(const detail::delegate::key signature{detail::delegate::salt<result>}; const std::size_t e : broadcast)
+			for(const fake::signet_t signature{fake::signet_v<result>}; const std::size_t e : broadcast)
 				if(delegates.at(e).result == signature)
 					reserve++;
 			
 			if(reserve != 0x1)
 				throw std::runtime_error{(error + fake::view_v<": delegate is NOT unique.">).data()};
 			
-			for(const detail::delegate::key signature{detail::delegate::salt<result>}; const std::size_t e : broadcast){
+			for(const fake::signet_t signature{fake::signet_v<result>}; const std::size_t e : broadcast){
 				const args_t refs = std::tie(_args...);
 				const auto &delegate = delegates.at(e);
 				
@@ -446,10 +429,10 @@ namespace fake
 			using bare_t = std::tuple<std::remove_cvref_t<decltype(_args)>...>;
 			constexpr fake::view_c auto arguments = fake::type_view(fake::pack_v<bare_t>);
 			
-			if(parameters.contains(detail::delegate::salt<arguments>) == false)
+			if(parameters.contains(fake::signet_v<arguments>) == false)
 				return false;
 			
-			for(const std::size_t e : parameters.at(detail::delegate::salt<arguments>)){
+			for(const std::size_t e : parameters.at(fake::signet_v<arguments>)){
 				const args_t refs = std::tie(_args...);
 				delegates.at(e).function(std::make_any<const args_t&>(refs));
 			}
@@ -461,7 +444,7 @@ namespace fake
 			if(delegates.contains(_index) == false)
 				return 0;
 			
-			const detail::delegate::key type = delegates[_index].type;
+			const fake::signet_t type = delegates[_index].type;
 			
 			parameters[type].erase(_index);
 			if(parameters[type].empty())
@@ -474,7 +457,7 @@ namespace fake
 		
 	private:
 		std::unordered_map<std::size_t, function_t> delegates;
-		std::unordered_map<detail::delegate::key, std::set<std::size_t>, detail::delegate::hash> parameters;
+		std::unordered_map<fake::signet_t, std::set<std::size_t>> parameters;
 	};
 	
 }
