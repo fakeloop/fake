@@ -55,6 +55,48 @@ namespace fake
 		
 	}
 	
+	namespace tool::view
+	{
+		
+		template<std::size_t _size>
+		constexpr unsigned long long hash(const char (&_str)[_size]) noexcept{
+			constexpr unsigned long long basis = 14695981039346656037ull;
+			constexpr unsigned long long prime = 1099511628211ull;
+			
+			unsigned long long hash = basis;
+			for(const char e : _str)
+				hash = (hash ^ e) * prime;
+			
+			return hash;
+		}
+		
+		template<std::size_t _size>
+		constexpr unsigned long long hash(const char (&_str)[_size], unsigned long long _basis) noexcept{
+			constexpr unsigned long long prime = 1099511628211ull;
+			
+			unsigned long long hash = _basis;
+			if(_size && _str[_size - 0x1] == '\0')
+				for(const char e : std::ranges::subrange(_str, _str + _size - 0x1))
+					hash = (hash ^ e) * prime;
+			else
+				for(const char e : _str)
+					hash = (hash ^ e) * prime;
+			
+			return hash;
+		}
+		
+		constexpr unsigned long long hash(std::string_view _str, unsigned long long _basis) noexcept{
+			constexpr unsigned long long prime = 1099511628211ull;
+			
+			unsigned long long hash = _basis;
+			for(const char e : _str)
+				hash = (hash ^ e) * prime;
+			
+			return hash;
+		}
+		
+	}
+	
 	template<char... _Chars>
 	struct view{
 		constexpr view() noexcept{}
@@ -87,14 +129,7 @@ namespace fake
 		static constexpr unsigned long long hash() noexcept{
 			constexpr char local[]{_Chars...};
 			
-			constexpr unsigned long long basis = 14695981039346656037ull;
-			constexpr unsigned long long prime = 1099511628211ull;
-			
-			unsigned long long hash = basis;
-			for(const char e : local)
-				hash = (hash ^ e) * prime;
-			
-			return hash;
+			return tool::view::hash(local);
 		}
 		
 	private:

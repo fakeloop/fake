@@ -13,6 +13,9 @@
 #include "push.h"
 
 #include <utility>
+#include <bit>
+#include <tuple>
+#include <atomic>
 #include <stdexcept>
 
 #include "view.h"
@@ -289,12 +292,63 @@ namespace fake
 	
 	template<auto _vest>
 	inline void once(auto _lambda) noexcept(noexcept(_lambda())){
-		static bool flag = true;
-		if(flag)
-			_lambda(), flag = false;
+		static std::atomic<bool> flag = true;
+		if(flag.exchange(false, std::memory_order::relaxed))
+			_lambda();
 	}
 	
+	namespace detail::signet
+	{
+		
+		inline constexpr std::tuple salt{
+			fake::view_v<"MGR">,
+			fake::view_v<"YUH">,
+			fake::view_v<"DIYUSI">,
+			fake::view_v<"NEL">
+		};
+		
+	}
+	
+	struct signet_t final : std::array<std::size_t, std::tuple_size_v<decltype(detail::signet::salt)>>
+	{
+		static constexpr std::size_t size_value = std::tuple_size_v<decltype(detail::signet::salt)>;
+	};
+	
+	consteval signet_t signet(fake::view_c auto _view) noexcept{
+		return [&_view]<std::size_t... _index>(std::index_sequence<_index...>){
+			using namespace fake::literals;
+			return signet_t{(std::get<_index>(detail::signet::salt) + "@"_v + _view).hash()...};
+		}(std::make_index_sequence<signet_t::size_value>());
+	}
+	
+	template<std::size_t _size>
+	constexpr signet_t signet(const char (&_view)[_size]) noexcept{
+		return [&_view]<std::size_t... _index>(std::index_sequence<_index...>){
+			using namespace fake::literals;
+			return signet_t{tool::view::hash(_view, (std::get<_index>(detail::signet::salt) + "@"_v).hash())...};
+		}(std::make_index_sequence<signet_t::size_value>());
+	}
+	
+	constexpr signet_t signet(std::string_view _view) noexcept{
+		return [&_view]<std::size_t... _index>(std::index_sequence<_index...>){
+			using namespace fake::literals;
+			return signet_t{tool::view::hash(_view, (std::get<_index>(detail::signet::salt) + "@"_v).hash())...};
+		}(std::make_index_sequence<signet_t::size_value>());
+	}
+	
+	template<fake::view_c auto _view>
+	inline constexpr signet_t signet_v = signet(_view);
+	
 }
+
+template<>
+struct std::hash<fake::signet_t>{
+	std::size_t operator()(const fake::signet_t &_e) const noexcept{
+		return [&_e]<std::size_t... _index>(std::index_sequence<_index...>){
+			return (0x0 ^ ... ^ std::rotl(_e[_index], _index));
+		}(std::make_index_sequence<fake::signet_t::size_value>());
+	}
+};
 
 #include "pop.h"
 
