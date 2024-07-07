@@ -212,17 +212,14 @@ namespace fake::custom
 		};
 		
 	private:
-		template<typename _Type>
-		static auto byte_address(_Type &_type) noexcept{
-			return &const_cast<char&>(reinterpret_cast<const volatile char&>(_type));
-		}
-		
-	private:
 		template<typename _Aggr, std::size_t _index>
 		struct aggr_t final{};
 		
 		template<std::size_t _index>
 		struct index_t final{};
+		
+		template<std::uintptr_t _offset>
+		struct member_t final{};
 		
 		static constexpr fake::meta::unordered_map aggr = []{};
 		static constexpr fake::meta::variant aggr_resume = []{};
@@ -287,33 +284,36 @@ namespace fake::custom
 			using type = std::remove_cvref_t<_Aggr>;
 			
 			return [](auto &&_e, const auto &_f){
-				std::size_t offset = 0;
+				const std::uintptr_t address = std::bit_cast<std::uintptr_t>(&_e);
+				
 				// using a passed '_vest' from an evaluated context to make clang happy. 
-				auto impl = [&]<std::size_t _index, auto _vest>(
+				auto impl = [address, &_f]<std::size_t _index, std::uintptr_t _offset, auto _vest>(
 					auto &_self,
 					fake::mezz_t<_vest>,
-					index_t<_index>
+					index_t<_index>,
+					member_t<_offset>
 				) requires(
 					!std::same_as<fake::take_t<aggr.at<_vest>(fake::pack_v<aggr_t<type, _index>>)>, fake::null_t>
 				){
 					using type = fake::take_t<aggr.at<[]{}>(fake::pack_v<aggr_t<type, _index>>)>;
-					constexpr std::size_t element = alignof(type);
-					constexpr std::size_t size = sizeof(type);
-					constexpr std::size_t bigger = (size > element ? size : element);
-					offset = (offset + element - 1 & ~(element - 1)) + bigger;
-					type &reference = *reinterpret_cast<type*>(for_each::byte_address(_e) + offset - bigger);
+					constexpr std::uintptr_t element = alignof(type);
+					constexpr std::uintptr_t size = sizeof(type);
+					constexpr std::uintptr_t align = std::max(size, element);
+					constexpr std::uintptr_t member = _offset + element - 1 & ~(element - 1);
+					constexpr std::uintptr_t next = member + align;
+					type &reference = *std::launder(std::bit_cast<type*>(address + member));
 					
 					if constexpr(requires{_f(reference);})
 						_f(reference);
 					else
 						_f.template operator()<decltype(fake::to_view_v<_index>)>(reference);
 					
-					if constexpr(requires{_self(_self, fake::mezz_v<[]{}>, index_t<_index + 1>{});})
-						_self(_self, fake::mezz_v<[]{}>, index_t<_index + 1>{});
+					if constexpr(requires{_self(_self, fake::mezz_v<[]{}>, index_t<_index + 1>{}, member_t<next>{});})
+						_self(_self, fake::mezz_v<[]{}>, index_t<_index + 1>{}, member_t<next>{});
 				};
 				
-				if constexpr(requires{impl(impl, fake::mezz_v<[]{}>, index_t<0>{});})
-					impl(impl, fake::mezz_v<[]{}>, index_t<0>{});
+				if constexpr(requires{impl(impl, fake::mezz_v<[]{}>, index_t<0>{}, member_t<0x0>{});})
+					impl(impl, fake::mezz_v<[]{}>, index_t<0>{}, member_t<0x0>{});
 			};
 		}
 		
