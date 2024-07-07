@@ -476,6 +476,20 @@ namespace fake
 		}
 		
 		template<typename _First>
+		requires requires(query _query){extract<_First>(_query);}
+		static consteval std::size_t index() noexcept{
+			return []<std::size_t... _index>(std::index_sequence<_index...>){
+				return (
+					(
+						std::size_t(
+							std::same_as<fake::take_t<first_types::type(fake::index_v<_index>)>, _First> == false
+						) - std::size_t{0x1} & _index
+					) | ...
+				);
+			}(std::make_index_sequence<size>());
+		}
+		
+		template<typename _First>
 		constexpr auto& value() & noexcept
 		requires requires{ref<_First>(*this);}{
 			return ref<_First>(*this);
