@@ -1,6 +1,6 @@
 # `fake` – metaprogramming library / 元编程库
 
-[![License: WTFPL](https://img.shields.io/badge/License-WTFPL-brightgreen.svg)](fake/blob/master/LICENSE)
+[![License: WTFPL](https://img.shields.io/badge/License-WTFPL-brightgreen.svg)](LICENSE)
 
 `fake` is a header‑only library for C++23 that provides a rich set of tools for compile‑time programming, asynchronous DAG execution, type reflection, formatting, and more.
 
@@ -138,7 +138,7 @@ The library is header‑only; no linking required except for threading support (
     The demo prints a colored representation of a complex object and demonstrates round‑trip parsing.
     该演示会打印一个复杂对象的彩色表示，并展示往返解析。
 
-    [![output terminal](https://raw.githubusercontent.com/fakeloop/fake/master/demo/io/output.png)](fake/blob/master/demo/io/output.png)
+    [![output terminal](https://raw.githubusercontent.com/fakeloop/fake/master/demo/io/output.png)](demo/io/output.png)
 
 4. **Use in your project** / **在你的项目中使用**
     Just include the headers and start using the features. All configuration is done at compile time.
@@ -150,24 +150,24 @@ Each header comes with extensive comments and usage examples. The following summ
 
 每个头文件都附有详细的注释和使用示例。以下链接指向对应的文档章节（详细内容请查看源文件）。
 
-- `acyclic.h` [Chinese](fake/blob/master/docs/acyclic-cn.md) – [English](fake/blob/master/docs/acyclic-en.md)
-- `delegate.h` [Chinese](fake/blob/master/docs/delegate-cn.md) – [English](fake/blob/master/docs/delegate-en.md)
-- `detect.h` [Chinese](fake/blob/master/docs/detect-cn.md) – [English](fake/blob/master/docs/detect-en.md)
-- `enum_info.h` [Chinese](fake/blob/master/docs/enum_info-cn.md) – [English](fake/blob/master/docs/enum_info-en.md)
-- `flat.h` [Chinese](fake/blob/master/docs/flat-cn.md) – [English](fake/blob/master/docs/flat-en.md)
-- `functor_info.h` [Chinese](fake/blob/master/docs/functor_info-cn.md) – [English](fake/blob/master/docs/functor_info-en.md)
-- `is_valid.h` [Chinese](fake/blob/master/docs/is_valid-cn.md) – [English](fake/blob/master/docs/is_valid-en.md)
-- `patterns.h` [Chinese](fake/blob/master/docs/patterns-cn.md) – [English](fake/blob/master/docs/patterns-en.md)
-- `traits.h` [Chinese](fake/blob/master/docs/traits-cn.md) – [English](fake/blob/master/docs/traits-en.md)
-- `tuple.h` [Chinese](fake/blob/master/docs/tuple-cn.md) – [English](fake/blob/master/docs/tuple-en.md)
-- `type_format.h` [Chinese](fake/blob/master/docs/type_format-cn.md) – [English](fake/blob/master/docs/type_format-en.md)
-- `utility.h` [Chinese](fake/blob/master/docs/utility-cn.md) – [English](fake/blob/master/docs/utility-en.md)
-- `view.h` [Chinese](fake/blob/master/docs/view-cn.md) – [English](fake/blob/master/docs/view-en.md)
+- `acyclic.h` [Chinese](docs/acyclic-cn.md) – [English](docs/acyclic-en.md)
+- `delegate.h` [Chinese](docs/delegate-cn.md) – [English](docs/delegate-en.md)
+- `detect.h` [Chinese](docs/detect-cn.md) – [English](docs/detect-en.md)
+- `enum_info.h` [Chinese](docs/enum_info-cn.md) – [English](docs/enum_info-en.md)
+- `flat.h` [Chinese](docs/flat-cn.md) – [English](docs/flat-en.md)
+- `functor_info.h` [Chinese](docs/functor_info-cn.md) – [English](docs/functor_info-en.md)
+- `is_valid.h` [Chinese](docs/is_valid-cn.md) – [English](docs/is_valid-en.md)
+- `patterns.h` [Chinese](docs/patterns-cn.md) – [English](docs/patterns-en.md)
+- `traits.h` [Chinese](docs/traits-cn.md) – [English](docs/traits-en.md)
+- `tuple.h` [Chinese](docs/tuple-cn.md) – [English](docs/tuple-en.md)
+- `type_format.h` [Chinese](docs/type_format-cn.md) – [English](docs/type_format-en.md)
+- `utility.h` [Chinese](docs/utility-cn.md) – [English](docs/utility-en.md)
+- `view.h` [Chinese](docs/view-cn.md) – [English](docs/view-en.md)
 
 ## License / 许可证
 
 This library is provided under the **WTFPL**.
-You can copy, modify, distribute, and use the code for any purpose, without any warranty. See the [LICENSE](fake/blob/master/LICENSE) for details.
+You can copy, modify, distribute, and use the code for any purpose, without any warranty. See the [LICENSE](LICENSE) for details.
 
 本库使用 **WTFPL** 许可证。
-你可以复制、修改、分发和使用本代码用于任何目的，无任何担保。详见 [LICENSE](fake/blob/master/LICENSE)。
+你可以复制、修改、分发和使用本代码用于任何目的，无任何担保。详见 [LICENSE](LICENSE)。
