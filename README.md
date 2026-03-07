@@ -90,9 +90,11 @@
 
 - Compiler / 编译器:
   >GCC 14.2.0 or later (required for full C++23 support, especially `consteval local static`).
+  >
   >GCC 14.2.0 或更高版本（需要完整支持 C++23，特别是 `consteval local static`）。
 - Standard / 标准:
   >C++23 (some parts use C++20 coroutines).
+  >
   >C++23（部分功能使用了 C++20 协程）。
 
 The library is header‑only; no linking required except for threading support (if you use `acyclic.h` with multi‑threaded schedulers, you may need `-pthread`).
@@ -108,16 +110,20 @@ The library is header‑only; no linking required except for threading support (
     ```
 
 2. **Include the headers** / **包含头文件**
-    Add `fake/include/` to your compiler’s include path. Then include the desired header, e.g.:
-    将 `fake/include/` 添加到编译器的包含路径中。然后包含所需的头文件，例如：
+
+    >Add `fake/include/` to your compiler’s include path. Then include the desired header, e.g.:
+    >
+    >将 `fake/include/` 添加到编译器的包含路径中。然后包含所需的头文件，例如：
 
     ```cpp
     #include "type_format.h"
     ```
 
 3. **Try the demo** / **尝试示例**
-    The repository contains a demo under `fake/demo/io/`. Build it with the provided scripts:
-    仓库中的 `fake/demo/io/` 目录下有一个演示程序。使用提供的脚本编译：
+
+    >The repository contains a demo under `fake/demo/io/`. Build it with the provided scripts:
+    >
+    >仓库中的 `fake/demo/io/` 目录下有一个演示程序。使用提供的脚本编译：
 
     **linux:**
 
@@ -135,14 +141,17 @@ The library is header‑only; no linking required except for threading support (
     build/demo.exe
     ```
 
-    The demo prints a colored representation of a complex object and demonstrates round‑trip parsing.
-    该演示会打印一个复杂对象的彩色表示，并展示往返解析。
+    >The demo prints a colored representation of a complex object and demonstrates round‑trip parsing.
+    >
+    >该演示会打印一个复杂对象的彩色表示，并展示往返解析。
 
     [![output terminal](demo/io/output.png?raw=true)](demo/io/output.png)
 
 4. **Use in your project** / **在你的项目中使用**
-    Just include the headers and start using the features. All configuration is done at compile time.
-    只需包含头文件即可使用所有功能。所有配置都在编译期完成。
+
+    >Just include the headers and start using the features. All configuration is done at compile time.
+    >
+    >只需包含头文件即可使用所有功能。所有配置都在编译期完成。
 
 ## Documentation / 文档
 
