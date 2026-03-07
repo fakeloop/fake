@@ -12,12 +12,88 @@
 
 #include "push.h"
 
+#include <concepts>
 #include <functional>
+#include <tuple>
 
 #include "is_valid.h"
 
 namespace fake
 {
+	
+	namespace detail::functor_info
+	{
+		
+		template<typename>
+		struct place_holder_extractor final{};
+		
+		template<template<auto> typename _Ph, auto _index>
+		struct place_holder_extractor<_Ph<_index>> final{static constexpr auto value = _index;};
+		
+		template<typename _Type>
+		constexpr auto place_holder_extract_v = place_holder_extractor<std::remove_cvref_t<_Type>>::value;
+		
+		template<typename>
+		struct is_place_holder final : std::false_type{};
+		
+		template<template<auto> typename _Ph, auto _index>
+		requires std::same_as<
+			_Ph<place_holder_extract_v<decltype(std::placeholders::_1)>>,
+			std::remove_cvref_t<decltype(std::placeholders::_1)>
+		>
+		struct is_place_holder<_Ph<_index>> final : std::true_type{};
+		
+		template<typename _Type>
+		concept is_place_holder_c = is_place_holder<std::remove_cvref_t<_Type>>::value;
+		
+		template<typename _Retn, typename _Rec, typename... _Binds>
+		struct args_mapping final{
+		private:
+			static consteval auto extract() noexcept{
+				return []<std::size_t... _index>(std::index_sequence<_index...>){
+					constexpr auto each = [](fake::pazz_c auto _pazz, fake::mezz_c auto _i){
+						constexpr std::size_t origin = place_holder_extract_v<decltype(std::placeholders::_1)>;
+						
+						if constexpr(is_place_holder_c<fake::take_t<_pazz.value>>)
+							return fake::pazz_v<
+								std::tuple<
+									std::tuple_element_t<
+										place_holder_extract_v<fake::take_t<_pazz.value>> - origin,
+										_Rec
+									>
+								>
+							>;
+						else
+							return fake::pazz_v<std::tuple<>>;
+					};
+					
+					return fake::pazz_v<
+						decltype(
+							std::tuple_cat(
+								std::declval<fake::take_t<each(fake::pazz_v<_Binds>, fake::mezz_v<_index>)>>()...
+							)
+						)
+					>;
+				}(std::make_index_sequence<sizeof...(_Binds)>());
+			}
+			
+			static consteval auto functor() noexcept{
+				using tuple = fake::take_t<extract()>;
+				
+				return []<std::size_t... _index>(std::index_sequence<_index...>){
+					return fake::pazz_v<_Retn(std::tuple_element_t<_index, tuple>...)>;
+				}(std::make_index_sequence<std::tuple_size_v<tuple>>());
+			}
+			
+		public:
+			using tuple = fake::take_t<args_mapping::extract()>;
+			using func = fake::take_t<args_mapping::functor()>;
+			template<std::size_t _Index>
+			using args = std::tuple_element_t<_Index, tuple>;
+			static constexpr std::size_t size = std::tuple_size_v<tuple>;
+		};
+		
+	}
 	
 	// declaration only, for the sfinae instantiation failure in the argument deduction of 'fake::is_functor'. 
 	template<typename, typename = void>
@@ -49,12 +125,23 @@ namespace fake
 		using rec_tuple = typename functor_info<_Functor>::tuple;
 		static constexpr std::size_t rec_size = functor_info<_Functor>::size;
 		
-		using retn = rec_retn;
-		using func = retn(_Args...);
+		using bind_retn = rec_retn;
+		using bind_func = rec_retn(_Args...);
 		template<std::size_t _Index>
-		using args = fake::pack_index_t<_Index, _Args...>;
-		using tuple = std::tuple<_Args...>;
-		static constexpr std::size_t size = sizeof... (_Args);
+		using bind_args = fake::pack_index_t<_Index, _Args...>;
+		using bind_tuple = std::tuple<_Args...>;
+		static constexpr std::size_t bind_size = sizeof... (_Args);
+		
+	private:
+		using mapping = detail::functor_info::args_mapping<rec_retn, rec_tuple, _Args...>;
+		
+	public:
+		using retn = rec_retn;
+		using func = typename mapping::func;
+		template<std::size_t _Index>
+		using args = typename mapping::template args<_Index>;
+		using tuple = typename mapping::tuple;
+		static constexpr std::size_t size = mapping::size;
 	};
 	
 	template<typename _Retn, typename _Class, typename... _Args>

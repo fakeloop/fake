@@ -105,7 +105,10 @@ int main(int _argc, char* _argv[])
 			}
 			else{
 				std::cout << shrink_type(fake::pack_v<type>) << " " << _v << ": {", layer += 4, scope();
-				demo::for_each<token::print>(_e, [&](auto &&_e, std::string_view _v = ""){_self(_self, i, _e, _v);});
+				demo::for_each_w<[]{}, token::print>(
+					_e,
+					[&](auto &&_e, std::string_view _v = ""){_self(_self, i, _e, _v);}
+				);
 				layer -= 4, scope(), std::cout << '}';
 			}
 		};

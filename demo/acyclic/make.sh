@@ -1,14 +1,55 @@
 #!/bin/sh
-g++ aspect.cpp -c -o aspect.o -iquote "../../include/" -std=c++20
-g++ awaited.cpp -c -o awaited.o -iquote "../../include/" -std=c++20
-g++ awaiter.cpp -c -o awaiter.o -iquote "../../include/" -std=c++20
-g++ branch.cpp -c -o branch.o -iquote "../../include/" -std=c++20
-g++ coroutine.cpp -c -o coroutine.o -iquote "../../include/" -std=c++20
-g++ demo.cpp -c -o demo.o -iquote "../../include/" -std=c++20
-g++ exception.cpp -c -o exception.o -iquote "../../include/" -std=c++20
-g++ nested.cpp -c -o nested.o -iquote "../../include/" -std=c++20
-g++ sequence.cpp -c -o sequence.o -iquote "../../include/" -std=c++20
-g++ simple.cpp -c -o simple.o -iquote "../../include/" -std=c++20
-g++ aspect.o awaited.o awaiter.o branch.o coroutine.o demo.o exception.o nested.o sequence.o simple.o -o demo.out -pthread
-./demo.out
 
+# make.sh – Acyclic
+
+set -u
+
+# Error report color
+YELLOW='\033[33m'
+RESET='\033[0m'
+
+# Error report
+error_exit() {
+    printf "${YELLOW}Error: %s${RESET}\n" "$1" >&2
+    exit 1
+}
+
+# Set path
+cd "$(dirname "$0")" || error_exit "Cannot cd to script directory."
+SCRIPT_DIR=$(pwd -P)
+cd "$SCRIPT_DIR" || error_exit "Cannot determine script directory."
+
+CPP_DIR="."
+INCLUDE_DIR="../../include"
+BUILD_DIR="./build"
+CPP_FILE="$CPP_DIR/test-integrality.cpp"
+TARGET_DIR="$BUILD_DIR/demo.out"
+
+# Check if paths exist
+[ -d "$CPP_DIR" ]     || error_exit "Source directory not found: $CPP_DIR"
+[ -d "$INCLUDE_DIR" ] || error_exit "Include directory not found: $INCLUDE_DIR"
+[ -d "$BUILD_DIR" ]   || error_exit "Build directory not found: $BUILD_DIR"
+
+# Build
+list="aspect;awaited;awaiter;branch;coroutine;demo;exception;nested;sequence;simple;"
+
+compile() {
+	c++ "$CPP_DIR/$1.cpp" -c -o "$BUILD_DIR/$1.o" -iquote "$INCLUDE_DIR" -std=c++23 || error_exit "Failed to compile $1"
+}
+
+concat() {
+	echo "$list" | while read -r -d ';' result; do printf "$BUILD_DIR/$result.o "; done
+}
+
+make() {
+	echo "$list" | while read -r -d ';' result; do compile "$result"; done
+}
+
+link() {
+	c++ $(concat) -o "$TARGET_DIR" -pthread || error_exit "Failed to link acyclic demo"
+}
+
+make
+link
+
+exit 0

@@ -101,6 +101,17 @@ namespace fake
 		_Type
 	>;
 	
+	template<typename _Type>
+	using add_const_t = std::conditional_t<
+		std::is_reference_v<_Type>,
+		std::conditional_t<
+			std::is_lvalue_reference_v<_Type>,
+			std::add_lvalue_reference_t<std::add_const_t<std::remove_reference_t<_Type>>>,
+			std::add_rvalue_reference_t<std::add_const_t<std::remove_reference_t<_Type>>>
+		>,
+		std::add_const_t<_Type>
+	>;
+	
 	template<std::size_t _Size>
 	struct char_array{
 		static_assert((_Size & _Size - 1) == 0);
@@ -209,16 +220,16 @@ namespace fake
 		using type = _Type;
 	};
 	
-	template<typename _Lhs, std::derived_from<_Lhs> _Rhs, typename... _Types>
-	requires requires{requires std::same_as<_Lhs, _Rhs> == false; typename common_base<_Rhs, _Types...>::type;}
-	struct common_base<_Lhs, _Rhs, _Types...> final{
-		using type = typename common_base<_Lhs, _Types...>::type;
+	template<typename _Base, std::derived_from<_Base> _Derive, typename... _Types>
+	requires requires{requires std::same_as<_Base, _Derive> == false; typename common_base<_Base, _Types...>::type;}
+	struct common_base<_Base, _Derive, _Types...> final{
+		using type = typename common_base<_Base, _Types...>::type;
 	};
 	
-	template<typename _Lhs, typename _Rhs, typename... _Types>
-	requires std::derived_from<_Lhs, _Rhs> && requires{typename common_base<_Lhs, _Types...>::type;}
-	struct common_base<_Lhs, _Rhs, _Types...> final{
-		using type = typename common_base<_Rhs, _Types...>::type;
+	template<typename _Derive, typename _Base, typename... _Types>
+	requires std::derived_from<_Derive, _Base> && requires{typename common_base<_Base, _Types...>::type;}
+	struct common_base<_Derive, _Base, _Types...> final{
+		using type = typename common_base<_Base, _Types...>::type;
 	};
 	
 	template<typename... _Types>
@@ -232,16 +243,16 @@ namespace fake
 		using type = _Type;
 	};
 	
-	template<typename _Lhs, std::derived_from<_Lhs> _Rhs, typename... _Types>
-	requires requires{requires std::same_as<_Lhs, _Rhs> == false; typename common_derive<_Rhs, _Types...>::type;}
-	struct common_derive<_Lhs, _Rhs, _Types...> final{
-		using type = typename common_derive<_Rhs, _Types...>::type;
+	template<typename _Base, std::derived_from<_Base> _Derive, typename... _Types>
+	requires requires{requires std::same_as<_Base, _Derive> == false; typename common_derive<_Derive, _Types...>::type;}
+	struct common_derive<_Base, _Derive, _Types...> final{
+		using type = typename common_derive<_Derive, _Types...>::type;
 	};
 	
-	template<typename _Lhs, typename _Rhs, typename... _Types>
-	requires std::derived_from<_Lhs, _Rhs> && requires{typename common_derive<_Lhs, _Types...>::type;}
-	struct common_derive<_Lhs, _Rhs, _Types...> final{
-		using type = typename common_derive<_Lhs, _Types...>::type;
+	template<typename _Derive, typename _Base, typename... _Types>
+	requires std::derived_from<_Derive, _Base> && requires{typename common_derive<_Derive, _Types...>::type;}
+	struct common_derive<_Derive, _Base, _Types...> final{
+		using type = typename common_derive<_Derive, _Types...>::type;
 	};
 	
 	template<typename... _Types>
@@ -665,11 +676,20 @@ namespace fake
 		requires _Target::value.template operator()<std::remove_reference_t<_Type>>();
 	};
 	
+	template<typename _Type, typename _Target>
+	concept like = std::same_as<std::remove_cvref_t<_Type>, std::remove_cvref_t<_Target>> || requires{
+		requires fake::mezz_c<_Target>;
+		requires _Target::value.template operator()<std::remove_cvref_t<_Type>>();
+	};
+	
 	template<typename _Type, typename... _Targets>
 	concept meets = (std::same_as<_Type, _Targets> || ...);
 	
 	template<typename _Type, typename... _Targets>
 	concept holds = (fake::hold<_Type, _Targets> || ...);
+	
+	template<typename _Type, typename... _Targets>
+	concept likes = (fake::like<_Type, _Targets> || ...);
 	
 }
 

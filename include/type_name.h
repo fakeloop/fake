@@ -39,6 +39,7 @@ namespace fake::custom
 		template<typename _ConfigToken> struct key final{};
 		template<typename _ConfigToken> struct guard final{};
 		template<fake::gene_c _Gene> struct trunc final{};
+		template<fake::gene_c _Gene> struct alias final{};
 		struct bracket final{};
 		struct forbid final{};
 		
@@ -90,6 +91,23 @@ namespace fake::custom
 				constexpr auto local = fake::take_v<configure.at<[]{}>(fake::pack_v<key<_ConfigToken>>)>;
 				local.template emplace<[]{}>(fake::pack_v<_Gene>, fake::pack_v<decltype(_lambda)>);
 			}
+			
+			template<auto _vest, typename _ConfigToken, fake::gene_c _Gene, fake::view_c _Alias>
+			requires (
+				instantiate_after_configure<_vest, _ConfigToken>() &&
+				!std::same_as<_Gene, fake::generic<fake::container::null_t>>
+			)
+			static consteval auto set_template_alias(_Alias) noexcept{
+				constexpr auto local = fake::take_v<configure.at<[]{}>(fake::pack_v<key<_ConfigToken>>)>;
+				local.template emplace<[]{}>(fake::pack_v<alias<_Gene>>, fake::pack_v<_Alias>);
+			}
+			
+			template<auto _vest, typename _ConfigToken, fake::gene_c _Gene, fake::view_c _Alias>
+			requires (
+				instantiate_after_configure<_vest, _ConfigToken>() &&
+				std::same_as<_Gene, fake::generic<fake::container::null_t>>
+			)
+			static consteval auto set_template_alias(_Alias) noexcept{}
 			
 			template<auto _vest, typename _ConfigToken, fake::gene_c _Gene, std::size_t _TemplateParamaterNumber>
 			requires (
@@ -185,35 +203,61 @@ namespace fake::custom
 		}
 		
 	private:
+		static consteval auto core(fake::view_c auto _prefix) noexcept{
+			return _prefix.template substr<_prefix.template find_last_of<":">() + 1>();
+		}
+		
+		template<fake::view_c auto _prefix, fake::view_c auto _infix, fake::view_c auto _suffix>
+		struct split_t final{
+			static constexpr auto prefix = _prefix;
+			static constexpr auto infix = _infix;
+			static constexpr auto suffix = _suffix;
+		};
+		
+		static consteval auto split(fake::view_c auto _origin) noexcept{
+			struct result_t final{std::string_view prefix; std::string_view infix; std::string_view suffix;};
+			
+			constexpr result_t r = [](std::string_view _symbol) -> result_t {
+				const std::size_t tail = _symbol.find_last_of('>');
+				const bool is_template = tail + 1;
+				const std::string_view suffix = is_template ? _symbol.substr(tail + 1) : std::string_view{""};
+				std::size_t head = is_template ? tail : 0;
+				if(is_template)
+					for(std::size_t stack = 1; stack && head; head--)
+						switch(_symbol[head - 1]){case '>': stack++; break; case '<': stack--; break;};
+				const std::string_view prefix = is_template ? _symbol.substr(0, head) : _symbol;
+				return {prefix, _symbol.substr(head, tail + 1 - head), suffix};
+			}(_origin);
+			
+			namespace tool = fake::detail::view;
+			
+			constexpr fake::view_c auto prefix_v = fake::view_v<tool::string<r.prefix.size() + 1>{r.prefix.data()}>;
+			constexpr fake::view_c auto infix_v = fake::view_v<tool::string<r.infix.size() + 1>{r.infix.data()}>;
+			constexpr fake::view_c auto suffix_v = fake::view_v<tool::string<r.suffix.size() + 1>{r.suffix.data()}>;
+			
+			return split_t<prefix_v, infix_v, suffix_v>{};
+		}
+		
+	private:
 		template<typename _ConfigToken, auto _footprint, typename _Type>
-		requires
-			fake::meta::array_c<decltype(_footprint)> &&
-			fake::is_template_v<fake::bare_t<_Type>>
+		requires fake::meta::array_c<decltype(_footprint)> && fake::is_template_v<fake::bare_t<_Type>>
 		struct template_name final{
 		private:
 			static constexpr auto local = fake::take_v<configure.at<[]{}>(fake::pack_v<key<_ConfigToken>>)>;
 			using bracket_t = fake::take_t<local.template at<[]{}>(fake::pack_v<bracket>)>;
-			static constexpr fake::view_c auto bracket_left = bracket_t::first_type::value;
-			static constexpr fake::view_c auto bracket_right = bracket_t::second_type::value;
+			static constexpr fake::view_c auto left = bracket_t::first_type::value;
+			static constexpr fake::view_c auto right = bracket_t::second_type::value;
 			
 		public:
 			static consteval auto view() noexcept{
 				using bare = fake::bare_t<_Type>;
 				using info = fake::template_info<bare>;
-				constexpr std::string_view symbol = fake::symbol::string_view<_Type>();
-				constexpr std::size_t length = symbol.size();
-				constexpr std::string_view prefix = [](std::string_view _symbol){
-					std::size_t i = _symbol.find_last_of('>');
-					for(std::size_t stack = 1; stack && i; i--)
-						switch(_symbol[i - 1]){case '>': stack++; break; case '<': stack--; break;};
-					return _symbol.substr(0, i);
-				}(symbol);
-				constexpr std::string_view suffix = [](std::string_view _symbol){
-					for(std::size_t i = length; i; i--)
-						if(_symbol[i - 1] == '>')
-							return _symbol.substr(i);
-					return _symbol;
-				}(symbol);
+				using alias_type = fake::take_t<local.template at<[]{}>(fake::pack_v<alias<fake::pattern_t<bare>>>)>;
+				constexpr bool cover = fake::view_c<alias_type>;
+				constexpr auto result = type_name::split(fake::type_view(fake::pack_v<_Type>));
+				constexpr fake::view_c auto prefix = std::conditional_t<cover, alias_type, decltype(result.prefix)>{};
+				constexpr fake::view_c auto infix = result.infix;
+				constexpr fake::view_c auto suffix = result.suffix;
 				
 				using mezz = fake::take_t<local.template at<[]{}>(fake::pack_v<trunc<fake::pattern_t<bare>>>)>;
 				
@@ -221,43 +265,54 @@ namespace fake::custom
 				constexpr std::size_t size = std::conditional_t<std::same_as<mezz, fake::null_t>, max_t, mezz>::value;
 				
 				if constexpr(info::is_view_like && fake::mezz_c<bare>){
-					return fake::view_v<fake::detail::view::string<prefix.size() + 1>{prefix.data()}> +
-						bracket_left + fake::view_v<"\'"> + escape(bare{}) + fake::view_v<"\'"> +
-						bracket_right + fake::view_v<fake::detail::view::string<suffix.size() + 1>{suffix.data()}>;
+					return prefix + left + fake::view_v<"\'"> + escape(bare{}) + fake::view_v<"\'"> + right + suffix;
 				}
 				else if constexpr(info::is_view_like && fake::view_c<bare>){
 					constexpr fake::view_c auto value = escape(info::self);
-					return fake::view_v<fake::detail::view::string<prefix.size() + 1>{prefix.data()}> +
-						bracket_left + fake::view_v<"\'"> + value + fake::view_v<"\'"> + bracket_right +
-						fake::view_v<fake::detail::view::string<suffix.size() + 1>{suffix.data()}>;
+					return prefix + left + fake::view_v<"\'"> + value + fake::view_v<"\'"> + right + suffix;
 				}
 				else if constexpr(info::is_array_like){
 					using type = typename info::remove_cvref_arg;
-					return fake::view_v<fake::detail::view::string<prefix.size() + 1>{prefix.data()}> +
-						bracket_left + method<_ConfigToken, _footprint, type>() +
-						fake::view_v<" ["> + fake::to_view_v<info::array_size> + fake::view_v<"]"> + bracket_right +
-						fake::view_v<fake::detail::view::string<suffix.size() + 1>{suffix.data()}>;
+					return prefix + left + method<_ConfigToken, _footprint, type>() + fake::view_v<" ["> +
+						fake::to_view_v<info::array_size> + fake::view_v<"]"> + right + suffix;
 				}
 				else{
 					using tuple = typename info::remove_cvref_args;
-					return fake::view_v<fake::detail::view::string<prefix.size() + 1>{prefix.data()}> +
-						[]<std::size_t... _index>(std::index_sequence<_index...>){
-							return (
-								bracket_left + (
-									(
-										std::conditional_t<_index, fake::view_t<", ">, fake::view_t<"">>{} +
-										method<_ConfigToken, _footprint, fake::element_index_t<_index, tuple>>()
-									) + ... + bracket_right
-								)
-							);
-						}(std::make_index_sequence<std::min(size, std::tuple_size_v<tuple>)>()) +
-						fake::view_v<fake::detail::view::string<suffix.size() + 1>{suffix.data()}>;
+					return prefix + []<std::size_t... _index>(std::index_sequence<_index...>){
+						return (
+							left + (
+								(
+									std::conditional_t<_index, fake::view_t<", ">, fake::view_t<"">>{} +
+									method<_ConfigToken, _footprint, fake::element_index_t<_index, tuple>>()
+								) + ... + right
+							)
+						);
+					}(std::make_index_sequence<std::min(size, std::tuple_size_v<tuple>)>()) + suffix;
 				}
 			}
 		};
 		
+		template<typename _ConfigToken, auto _footprint, fake::array_c _Type>
+		requires fake::meta::array_c<decltype(_footprint)>
+		struct array_name final{
+			static consteval auto split() noexcept{
+				using type = fake::array_value_t<_Type>;
+				constexpr std::size_t size = fake::array_size_v<_Type>;
+				constexpr fake::view_c auto prefix = type_name::method<_ConfigToken, _footprint, type>();
+				constexpr fake::view_c auto suffix = fake::value_view(fake::mezz_v<size>);
+				
+				return split_t<prefix, fake::view_v<"">, fake::view_v<" ["> + suffix + fake::view_v<"]">>{};
+			}
+			
+			static consteval auto view() noexcept{
+				constexpr auto result = split();
+				
+				return result.prefix + result.suffix;
+			}
+		};
+		
 	private:
-		static constexpr auto integral_tramsform = [](fake::pack_c auto _pack){
+		static constexpr auto integral_transform = [](fake::pack_c auto _pack){
 			using namespace fake::literals;
 			using type = fake::take_t<decltype(_pack){}>;
 			constexpr fake::view_c auto unsigned_v = std::conditional_t<
@@ -271,19 +326,19 @@ namespace fake::custom
 		};
 		
 	private:
-		// register meta-implementations for token-based-cpo 'fake::type_name' at compile-time. 
+		// register meta-implementations for token-based-cpo 'fake::custom::type_name' at compile-time. 
 		template<auto, typename _ConfigToken>
 		static consteval auto inject() noexcept{
-			config::emplace_transform<[]{}, _ConfigToken, int8_t>(integral_tramsform);
-			config::emplace_transform<[]{}, _ConfigToken, uint8_t>(integral_tramsform);
-			config::emplace_transform<[]{}, _ConfigToken, int16_t>(integral_tramsform);
-			config::emplace_transform<[]{}, _ConfigToken, uint16_t>(integral_tramsform);
-			config::emplace_transform<[]{}, _ConfigToken, int16_t>(integral_tramsform);
-			config::emplace_transform<[]{}, _ConfigToken, uint16_t>(integral_tramsform);
-			config::emplace_transform<[]{}, _ConfigToken, int32_t>(integral_tramsform);
-			config::emplace_transform<[]{}, _ConfigToken, uint32_t>(integral_tramsform);
-			config::emplace_transform<[]{}, _ConfigToken, int64_t>(integral_tramsform);
-			config::emplace_transform<[]{}, _ConfigToken, uint64_t>(integral_tramsform);
+			config::emplace_transform<[]{}, _ConfigToken, int8_t>(integral_transform);
+			config::emplace_transform<[]{}, _ConfigToken, uint8_t>(integral_transform);
+			config::emplace_transform<[]{}, _ConfigToken, int16_t>(integral_transform);
+			config::emplace_transform<[]{}, _ConfigToken, uint16_t>(integral_transform);
+			config::emplace_transform<[]{}, _ConfigToken, int16_t>(integral_transform);
+			config::emplace_transform<[]{}, _ConfigToken, uint16_t>(integral_transform);
+			config::emplace_transform<[]{}, _ConfigToken, int32_t>(integral_transform);
+			config::emplace_transform<[]{}, _ConfigToken, uint32_t>(integral_transform);
+			config::emplace_transform<[]{}, _ConfigToken, int64_t>(integral_transform);
+			config::emplace_transform<[]{}, _ConfigToken, uint64_t>(integral_transform);
 			
 			config::emplace_transform<[]{}, _ConfigToken, fake::generic<std::basic_string>>(
 				[](fake::pack_c auto _pack){
@@ -342,6 +397,7 @@ namespace fake::custom
 			
 			using list_g = fake::pattern_t<fake::list<int>>;
 			config::set_templace_trunc<[]{}, _ConfigToken, list_g, 0x1>();
+			config::set_template_alias<[]{}, _ConfigToken, list_g>(fake::view_v<"std::list">);
 			
 			using set_g = fake::pattern_t<fake::set<int>>;
 			config::set_templace_trunc<[]{}, _ConfigToken, set_g, 0x1>();
@@ -372,6 +428,61 @@ namespace fake::custom
 		}
 		
 	private:
+		template<
+			fake::view_c auto _entire,
+			fake::view_c auto _core,
+			fake::view_c auto _prefix,
+			fake::view_c auto _parameters,
+			fake::view_c auto _suffix
+		>
+		struct info_t final{
+			static constexpr auto entire = _entire;
+			static constexpr auto core = _core;
+			static constexpr auto prefix = _prefix;
+			static constexpr auto parameters = _parameters;
+			static constexpr auto suffix = _suffix;
+		};
+		
+		template<typename _ConfigToken, auto _footprint, typename _Type>
+		requires (fake::meta::array_c<decltype(_footprint)>)
+		inline static consteval auto info() noexcept{
+			using type_t = fake::bare_t<_Type>;
+			constexpr auto local = fake::take_v<configure.at<[]{}>(fake::pack_v<key<_ConfigToken>>)>;
+			if constexpr(local.template contains<[]{}>(fake::pack_v<type_t>)){
+				constexpr auto handler = fake::take_v<local.template at<[]{}>(fake::pack_v<type_t>)>;
+				constexpr fake::view_c auto origin = handler(fake::pack_v<_Type>);
+				constexpr auto result = split(origin);
+				return info_t<origin, type_name::core(result.prefix), result.prefix, result.infix, result.suffix>{};
+			}
+			else if constexpr(fake::array_c<type_t>){
+				constexpr auto array = array_name<_ConfigToken, _footprint, _Type>::split();
+				constexpr fake::view_c auto entire = array.prefix + array.suffix;
+				constexpr fake::view_c auto origin = array.prefix;
+				constexpr auto result = split(origin);
+				return info_t<entire, type_name::core(result.prefix), result.prefix, result.infix, array.suffix>{};
+			}
+			else if constexpr(fake::is_template_v<type_t> || is_std_array_v<type_t>){
+				using generic_t = fake::pattern_t<type_t>;
+				if constexpr(local.template contains<[]{}>(fake::pack_v<generic_t>)){
+					constexpr auto handler = fake::take_v<local.template at<[]{}>(fake::pack_v<generic_t>)>;
+					constexpr fake::view_c auto origin = handler(fake::pack_v<_Type>);
+					constexpr auto result = split(origin);
+					return info_t<origin, type_name::core(result.prefix), result.prefix, result.infix, result.suffix>{};
+				}
+				else{
+					constexpr fake::view_c auto origin = template_name<_ConfigToken, _footprint, _Type>::view();
+					constexpr auto result = split(origin);
+					return info_t<origin, type_name::core(result.prefix), result.prefix, result.infix, result.suffix>{};
+				}
+			}
+			else{
+				constexpr fake::view_c auto origin = fake::type_view(fake::pack_v<_Type>);
+				constexpr auto result = split(origin);
+				return info_t<origin, type_name::core(result.prefix), result.prefix, result.infix, result.suffix>{};
+			}
+		}
+		
+	private:
 		template<typename _ConfigToken, auto _footprint>
 		requires fake::meta::array_c<decltype(_footprint)>
 		friend struct detail::type_name::broker;
@@ -381,8 +492,12 @@ namespace fake::custom
 		inline static consteval auto method() noexcept{
 			using type_t = fake::bare_t<_Type>;
 			constexpr auto local = fake::take_v<configure.at<[]{}>(fake::pack_v<key<_ConfigToken>>)>;
-			if constexpr(local.template contains<[]{}>(fake::pack_v<type_t>))
+			if constexpr(local.template contains<[]{}>(fake::pack_v<type_t>)){
 				return fake::take_v<local.template at<[]{}>(fake::pack_v<type_t>)>(fake::pack_v<_Type>);
+			}
+			else if constexpr(fake::array_c<type_t>){
+				return array_name<_ConfigToken, _footprint, _Type>::view();
+			}
 			else if constexpr(fake::is_template_v<type_t> || is_std_array_v<type_t>){
 				using generic_t = fake::pattern_t<type_t>;
 				if constexpr(local.template contains<[]{}>(fake::pack_v<generic_t>))
@@ -390,8 +505,9 @@ namespace fake::custom
 				else
 					return template_name<_ConfigToken, _footprint, _Type>::view();
 			}
-			else
+			else{
 				return fake::type_view(fake::pack_v<_Type>);
+			}
 		}
 	};
 	
@@ -402,6 +518,7 @@ namespace fake::custom
 		concept invocable_c = requires{
 			requires fake::meta::array_c<decltype(_footprint)>;
 			custom::type_name::method<_ConfigToken, _footprint, _Type>();
+			custom::type_name::info<_ConfigToken, _footprint, _Type>();
 		};
 		
 		// currying broker. 
@@ -410,6 +527,12 @@ namespace fake::custom
 		struct broker
 		{
 		public:
+			template<typename _Type>
+			requires invocable_c<_ConfigToken, _footprint, _Type>
+			inline consteval auto info(fake::type_package<_Type>) const{
+				return custom::type_name::info<_ConfigToken, _footprint, _Type>();
+			}
+			
 			template<typename _Type>
 			requires invocable_c<_ConfigToken, _footprint, _Type>
 			inline consteval auto operator()(fake::type_package<_Type>) const{
@@ -427,6 +550,11 @@ namespace fake
 	template<typename _ConfigToken, auto _footprint = custom::type_name::config::footprint<_ConfigToken>([]{})>
 	requires fake::meta::array_c<decltype(_footprint)>
 	inline constexpr custom::detail::type_name::broker<_ConfigToken, _footprint> type_name;
+	
+	// gcc bug workaround utility. 
+	template<auto _vest, typename _ConfigToken, auto _fp = custom::type_name::config::footprint<_ConfigToken>(_vest)>
+	requires fake::meta::array_c<decltype(_fp)>
+	inline constexpr auto type_name_w = fake::type_name<_ConfigToken, _fp>;
 	
 }
 

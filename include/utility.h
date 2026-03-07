@@ -13,15 +13,228 @@
 #include "push.h"
 
 #include <utility>
+#include <ranges>
+#include <charconv>
 #include <bit>
 #include <tuple>
 #include <atomic>
+#include <chrono>
 #include <stdexcept>
 
+#include "patterns.h"
 #include "view.h"
 
 namespace fake
 {
+	
+	namespace detail::utility
+	{
+		
+		struct undefine final{};
+		
+		template<typename _Type>
+		concept cast_c = std::is_integral_v<_Type> || std::is_floating_point_v<_Type>;
+		
+		template<typename _Type, auto _config>
+		concept config_c = std::is_floating_point_v<_Type> && fake::like<decltype(_config), std::chars_format> ||
+			std::is_integral_v<_Type> &&
+				fake::like<decltype(_config), int> &&
+				requires{requires (2 <= _config && _config <= 36);} ||
+			fake::like<decltype(_config), undefine>;
+		
+		template<typename _Type, auto _config, auto _precision>
+		concept precision_c = config_c<_Type, _config> && fake::like<decltype(_precision), undefine> || (
+				fake::like<decltype(_config), undefine> == false &&
+				std::is_floating_point_v<_Type> &&
+				fake::like<decltype(_precision), int> &&
+				requires{requires (0x0 <= _precision && _precision <= 0x8000);}
+			);
+		
+		template<std::size_t _size>
+		inline std::array<char, _size>& format_buffer() noexcept{
+			static thread_local std::array<char, _size> buffer{};
+			return buffer;
+		}
+		
+		inline consteval bool format_fix(undefine _config) noexcept{
+			return false;
+		}
+		
+		inline consteval bool format_fix(std::chars_format _config) noexcept{
+			return (_config & std::chars_format::fixed) != std::chars_format{} &&
+				(_config & std::chars_format::scientific) == std::chars_format{};
+		}
+		
+		inline constexpr std::string_view trim(std::string_view _e) noexcept{
+			constexpr auto is_space = [](char _lhs){
+				return ("\t\n\v\f\r " | std::views::drop_while([_lhs](char _rhs){return _lhs != _rhs;})).size();
+			};
+			
+			while(_e.size() && is_space(_e.front()))
+				_e.remove_prefix(0x1);
+			
+			while(_e.size() && is_space(_e.back()))
+				_e.remove_suffix(0x1);
+			
+			return _e;
+		}
+		
+	}
+	
+	template<detail::utility::cast_c _Type, auto _config = detail::utility::undefine{}>
+	inline constexpr std::optional<_Type> cast(std::string_view _e) noexcept
+	requires detail::utility::config_c<_Type, _config> {
+		constexpr auto config = []{
+			if constexpr(fake::like<decltype(_config), detail::utility::undefine>)
+				if constexpr(std::is_floating_point_v<_Type>)
+					return std::chars_format::general;
+				else
+					return 10;
+			else
+				return _config;
+		}();
+		
+		_e = detail::utility::trim(_e);
+		
+		_Type buffer;
+		const std::from_chars_result result = std::from_chars(_e.begin(), _e.end(), buffer, config);
+		
+		if(result.ec != std::errc{}) [[unlikely]]
+			return {};
+		
+		if(result.ptr != _e.end()) [[unlikely]]
+			return {};
+		
+		return buffer;
+	}
+	
+	template<auto _config = detail::utility::undefine{}, auto _precision = detail::utility::undefine{}>
+	inline constexpr std::string cast(detail::utility::cast_c auto _e)
+	requires detail::utility::precision_c<decltype(_e), _config, _precision> {
+		constexpr std::size_t size = []{
+			if constexpr(fake::like<decltype(_precision), detail::utility::undefine> == false)
+				return std::max<std::size_t>(0x4000, std::bit_ceil<std::size_t>(_precision << 0x1));
+			else if constexpr(detail::utility::format_fix(_config))
+				return 0x4000;
+			else
+				return 0x40;
+		}();
+		
+		auto &buffer = detail::utility::format_buffer<size>();
+		
+		std::to_chars_result result;
+		
+		if constexpr(fake::like<decltype(_config), detail::utility::undefine>)
+			result = std::to_chars(buffer.begin(), buffer.end(), _e);
+		else if constexpr(fake::like<decltype(_precision), detail::utility::undefine>)
+			result = std::to_chars(buffer.begin(), buffer.end(), _e, _config);
+		else
+			result = std::to_chars(buffer.begin(), buffer.end(), _e, _config, _precision);
+		
+		if(result.ec != std::errc{}) [[unlikely]]
+			return {};
+		
+		return {buffer.begin(), result.ptr};
+	}
+	
+	template<>
+	inline constexpr std::optional<char> cast<char>(std::string_view _e) noexcept{
+		_e = detail::utility::trim(_e);
+		
+		if(_e.size() > 0x2) [[unlikely]]
+			return {};
+		
+		if(_e.size() == 0x1 && _e.front() == '\\') [[unlikely]]
+			return {};
+		
+		if(_e.size() == 0x2 && _e.front() != '\\') [[unlikely]]
+			return {};
+		
+		if(const char e = _e.back(); _e.size() == 0x1) [[likely]]
+			return e;
+		else [[unlikely]]
+			switch(e){
+				case '0': return '\0';
+				case 'b': return '\b';
+				case 'e': return '\e';
+				case 'f': return '\f';
+				case 'r': return '\r';
+				case 't': return '\t';
+				case 'n': return '\n';
+				case 'v': return '\v';
+				default: return e;
+			}
+	}
+	
+	inline constexpr std::string cast(char _e){
+		switch(_e){
+			case '\0': return "\\0";
+			case '\b': return "\\b";
+			case '\e': return "\\e";
+			case '\f': return "\\f";
+			case '\r': return "\\r";
+			case '\t': return "\\t";
+			case '\n': return "\\n";
+			case '\v': return "\\v";
+			case '\\': return "\\\\";
+			case '\'': return "\\\'";
+			case '\"': return "\\\"";
+			default: return {_e};
+		}
+	}
+	
+	template<>
+	inline constexpr std::optional<char8_t> cast<char8_t>(std::string_view _e) noexcept{
+		if(const auto opt = fake::cast<char>(_e)) [[likely]]
+			return char8_t(opt.value());
+		return {};
+	}
+	
+	inline constexpr std::string cast(char8_t _e){
+		return fake::cast(char(_e));
+	}
+	
+	template<>
+	inline constexpr std::optional<bool> cast<bool>(std::string_view _e) noexcept{
+		_e = detail::utility::trim(_e);
+		if(_e == "true")
+			return true;
+		if(_e == "false")
+			return false;
+		return {};
+	}
+	
+	inline constexpr std::string cast(bool _e){
+		return _e ? "true" : "false";
+	}
+	
+	template<fake::trait_c<std::chrono::duration> _Duration>
+	requires std::same_as<_Duration, std::remove_cvref_t<_Duration>>
+	inline constexpr std::optional<_Duration> cast(std::string_view _e) noexcept{
+		if(const auto rep = fake::cast<typename _Duration::rep>(_e))
+			return _Duration{rep.value()};
+		return {};
+	}
+	
+	template<fake::trait_c<std::chrono::duration> _Duration>
+	requires std::same_as<_Duration, std::remove_cvref_t<_Duration>>
+	inline constexpr std::string cast(_Duration _e){
+		return fake::cast(_e.count());
+	}
+	
+	template<fake::trait_c<std::chrono::time_point> _TimePoint>
+	requires std::same_as<_TimePoint, std::remove_cvref_t<_TimePoint>>
+	inline constexpr std::optional<_TimePoint> cast(std::string_view _e) noexcept{
+		if(const auto rep = fake::cast<typename _TimePoint::duration::rep>(_e))
+			return _TimePoint{typename _TimePoint::duration{rep.value()}};
+		return {};
+	}
+	
+	template<fake::trait_c<std::chrono::time_point> _TimePoint>
+	requires std::same_as<_TimePoint, std::remove_cvref_t<_TimePoint>>
+	inline constexpr std::string cast(_TimePoint _e){
+		return fake::cast(_e.time_since_epoch().count());
+	}
 	
 	namespace exception
 	{
@@ -39,7 +252,7 @@ namespace fake
 		public:
 			template<std::same_as<std::basic_istream<char>> _Stream>
 			inline static mismatch make(fake::view_c auto _message, _Stream &_is){
-				const std::streampos pos = _is.tellg();
+				const std::streampos pos = _is.rdbuf()->pubseekoff(0x0, std::ios_base::cur, std::ios_base::in);
 				_is.seekg(0);
 				std::size_t line = 1, row = 1;
 				for(std::streampos i = 0; i < pos; i += 1)
@@ -78,7 +291,7 @@ namespace fake
 				if(_is.good() == false)
 					return false;
 				
-				const auto pos = _is.tellg();
+				const auto pos = _is.rdbuf()->pubseekoff(0x0, std::ios_base::cur, std::ios_base::in);
 				
 				constexpr std::string_view space{"\t\n\v\f\r "};
 				while(_is.good() && space.find_first_of(_is.peek()) != std::string_view::npos)
@@ -193,7 +406,10 @@ namespace fake
 			constexpr fake::view_c auto back = std::conditional_t<b, decltype(bv), fake::view_t<"">>{};
 			constexpr fake::view_c auto reset = std::conditional_t<f || b, fake::view_t<"">, fake::view_t<"0">>{};
 			
-			return "\e["_v + front + semi + back + reset + "m"_v;
+			if constexpr(_front == colors::undefine && _back == colors::undefine)
+				return ""_v;
+			else
+				return "\e["_v + front + semi + back + reset + "m"_v;
 		}
 		
 		consteval auto clear() noexcept{return fake::view_v<"\e[0m">;}
@@ -206,6 +422,14 @@ namespace fake
 			constexpr stream(_Type &&_data): data(std::forward<_Type>(_data)){}
 			stream(const stream&) = delete;
 			stream& operator=(const stream&) = delete;
+			
+		private:
+			static consteval auto clear() noexcept{
+				if constexpr(_front == colors::undefine && _back == colors::undefine)
+					return fake::view_v<"">;
+				else
+					return fake::view_v<"\e[0m">;
+			}
 			
 		private:
 			template<std::same_as<std::basic_ostream<char>> _Stream>
@@ -311,6 +535,7 @@ namespace fake
 	
 	struct signet_t final : std::array<std::size_t, std::tuple_size_v<decltype(detail::signet::salt)>>
 	{
+		using array_type = std::array<std::size_t, std::tuple_size_v<decltype(detail::signet::salt)>>;
 		static constexpr std::size_t size_value = std::tuple_size_v<decltype(detail::signet::salt)>;
 	};
 	
@@ -338,6 +563,36 @@ namespace fake
 	
 	template<fake::view_c auto _view>
 	inline constexpr signet_t signet_v = signet(_view);
+	
+	template<std::invocable<> _Lambda>
+	struct scope_guard final{
+		[[nodiscard]] scope_guard(_Lambda &&_lambda): lambda(std::forward<_Lambda>(_lambda)){}
+		[[nodiscard]] scope_guard(scope_guard&&) = default;
+		~scope_guard(){if(intact) lambda();}
+		
+	private:
+		scope_guard(const scope_guard&) = delete;
+		scope_guard& operator=(const scope_guard&) = delete;
+		scope_guard& operator=(scope_guard&&) = delete;
+		
+	private:
+		fake::patterns::intact<fake::patterns::intact_e::moveonly> intact;
+		std::remove_cvref_t<_Lambda> lambda;
+	};
+	
+	namespace detail::global
+	{
+		
+		template<typename _Derive, auto _lambda>
+		using base = fake::patterns::registry<_Derive, _lambda>;
+		
+		template<auto _lambda>
+		struct invoke final : base<invoke<_lambda>, _lambda>{};
+		
+	}
+	
+	template<auto _lambda>
+	inline constexpr fake::detail::global::invoke<_lambda> global;
 	
 }
 

@@ -1,497 +1,173 @@
-# `fake` C++ metaprogramming library
+# `fake` – metaprogramming library / 元编程库
 
-## ***brief:***
+[![License: WTFPL](https://img.shields.io/badge/License-WTFPL-brightgreen.svg)](fake/blob/master/LICENSE)
 
-`fake` provides a set of tools of `metaprogramming`, `stateful metaprogramming` and `concurrency adapter`
+`fake` is a header‑only library for C++23 that provides a rich set of tools for compile‑time programming, asynchronous DAG execution, type reflection, formatting, and more.
 
-`fake` is a header-only library
+`fake` 是一个仅头文件的 C++23 库，提供了丰富的编译期编程工具，包括异步 DAG 执行、类型反射、格式化等功能。
 
-## ***简介:***
+## Features / 特性
 
-`fake` 提供了一套 `元编程`, `有状态元编程` 和 `并发适配器` 工具
+**`acyclic.h`**
 
-`fake` 是一个纯头文件库
+>Build and execute asynchronous directed acyclic graphs (DAGs) using C++20 coroutines. Compile‑time topology checks, token‑based scheduling, exception handling, and aspect‑oriented observation.
+>
+>使用 C++20 协程构建和执行异步有向无环图（DAG）。编译期拓扑检查、基于 token 的调度、异常处理和面向切面观测。
 
----
+**`delegate.h`**
 
-## ***compile:***
+>Versatile multicast/singlecast delegates with static or runtime signatures. Parent/child composition, and compile‑time aspect injection.
+>
+>多功能多播/单播委托，支持静态或运行时签名。父子组合以及编译期切面注入。
 
-all codes passed the compilation test on `gcc-12.2.0`.
+**`detect.h`**
 
-## ***编译:***
-
-所有代码已于 `gcc-12.2.0` 通过编译测试。
+>Type detection and transformation framework using compile‑time predicates and combinators (`&&`, `||`, `<<=`, etc.). Includes a huge collection of predefined detectors and transformations.
+>
+>使用编译期谓词和组合符（`&&`、`||`、`<<=` 等）进行类型检测和变换的框架。包含大量预定义的探测器和变换。
 
----
+**`enum_info.h`**
 
-### compile parameters
+>Bidirectional mapping between enumeration values and their names at compile time.
+>
+>编译期枚举值与名称的双向映射。
 
-### 编译参数
+**`flat.h`**
 
-```sh
--std=c++20 -iquote "fake/include"
-```
+>Compile‑time heterogeneous containers: `mate` (pair‑like), `flat` (indexed tuple), `query` (key‑value map). Optimized storage with empty‑base and static `mezz` keys.
+>
+>编译期异构容器：`mate`（类似 pair）、`flat`（索引元组）、`query`（键值映射）。通过空基类和静态 `mezz` 键优化存储。
 
-- *the `fake/include` is the directory of the headers in the `repository` you cloned.*
-- *`fake/include` 是 `仓库` 克隆目录内的头文件所在目录。*
+**`functor_info.h`**
 
----
+>Static reflection for callable types (lambdas, `std::bind`, member function pointers, free functions, …).
+>
+>可调用类型（lambda、`std::bind`、成员函数指针、自由函数等）的静态反射。
 
-#### ***example:***
+**`is_valid.h`**
 
-`compile and launch the "demo/io/io.cpp"`
+>Basic metaprogramming utilities: `null_t`, `pack_t`/`pazz_t`, `mezz_t`, `take_t`, pattern holders (`generic`, `array_like`, `view_like`), and more.
+>
+>基础元编程工具：`null_t`、`pack_t`/`pazz_t`、`mezz_t`、`take_t`、模式持有者（`generic`、`array_like`、`view_like`）等。
 
-#### ***示例:***
+**`patterns.h`**
 
-`编译并运行 "demo/io/io.cpp"`
+>Design patterns for compile‑time: singleton, gueston (cross‑binary reference), intact (move/copy tracking), registry (compile‑time registration), builder (named parameters).
+>
+>编译期设计模式：单例（singleton）、跨二进制引用（gueston）、移动/拷贝追踪（intact）、编译期注册（registry）、具名参数构建器（builder）。
 
-```sh
-cd ~
-mkdir my_workspace
-cd my_workspace
-git clone https://github.com/fakeloop/fake
-cd fake/demo/io
-g++ io.cpp -std=c++20 -iquote "../../include/" -o io.out
-./io.out
-```
+**`traits.h`**
 
-- ***"demo/io/io.cpp"***
+>Advanced type traits: pointer‑sized integers, reference modifications, common base/derive, variant/tuple introspection, `mimic_t`/`gemma_t`, expressive concepts (`hold`/`like`/`meets`), and more.
+>
+>高级类型 traits：指针大小的整数、引用修改、公共基类/派生类、variant/tuple 内省、`mimic_t`/`gemma_t`、表达性概念（`hold`/`like`/`meets`）等。
 
-```c++
-#include <iostream>
-#include <vector>
-#include <unordered_set>
-#include <unordered_map>
+**`tuple.h`**
 
-#include "type_format.h"
+>Metaprogramming utilities for `std::tuple`: search, filter, transform, concatenate, zip, fold, and more.
+>
+>用于 `std::tuple` 的元编程工具：搜索、过滤、变换、拼接、压缩、折叠等。
 
-struct foo{
-    int x;
-    double y;
-    std::unordered_set<int> s;
-    std::unordered_map<std::string, int> m;
-};
+**`type_format.h`**
 
-template<typename _Type>
-struct bar{
-    std::tuple<foo, std::string, std::string> t;
-    std::vector<std::string_view> v;
-    _Type z;
-    _Type w;
-    char s[2] = "S";
-    char n[2] = "N";
-    char e[0];
-    char m[3] = "NN";
-    char l[0];
-};
+>Compile‑time configurable (de)serialization for arbitrary C++ types. Predefined formatters: `fancy`, `pretty`, `plain`, `json`, `html`, `brief`. Extensible via stateful metaprogramming.
+>
+>编译期可配置的（反）序列化工具，适用于任意 C++ 类型。预定义的格式化器：`fancy`、`pretty`、`plain`、`json`、`html`、`brief`。可通过有状态元编程扩展。
 
-struct foobar{
-public:
-    template<std::convertible_to<bar<std::string>> _Cookie>
-    foobar(_Cookie &&_cookie): cookie(std::forward<_Cookie>(_cookie)){}
-    
-private:
-    int password = 114514;
-    std::string secret = "embarrassing fact";
-    bar<std::string> cookie;
-};
+**`utility.h`**
 
-// steal private members. 
-template<>
-struct fake::tool::steal<[]{}, fake::tool::adaptor<foobar>, &foobar::password, &foobar::secret, &foobar::cookie>{
-    // register meta-implementations for token-based-cpo 'fake::for_each<fake::cpo::format<...>>' at compile-time. 
-    using token = fake::cpo::format<fake::io::token::pretty>;
-    static_assert(fake::custom::for_each::config::emplace_visitor<[]{}, token, steal>());
-};
+>Runtime utilities: string/number conversion, stream matching, terminal colors, hexadecimal conversion, compile‑time string signatures (`signet`), scope guards.
+>
+>运行时实用工具：字符串/数字转换、流匹配、终端颜色、十六进制转换、编译期字符串签名（`signet`）、作用域守卫。
 
-int main(int _argc, char* _argv[])
-{
-    using namespace std::string_literals;
-    
-    bar<std::string> var{
-        {{114, 514.0, {1919, 893}, {{"ya", 8}, {"ju", 10}}}, "MGR", "YUH"},
-        {"SZ", "JOKER"},
-        "DIYUSI"s,
-        "NEL"s
-    };
-    
-    foobar lost_owner{std::move(var)};
-    
-    std::cout << fake::io::pretty<>(lost_owner) << std::endl;
-}
+**`view.h`**
 
-```
+>Compile‑time string view with full `constexpr` support. String manipulation (find, replace, compare, hashing) entirely at compile time. Also provides `type_view`, `value_view`, `self_view`.
+>
+>完全支持 `constexpr` 的编译期字符串视图。完全在编译期完成的字符串操作（查找、替换、比较、哈希）。还提供 `type_view`、`value_view`、`self_view`。
 
-***colorized output in terminal:***
+## Requirements / 要求
 
-***着色后的控制台输出:***
+- Compiler / 编译器:
+  >GCC 14.2.0 or later (required for full C++23 support, especially `consteval local static`).
+  >GCC 14.2.0 或更高版本（需要完整支持 C++23，特别是 `consteval local static`）。
+- Standard / 标准:
+  >C++23 (some parts use C++20 coroutines).
+  >C++23（部分功能使用了 C++20 协程）。
 
-![output terminal](https://raw.githubusercontent.com/fakeloop/fake/master/demo/io/output.png)
+The library is header‑only; no linking required except for threading support (if you use `acyclic.h` with multi‑threaded schedulers, you may need `-pthread`).
 
----
+纯头文件库；无需链接，除非使用多线程调度器（例如 `acyclic.h` 可能需要 `-pthread`）。
 
-***warning:***
+## Quick Start / 快速开始
 
-the `stateful metaprogramming` is some sort of **black magic**, which has always been ***controversial***.
+1. **Clone the repository** / **克隆仓库**
 
-The C++ standard may drop support for this feature in the future, although the issue is currently in an open state.
+    ```sh
+    git clone https://github.com/fakeloop/fake.git
+    ```
 
-the following headers contain **black magic**: `include/type_map.h` `include/meta.h` `include/type_name.h` `include/type_info.h` `include/type_stream.h` `include/type_format.h`.
+2. **Include the headers** / **包含头文件**
+    Add `fake/include/` to your compiler’s include path. Then include the desired header, e.g.:
+    将 `fake/include/` 添加到编译器的包含路径中。然后包含所需的头文件，例如：
 
-***警告:***
+    ```cpp
+    #include "type_format.h"
+    ```
 
-`有状态元编程` 是一种 **黑魔法**, 一直以来都存在 ***争议***。
+3. **Try the demo** / **尝试示例**
+    The repository contains a demo under `fake/demo/io/`. Build it with the provided scripts:
+    仓库中的 `fake/demo/io/` 目录下有一个演示程序。使用提供的脚本编译：
 
-C++ 标准可能会在未来放弃对该特性的支持, 虽然目前该议题处于开放状态。
+    **linux:**
 
-这些头文件包含 **黑魔法**: `include/type_map.h` `include/meta.h` `include/type_name.h` `include/type_info.h` `include/type_stream.h` `include/type_format.h`。
+    ```sh
+    cd fake/demo/io
+    ./make.sh
+    ./build/demo.out
+    ```
 
----
+    **windows:**
 
-## `metaprogramming`
+    ```bat
+    cd fake/demo/io
+    make.bat
+    build/demo.exe
+    ```
 
-## `元编程`
+    The demo prints a colored representation of a complex object and demonstrates round‑trip parsing.
+    该演示会打印一个复杂对象的彩色表示，并展示往返解析。
 
-***version:***
+    [![output terminal](https://raw.githubusercontent.com/fakeloop/fake/master/demo/io/output.png)](fake/blob/master/demo/io/output.png)
 
-the `metaprogramming` subsystem of `fake` is interface-stable currently.
+4. **Use in your project** / **在你的项目中使用**
+    Just include the headers and start using the features. All configuration is done at compile time.
+    只需包含头文件即可使用所有功能。所有配置都在编译期完成。
 
-***版本:***
+## Documentation / 文档
 
-`fake` `元编程` 子系统目前接口稳定。
+Each header comes with extensive comments and usage examples. The following summary links to the corresponding documentation sections (see the source files for details).
 
----
+每个头文件都附有详细的注释和使用示例。以下链接指向对应的文档章节（详细内容请查看源文件）。
 
-<!---- >
+- `acyclic.h` [Chinese](fake/blob/master/docs/acyclic-cn.md) – [English](fake/blob/master/docs/acyclic-en.md)
+- `delegate.h` [Chinese](fake/blob/master/docs/delegate-cn.md) – [English](fake/blob/master/docs/delegate-en.md)
+- `detect.h` [Chinese](fake/blob/master/docs/detect-cn.md) – [English](fake/blob/master/docs/detect-en.md)
+- `enum_info.h` [Chinese](fake/blob/master/docs/enum_info-cn.md) – [English](fake/blob/master/docs/enum_info-en.md)
+- `flat.h` [Chinese](fake/blob/master/docs/flat-cn.md) – [English](fake/blob/master/docs/flat-en.md)
+- `functor_info.h` [Chinese](fake/blob/master/docs/functor_info-cn.md) – [English](fake/blob/master/docs/functor_info-en.md)
+- `is_valid.h` [Chinese](fake/blob/master/docs/is_valid-cn.md) – [English](fake/blob/master/docs/is_valid-en.md)
+- `patterns.h` [Chinese](fake/blob/master/docs/patterns-cn.md) – [English](fake/blob/master/docs/patterns-en.md)
+- `traits.h` [Chinese](fake/blob/master/docs/traits-cn.md) – [English](fake/blob/master/docs/traits-en.md)
+- `tuple.h` [Chinese](fake/blob/master/docs/tuple-cn.md) – [English](fake/blob/master/docs/tuple-en.md)
+- `type_format.h` [Chinese](fake/blob/master/docs/type_format-cn.md) – [English](fake/blob/master/docs/type_format-en.md)
+- `utility.h` [Chinese](fake/blob/master/docs/utility-cn.md) – [English](fake/blob/master/docs/utility-en.md)
+- `view.h` [Chinese](fake/blob/master/docs/view-cn.md) – [English](fake/blob/master/docs/view-en.md)
 
-### `"is_valid.h"`
+## License / 许可证
 
----
+This library is provided under the **WTFPL**.
+You can copy, modify, distribute, and use the code for any purpose, without any warranty. See the [LICENSE](fake/blob/master/LICENSE) for details.
 
-### `"traits.h"`
-
----
-
-<!---->
-
-### `"symbol.h"`
-
-***brief:***
-
-compile time convert `type` to `constexpr std::string_view` or `constexpr fake::symbol::view`
-
-***简介:***
-
-编译期将 `类型` 转换为 `constexpr std::string_view` 或 `constexpr fake::symbol::view`
-
-***usage:***
-
-***使用方法:***
-
-```c++
-#include <iostream>
-#include "symbol.h"
-
-int main(int _argc, char* _argv[]){
-    std::cout << fake::symbol::string_view<decltype(main)>() << std::endl;
-    return 0;
-}
-```
-
-***output:***
-
-***输出:***
-
-```plain
-int(int, char**)
-```
-
----
-
-<!---- >
-
-### `"functor_info.h"`
-
----
-
-<!---->
-
-### `"tuple.h"`
-
-***brief:***
-
-compile time `lambda` functor algorithm tool kit for `std::tuple`
-
-***简介:***
-
-用于 `std::tuple` 的 `lambda` 算子编译期算法工具集
-
-***usage:***
-
-***使用方法:***
-
-```c++
-#include "tuple.h"
-```
-
-***example:***
-
-*demo see `"demo/tuple/tuple.cpp"`*
-
-***示例:***
-
-*示例见 `"demo/tuple/tuple.cpp"`*
-
----
-
-### `"view.h"`
-
-***brief:***
-
-`std::view` provides a pure compile time string template implementation with literals
-
-***简介:***
-
-`std::view` 提供了一个带字面量的纯编译期字符串模板实现
-
-***usage:***
-
-***使用方法:***
-
-```c++
-#include <iostream>
-#include "view.h"
-
-int main(int _argc, char* _argv[]){
-    using namespace fake::literals;
-    constexpr fake::view origin = "hello view"_v;
-    constexpr auto dupli = decltype(origin){}; // make a new copy just from the type. 
-    constexpr auto& data = dupli.substr<6>().data();
-    static_assert(std::same_as<const char(&)[5], decltype(data)>);
-    std::cout << data << std::endl;
-    return 0;
-}
-```
-
-***output:***
-
-***输出:***
-
-```plain
-view
-```
-
-***example:***
-
-*demo see `"demo/view/view.cpp"`*
-
-***示例:***
-
-*示例见 `"demo/view/view.cpp"`*
-
----
-
-## `stateful metaprogramming`
-
-## `有状态元编程`
-
-***version:***
-
-the `stateful metaprogramming` subsystem of `fake` is interface-stable currently.
-
-***版本:***
-
-`fake` `有状态元编程` 子系统目前接口稳定。
-
----
-
-### `"meta.h"`
-
-***brief:***
-
-compile time variant and containers implemented via the **black magic**
-
-please use only after fully understanding the risks involved
-
-***简介:***
-
-通过**黑魔法**实现的编译期变量与容器
-
-请在使用前充分了解相关风险
-
-***usage:***
-
-***使用方法:***
-
-```c++
-#include "meta.h"
-
-int main(int _argc, char* _argv[])
-{
-    constexpr fake::meta::unordered_map um = []{};
-    
-    struct mgr{}; struct yuh{};
-    struct diyusi{}; struct nel{};
-    struct nyn{}; struct icg{};
-    struct sz{}; struct joker{};
-    
-    um.emplace<[]{}>(fake::pack_v<mgr>, fake::pack_v<yuh>);
-    um.emplace<[]{}>(fake::pack_v<diyusi>, fake::pack_v<nel>);
-    um.emplace<[]{}>(fake::pack_v<nyn>, fake::pack_v<icg>);
-    um.emplace<[]{}>(fake::pack_v<sz>, fake::pack_v<joker>);
-    
-    static_assert(
-        std::is_same_v<
-            decltype(um.data([]{})),
-            fake::meta::array<
-                std::pair<mgr, yuh>,
-                std::pair<diyusi, nel>,
-                std::pair<nyn, icg>,
-                std::pair<sz, joker>
-            >
-        >
-    );
-    
-    struct kofji{};
-    
-    um.emplace<[]{}>(fake::pack_v<nyn>, fake::pack_v<kofji>);
-    
-    static_assert(
-        std::is_same_v<
-            decltype(um.data([]{})),
-            fake::meta::array<
-                std::pair<mgr, yuh>,
-                std::pair<diyusi, nel>,
-                std::pair<nyn, kofji>,
-                std::pair<sz, joker>
-            >
-        >
-    );
-    
-    return 0;
-}
-```
-
-**Note: The compiler would only do one AST generation for a function or type, so be careful when writing some compile-time functions, as well as when invoking them for multiple times. If you expect to run a compile-time program, you should always write the compile-time code in some functions like `template<auto> auto demo()`, and invoke them by writing `demo<[]{}>()`. The function you invoked each time would be a different specialization of the template function `demo()`, since every `[]{}` has a different type. The compiler could never skip the AST generation process of the function `demo()`, since the return type `auto` could only be deduced by compiling the definition of the function body.**
-
-*The template functions and template member functions defined in this header `"meta.h"` may take a dummy parameter `[]{}` in order to force the compiler to generate a new specialization. The template parameter `[]{}` is necessary for `gcc-12.x.x` when invoking these template functions in another template context. It is usually the first parameter of the template, taking something like `template<auto = refresh(tool::token{}, key{}), ...>` by default.*
-
-**注意: 编译器只会为某个函数或类型进行一次语法树生成, 因此在编写并多次调用编译期函数时请小心。如果您希望运行一个编译期程序, 您永远应该在类似 `template<auto> auto demo()` 的函数内部编写这些编译期代码, 并且通过 `demo<[]{}>()` 调用它们。每次您所调用的都将是 `demo()` 模板函数的一个不同特化, 这是由于每个 `[]{}` 都拥有不同的类型。编译器永远无法跳过 `demo()` 函数的语法树生成过程, 因为要推导出返回值类型 `auto` 就必须编译函数体定义。**
-
-*本头文件 `"meta.h"` 中定义的模板函数和模板成员函数可以接收一个伪参数 `[]{}`, 目的是强制编译器重新进行特化。如要在其他模板上下文中调用这些模板函数, 在使用 `gcc-12.x.x` 时模板参数 `[]{}` 是必须的。其通常为首个模板参数, 默认接收 `template<auto = refresh(tool::token{}, key{}), ...>`。*
-
-***example:***
-
-*demo see `"demo/meta/"` `"demo/format/"` `"demo/print/"`*
-
-`"demo/format/"` and `"demo/print/"` are comprehensive examples to demonstrate the generic techniques of the `stateful metaprogramming`
-
-***示例:***
-
-*示例见 `"demo/meta/"` `"demo/format/"` `"demo/print/"`*
-
-`"demo/format/"` 和 `"demo/print/"` 是用于演示 `有状态元编程` 通用技巧的综合示例
-
-***compile:***
-
-***编译:***
-
-`"demo/meta/":`
-
-```sh
-g++ meta.cpp -o meta.out -iquote "../../include" -std=c++20 -Wno-non-template-friend
-```
-
-`"demo/format/":`
-
-```sh
-./make.sh
-```
-
-`"demo/print/":`
-
-```sh
-./make.sh
-```
-
----
-
-### `"type_format.h"`
-
-***brief:***
-
-the `fake::io` is a customizable `object formatter` with several preset format schemes `fake::io::plain<>` `fake::io::pretty<>` `fake::io::json<>` `fake::io::html<>`
-
-the `standard template container libraries` should always be included before the `"type_format.h"` library
-
-the `standard template container libraries` are `<vector>` `<list>` `<forward_list>` `<deque>` `<set>` `<unordered_set>` `<map>` `<unordered_map>`
-
-***简介:***
-
-`fake::io` 是一个可定制的 `对象格式化器`, 其提供了一些预设格式方案 `fake::io::plain<>` `fake::io::pretty<>` `fake::io::json<>` `fake::io::html<>`
-
-应确保在包含 `标准模板容器库` 后再包含 `"type_format.h"` 库
-
-`标准模板容器库` 包括 `<vector>` `<list>` `<forward_list>` `<deque>` `<set>` `<unordered_set>` `<map>` `<unordered_map>`
-
-***usage:***
-
-***使用方法:***
-
-```c++
-// #include <vector>
-// #include <list>
-// ...
-
-#include "type_format.h"
-```
-
-***example:***
-
-*demo see `"demo/io/"`*
-
-***示例:***
-
-*示例见 `"demo/io/"`*
-
----
-
-## `concurrency adapter`
-
-## `并发适配器`
-
-***version:***
-
-the `concurrency adapter` subsystem of `fake` is **NOT** interface-stable yet.
-
-***版本:***
-
-`fake` `并发适配器` 子系统目前接口 **尚未** 稳定。
-
----
-
-### `"acyclic.h"`
-
-***brief:***
-
-compile time `directed acyclic graph` execution flow adapter, adapting delegations by `compile time type representation`
-
-***简介:***
-
-编译期 `有向无环图` 执行流适配器, 依照 `编译期类型表示` 适配委托过程
-
-***usage:***
-
-***使用方法:***
-
-```c++
-#include "acyclic.h"
-```
-
-***example:***
-
-*demo see `"demo/acyclic/"`*
-
-***示例:***
-
-*示例见 `"demo/acyclic/"`*
+本库使用 **WTFPL** 许可证。
+你可以复制、修改、分发和使用本代码用于任何目的，无任何担保。详见 [LICENSE](fake/blob/master/LICENSE)。

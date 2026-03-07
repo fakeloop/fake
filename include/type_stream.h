@@ -15,8 +15,24 @@
 #include <iomanip>
 #include <ostream>
 
+#include "flat.h"
 #include "type_name.h"
 #include "type_info.h"
+
+namespace fake::io
+{
+	
+	template<fake::pack_c _Init = fake::pack_t<fake::null_t>, fake::mezz_c _Transform = fake::mezz_t<true>>
+	using info = fake::query<
+		fake::mate<fake::view_t<"init">, _Init>,
+		fake::mate<fake::view_t<"transform">, _Transform>
+	>;
+	
+	template<typename _Type>
+	concept info_c = fake::query_c<_Type> &&
+		std::same_as<typename _Type::first_types, fake::flat<fake::view_t<"init">, fake::view_t<"transform">>>;
+	
+}
 
 namespace fake::custom
 {
@@ -42,9 +58,9 @@ namespace fake::custom
 	public:
 		template<template<typename, auto, typename, typename> typename _Template>
 		struct adaptor final{
-			template<typename _ConfigToken, auto _footprint, typename _Type, typename _Init = const fake::null_t>
-			requires fake::meta::array_c<decltype(_footprint)> || std::same_as<decltype(_footprint), unsigned long long>
-			using type = _Template<_ConfigToken, _footprint, _Type, _Init>;
+			template<typename _ConfigToken, auto _footprint, typename _Type, fake::io::info_c _Info = fake::io::info<>>
+			requires fake::like<decltype(_footprint), fake::signet_t>
+			using type = _Template<_ConfigToken, _footprint, _Type, _Info>;
 		};
 		
 		template<typename>
@@ -154,7 +170,12 @@ namespace fake::custom
 		requires fake::meta::array_c<decltype(_footprint)>
 		friend struct detail::type_stream::broker;
 		
-		template<typename _ConfigToken, auto _footprint, typename _Type>
+		template<fake::mezz_c _Transform = fake::mezz_t<true>>
+		using info = fake::query<
+			fake::mate<fake::view_t<"transform">, _Transform>
+		>;
+		
+		template<typename _ConfigToken, auto _footprint, fake::query_c _Info, typename _Type>
 		requires
 			fake::meta::array_c<decltype(_footprint)> &&
 			requires(fake::take_t<configure.at<[]{}>(fake::pack_v<key<_ConfigToken>>)> _local){
@@ -163,12 +184,14 @@ namespace fake::custom
 		inline static constexpr auto method(_Type &&_e){
 			constexpr fake::take_t<configure.at<[]{}>(fake::pack_v<key<_ConfigToken>>)> local;
 			using stream_t = fake::take_t<local.template at<[]{}>(fake::pack_v<stream>)>;
-			constexpr auto hash = fake::type_view(_footprint).hash();
+			constexpr fake::signet_t hash = fake::signet_v<fake::type_view(_footprint)>;
 			
-			return typename stream_t::template type<_ConfigToken, hash, _Type>{std::forward<_Type>(_e)};
+			using info_i = fake::query_roll_t<fake::io::info<>, _Info>;
+			
+			return typename stream_t::template type<_ConfigToken, hash, _Type, info_i>{std::forward<_Type>(_e)};
 		}
 		
-		template<typename _ConfigToken, auto _footprint, typename _Type, typename _Init>
+		template<typename _ConfigToken, auto _footprint, fake::query_c _Info, typename _Type, typename _Init>
 		requires
 			fake::meta::array_c<decltype(_footprint)> &&
 			requires(fake::take_t<configure.at<[]{}>(fake::pack_v<key<_ConfigToken>>)> _local){
@@ -177,9 +200,12 @@ namespace fake::custom
 		inline static constexpr auto method(_Type &&_e, _Init &&_i){
 			constexpr fake::take_t<configure.at<[]{}>(fake::pack_v<key<_ConfigToken>>)> local;
 			using stream_t = fake::take_t<local.template at<[]{}>(fake::pack_v<stream>)>;
-			constexpr auto hash = fake::type_view(_footprint).hash();
+			constexpr fake::signet_t hash = fake::signet_v<fake::type_view(_footprint)>;
 			
-			return typename stream_t::template type<_ConfigToken, hash, _Type, _Init>{
+			using init_i = fake::query_rebind_t<fake::io::info<>, fake::view_v<"init">, fake::pack_t<_Init>>;
+			using info_i = fake::query_roll_t<init_i, _Info>;
+			
+			return typename stream_t::template type<_ConfigToken, hash, _Type, info_i>{
 				std::forward<_Type>(_e),
 				std::forward<_Init>(_i)
 			};
@@ -189,10 +215,10 @@ namespace fake::custom
 	namespace detail::type_stream
 	{
 		
-		template<typename _ConfigToken, auto _footprint, typename... _Type>
+		template<typename _ConfigToken, auto _footprint, typename _Info, typename... _Type>
 		concept invocable_c = requires(_Type ..._e){
 			requires fake::meta::array_c<decltype(_footprint)>;
-			custom::type_stream::method<_ConfigToken, _footprint>(_e...);
+			custom::type_stream::method<_ConfigToken, _footprint, _Info>(_e...);
 		};
 		
 		// currying broker. 
@@ -200,17 +226,36 @@ namespace fake::custom
 		requires fake::meta::array_c<decltype(_footprint)>
 		struct broker
 		{
+		private:
+			using default_i = fake::custom::type_stream::info<fake::mezz_t<true>>;
+			using origin_i = fake::custom::type_stream::info<fake::mezz_t<false>>;
+			
 		public:
 			template<typename _Type>
-			requires invocable_c<_ConfigToken, _footprint, _Type>
+			requires invocable_c<_ConfigToken, _footprint, default_i, _Type>
 			inline constexpr auto operator()(_Type &&_e) const{
-				return custom::type_stream::method<_ConfigToken, _footprint>(std::forward<_Type>(_e));
+				return custom::type_stream::method<_ConfigToken, _footprint, default_i>(std::forward<_Type>(_e));
 			}
 			
 			template<typename _Type, typename _Init>
-			requires invocable_c<_ConfigToken, _footprint, _Type, _Init>
+			requires invocable_c<_ConfigToken, _footprint, default_i, _Type, _Init>
 			inline constexpr auto operator()(_Type &&_e, _Init &&_i) const{
-				return custom::type_stream::method<_ConfigToken, _footprint>(
+				return custom::type_stream::method<_ConfigToken, _footprint, default_i>(
+					std::forward<_Type>(_e),
+					std::forward<_Init>(_i)
+				);
+			}
+			
+			template<typename _Type>
+			requires invocable_c<_ConfigToken, _footprint, origin_i, _Type>
+			inline constexpr auto origin(_Type &&_e) const{
+				return custom::type_stream::method<_ConfigToken, _footprint, origin_i>(std::forward<_Type>(_e));
+			}
+			
+			template<typename _Type, typename _Init>
+			requires invocable_c<_ConfigToken, _footprint, origin_i, _Type, _Init>
+			inline constexpr auto origin(_Type &&_e, _Init &&_i) const{
+				return custom::type_stream::method<_ConfigToken, _footprint, origin_i>(
 					std::forward<_Type>(_e),
 					std::forward<_Init>(_i)
 				);

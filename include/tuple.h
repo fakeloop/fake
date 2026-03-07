@@ -18,6 +18,7 @@
 #include "traits.h"
 #include "symbol.h"
 #include "type_array.h"
+#include "detect.h"
 
 namespace fake::tuple
 {
@@ -131,10 +132,19 @@ namespace fake::tuple
 	using match_index_t = typename match_index<_Tuple, _functor>::type;
 	
 	template<fake::tuple_c _Tuple, auto _functor>
+	constexpr auto match_index_v = typename match_index<_Tuple, _functor>::type{};
+	
+	template<fake::tuple_c _Tuple, auto _functor>
 	using first_index_t = typename match_index<_Tuple, _functor, true>::type;
 	
 	template<fake::tuple_c _Tuple, auto _functor>
+	constexpr auto first_index_v = typename match_index<_Tuple, _functor, true>::type{};
+	
+	template<fake::tuple_c _Tuple, auto _functor>
 	using last_index_t = typename match_index<_Tuple, _functor, false>::type;
+	
+	template<fake::tuple_c _Tuple, auto _functor>
+	constexpr auto last_index_v = typename match_index<_Tuple, _functor, false>::type{};
 	
 	template<fake::tuple_c _Tuple, auto _functor>
 	struct indices final{
@@ -637,13 +647,83 @@ namespace fake::tuple
 	template<fake::tuple_c _Tuple>
 	struct shrink final{
 	private:
-		static constexpr fake::pack_c auto init = fake::pack_v<std::tuple<>>;
+		using flat_type = fake::mimic_t<_Tuple, fake::flat>;
 		
-		static consteval auto impl(){
-			constexpr std::size_t size = std::tuple_size_v<_Tuple>;
-			
+		static constexpr fake::pack_c auto init = fake::pack_v<std::tuple<>>;
+		static constexpr std::size_t size = std::tuple_size_v<_Tuple>;
+		static constexpr auto zero = fake::mezz_v<std::size_t{}>;
+		
+	private:
+		template<
+			std::size_t _begin,
+			std::size_t _end,
+			auto _source,
+			fake::tuple_c _Unique,
+			fake::tuple_c _Result
+		>
+		static constexpr auto unique(
+			fake::mezz_t<_begin> _begin_m,
+			fake::mezz_t<_end> _end_m,
+			fake::mezz_t<_source> _source_m,
+			fake::type_package<_Unique> _unique_p,
+			fake::type_package<_Result> _result_p
+		){
+			if constexpr(_begin == _end){
+				return _result_p;
+			}
+			else{
+				constexpr tool::triple current = _source[_begin];
+				using current_t = std::tuple_element_t<current.index, _Tuple>;
+				
+				if constexpr(contains_type_v<_Unique, current_t>)
+					return unique(fake::mezz_v<_begin + 1>, _end_m, _source_m, _unique_p, _result_p);
+				else
+					return unique(
+						fake::mezz_v<_begin + 1>,
+						_end_m,
+						_source_m,
+						push_back_v<_Unique, current_t>,
+						push_back_v<_Result, fake::mezz_t<current.reverse>>
+					);
+			}
+		}
+		
+		template<
+			std::size_t _begin,
+			std::size_t _end,
+			auto _source,
+			fake::tuple_c _Result
+		>
+		static constexpr auto rec(
+			fake::mezz_t<_begin> _begin_m,
+			fake::mezz_t<_end> _end_m,
+			fake::mezz_t<_source> _source_m,
+			fake::type_package<_Result> _result_p
+		){
+			if constexpr(_end == size){
+				using local_t = fake::take_t<unique(_begin_m, _end_m, _source_m, init, init)>;
+				
+				return concat_v<_Result, local_t>;
+			}
+			else if constexpr(_source[_begin].key == _source[_end].key){
+				return rec(_begin_m, fake::mezz_v<_end + 1>, _source_m, _result_p);
+			}
+			else if constexpr(_begin + 1 == _end){
+				constexpr auto concat = push_back_v<_Result, fake::mezz_t<_source[_begin].reverse>>;
+				
+				return rec(_end_m, fake::mezz_v<_end + 1>, _source_m, concat);
+			}
+			else{
+				using local_t = fake::take_t<unique(_begin_m, _end_m, _source_m, init, init)>;
+				constexpr auto concat = concat_v<_Result, local_t>;
+				
+				return rec(_end_m, fake::mezz_v<_end + 1>, _source_m, concat);
+			}
+		}
+		
+		static constexpr auto impl(){
 			using sort_info = tool::type_sort<tool::order, _Tuple>;
-			return []<std::size_t... _index>(std::index_sequence<_index...>) consteval{
+			return []<std::size_t... _index>(std::index_sequence<_index...>){
 				using sort_t = typename sort_info::type;
 				constexpr std::array result = []{
 					constexpr std::array<tool::triple, size> source = {
@@ -654,78 +734,7 @@ namespace fake::tuple
 						}...
 					};
 					
-					constexpr auto unique = []<
-						std::size_t _begin,
-						std::size_t _end,
-						auto _source,
-						fake::tuple_c _Unique,
-						fake::tuple_c _Result
-					>(
-						auto _self,
-						fake::mezz_t<_begin> _begin_m,
-						fake::mezz_t<_end> _end_m,
-						fake::mezz_t<_source> _source_m,
-						fake::type_package<_Unique> _unique_p,
-						fake::type_package<_Result> _result_p
-					){
-						if constexpr(_begin == _end){
-							return _result_p;
-						}
-						else{
-							constexpr tool::triple current = _source[_begin];
-							using current_t = std::tuple_element_t<current.index, _Tuple>;
-							
-							if constexpr(contains_type_v<_Unique, current_t>)
-								return _self(_self, fake::mezz_v<_begin + 1>, _end_m, _source_m, _unique_p, _result_p);
-							else
-								return _self(
-									_self,
-									fake::mezz_v<_begin + 1>,
-									_end_m,
-									_source_m,
-									push_back_v<_Unique, current_t>,
-									push_back_v<_Result, fake::mezz_t<current.reverse>>
-								);
-						}
-					};
-					
-					constexpr auto rec = []<
-						std::size_t _begin,
-						std::size_t _end,
-						auto _source,
-						auto _unique,
-						fake::tuple_c _Result
-					>(
-						auto &_self,
-						fake::mezz_t<_begin> _begin_m,
-						fake::mezz_t<_end> _end_m,
-						fake::mezz_t<_source> _source_m,
-						fake::mezz_t<_unique> _unique_m,
-						fake::type_package<_Result> _result_p
-					){
-						if constexpr(_end == size){
-							using local_t = fake::take_t<_unique(_unique, _begin_m, _end_m, _source_m, init, init)>;
-							
-							return concat_v<_Result, local_t>;
-						}
-						else if constexpr(_source[_begin].key == _source[_end].key){
-							return _self(_self, _begin_m, fake::mezz_v<_end + 1>, _source_m, _unique_m, _result_p);
-						}
-						else if constexpr(_begin + 1 == _end){
-							constexpr auto concat = push_back_v<_Result, fake::mezz_t<_source[_begin].reverse>>;
-							
-							return _self(_self, _end_m, fake::mezz_v<_end + 1>, _source_m, _unique_m, concat);
-						}
-						else{
-							using local_t = fake::take_t<_unique(_unique, _begin_m, _end_m, _source_m, init, init)>;
-							constexpr auto concat = concat_v<_Result, local_t>;
-							
-							return _self(_self, _end_m, fake::mezz_v<_end + 1>, _source_m, _unique_m, concat);
-						}
-					};
-					
-					constexpr auto zero = fake::mezz_v<std::size_t{}>;
-					using target = fake::take_t<rec(rec, zero, zero, fake::mezz_v<source>, fake::mezz_v<unique>, init)>;
+					using target = fake::take_t<rec(zero, zero, fake::mezz_v<source>, init)>;
 					
 					constexpr std::size_t remain = std::tuple_size_v<target>;
 					std::array<tool::triple, remain> buffer;

@@ -12,6 +12,7 @@
 
 #include "push.h"
 
+#include <bit>
 #include <algorithm>
 #include <ostream>
 
@@ -58,39 +59,72 @@ namespace fake
 	namespace tool::view
 	{
 		
-		template<std::size_t _size>
-		constexpr unsigned long long hash(const char (&_str)[_size]) noexcept{
-			constexpr unsigned long long basis = 14695981039346656037ull;
-			constexpr unsigned long long prime = 1099511628211ull;
-			
-			unsigned long long hash = basis;
-			for(const char e : _str)
-				hash = (hash ^ e) * prime;
-			
-			return hash;
-		}
-		
-		template<std::size_t _size>
-		constexpr unsigned long long hash(const char (&_str)[_size], unsigned long long _basis) noexcept{
+		template<std::size_t _size, bool _ignore = true>
+		[[nodiscard]] constexpr unsigned long long hash(const char (&_str)[_size], unsigned long long _basis) noexcept{
 			constexpr unsigned long long prime = 1099511628211ull;
 			
 			unsigned long long hash = _basis;
-			if(_size && _str[_size - 0x1] == '\0')
-				for(const char e : std::ranges::subrange(_str, _str + _size - 0x1))
-					hash = (hash ^ e) * prime;
-			else
+			if constexpr(_ignore){
+				if(_size && _str[_size - 0x1] == '\0')
+					for(const char e : std::ranges::subrange(_str, _str + _size - 0x1))
+						hash = (hash ^ e) * prime;
+				else
+					for(const char e : _str)
+						hash = (hash ^ e) * prime;
+			}
+			else{
 				for(const char e : _str)
 					hash = (hash ^ e) * prime;
+			}
 			
 			return hash;
 		}
 		
-		constexpr unsigned long long hash(std::string_view _str, unsigned long long _basis) noexcept{
+		[[nodiscard]] constexpr unsigned long long hash(std::string_view _str, unsigned long long _basis) noexcept{
 			constexpr unsigned long long prime = 1099511628211ull;
 			
 			unsigned long long hash = _basis;
 			for(const char e : _str)
 				hash = (hash ^ e) * prime;
+			
+			return hash;
+		}
+		
+		template<std::size_t _size>
+		[[nodiscard]] constexpr unsigned long long hash(std::array<char, _size> _e, unsigned long long _basis) noexcept{
+			constexpr unsigned long long prime = 1099511628211ull;
+			
+			unsigned long long hash = _basis;
+			for(const char e : _e)
+				hash = (hash ^ e) * prime;
+			
+			return hash;
+		}
+		
+		template<std::size_t _size>
+		[[nodiscard]] constexpr unsigned long long hash(std::array<char, _size> _e) noexcept{
+			return fake::tool::view::hash<_size>(_e, 14695981039346656037ull);
+		}
+		
+		template<std::size_t _size, bool _ignore = true>
+		[[nodiscard]] constexpr unsigned long long hash(const char (&_str)[_size]) noexcept{
+			return fake::tool::view::hash<_size, _ignore>(_str, 14695981039346656037ull);
+		}
+		
+		[[nodiscard]] constexpr unsigned long long hash(std::string_view _str) noexcept{
+			return fake::tool::view::hash(_str, 14695981039346656037ull);
+		}
+		
+		[[nodiscard]] constexpr unsigned long long combine(std::same_as<unsigned long long> auto ..._e) noexcept{
+			constexpr auto mix = [](unsigned long long _lhs, unsigned long long _rhs) -> unsigned long long {
+				constexpr unsigned long long prime = 1099511628211ull;
+				return (std::rotr(_lhs, 0x1) ^ std::rotr(_rhs, 0x2)) * prime;
+			};
+			
+			unsigned long long hash = 14695981039346656037ull;
+			if constexpr(sizeof...(_e))
+				for(const unsigned long long e : std::array{_e...})
+					hash = mix(hash, e);
 			
 			return hash;
 		}
@@ -129,7 +163,10 @@ namespace fake
 		static constexpr unsigned long long hash() noexcept{
 			constexpr char local[]{_Chars...};
 			
-			return tool::view::hash(local);
+			if constexpr(empty())
+				return fake::tool::view::combine();
+			else
+				return fake::tool::view::hash<view::size(), false>(local);
 		}
 		
 	private:
@@ -366,8 +403,8 @@ namespace fake
 		}
 		
 	public:
-		operator std::string_view() const{
-			return buffer;
+		constexpr operator std::string_view() const{
+			return {buffer, view::size()};
 		}
 	};
 	
@@ -429,7 +466,7 @@ namespace fake
 	using view_t = std::remove_cvref_t<decltype(view_v<_Value>)>;
 	
 	template<auto _integral, std::size_t _base = 10>
-	requires fake::to_trait_c<std::is_integral_v<decltype(_integral)>> || fake::constant_c<decltype(_integral)>
+	requires (_base <= 36 && (std::is_integral_v<decltype(_integral)> || fake::constant_c<decltype(_integral)>))
 	constexpr auto to_view(){
 		if constexpr(_integral < 0)
 			return view_v<"-"> + to_view<-_integral, _base>();
@@ -442,6 +479,36 @@ namespace fake
 	template<auto _integral, std::size_t _base = 10>
 	requires requires{{to_view<_integral, _base>()} -> view_c;}
 	constexpr auto to_view_v = to_view<_integral, _base>();
+	
+	template<fake::view_c auto _v, std::size_t _base = 10>
+	consteval std::size_t from_view() noexcept
+	requires (
+		_v.template starts_with<"-">() == false &&
+		_v.template find_first_not_of<"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz">() == _v.npos
+	){
+		std::size_t result = 0;
+		for(const char e : std::string_view{_v})
+			result *= _base, result += e <= '9' ? e - '0' : e <= 'Z' ? e - 'A' + 10 : e - 'a' + 10;
+		return result;
+	}
+	
+	template<fake::view_c auto _v, std::size_t _base = 10>
+	consteval std::ptrdiff_t from_view() noexcept
+	requires (
+		_v.template starts_with<"-">() == true &&
+		_v.template substr<1>().template find_first_not_of<
+			"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+		>() == _v.npos
+	){
+		std::ptrdiff_t result = 0;
+		for(const char e : std::string_view{_v.template substr<1>()})
+			result *= _base, result += e <= '9' ? e - '0' : e <= 'Z' ? e - 'A' + 10 : e - 'a' + 10;
+		return -result;
+	}
+	
+	template<auto _integral, std::size_t _base = 10>
+	requires requires{{from_view<_integral, _base>()} -> fake::likes<std::size_t, std::ptrdiff_t>;}
+	constexpr auto from_view_v = from_view<_integral, _base>();
 	
 	constexpr auto type_view(fake::pack_c auto _pack) noexcept{
 		constexpr auto symbol = fake::symbol::string_view<fake::take_t<decltype(_pack){}>>();
@@ -468,7 +535,7 @@ namespace fake
 		
 		template<fake::detail::view::string _Value>
 		requires (_Value.size() > 0)
-		constexpr auto operator"" _v() noexcept{
+		constexpr auto operator""_v() noexcept{
 			return []<std::size_t... _Index>(std::index_sequence<_Index...>){
 				return fake::view<_Value.template at<_Index>()...>{};
 			}(std::make_index_sequence<_Value.size() - 1>{});

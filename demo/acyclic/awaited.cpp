@@ -42,10 +42,10 @@ namespace demo
 		
 		// 调度一个基础协程，并在其中将有向无环图上下文作为 'awaitable' 启动。 
 		sched.execute(
-			[ivk = std::move(invoke)]()->coro_t{
-				std::apply(print, co_await ivk(fake::pass<a>(114)));
+			[](auto _ivk) -> coro_t {
+				std::apply(print, co_await _ivk(fake::pass<a>(114)));
 				std::cout << "@done." << std::endl;
-			}()
+			}(std::move(invoke))
 		);
 		
 		// wait until all threads joined. 

@@ -282,6 +282,11 @@ namespace demo
 	requires fake::meta::array_c<decltype(_footprint)>
 	inline constexpr custom::detail::for_each::broker<_ConfigToken, _footprint> for_each;
 	
+	// gcc bug work around to pass a []{} manually. 
+	template<auto _vest, typename _ConfigToken, auto _fp = custom::for_each::config::footprint<_ConfigToken>(_vest)>
+	requires fake::meta::array_c<decltype(_fp)>
+	inline constexpr custom::detail::for_each::broker<_ConfigToken, _fp> for_each_w;
+	
 }
 
 #endif /*__DEMO_FOREACH_H__*/ 

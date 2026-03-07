@@ -20,6 +20,17 @@
 namespace fake
 {
 	
+	namespace detail::flat
+	{
+		
+		template<typename _Type>
+		concept non_mezz = fake::mezz_c<_Type> == false;
+		
+		template<typename _Type>
+		concept non_mezz_empty = fake::detail::flat::non_mezz<_Type> && fake::adapt_c<_Type, std::is_empty>;
+		
+	}
+	
 	template<typename _First, typename _Second>
 	struct mate{
 		using first_type = _First;
@@ -44,23 +55,13 @@ namespace fake
 		friend constexpr auto operator<=>(const mate&, const mate&) = default;
 	};
 	
-	template<typename _Second>
-	struct mate<void, _Second>{
-		using first_type = void;
+	template<fake::mezz_c _First, fake::adapt_c<std::is_empty> _Second>
+	struct mate<_First, _Second>{
+		using first_type = _First;
 		using second_type = _Second;
 		
-		second_type second;
-		
-	private:
-		friend constexpr auto operator<=>(const mate&, const mate&) = default;
-	};
-	
-	template<typename _First>
-	struct mate<_First, void>{
-		using first_type = _First;
-		using second_type = void;
-		
-		first_type first;
+		static constexpr first_type first{};
+		[[no_unique_address]] second_type second;
 		
 	private:
 		friend constexpr auto operator<=>(const mate&, const mate&) = default;
@@ -77,6 +78,18 @@ namespace fake
 		friend constexpr auto operator<=>(const mate&, const mate&) = default;
 	};
 	
+	template<detail::flat::non_mezz_empty _First, fake::adapt_c<std::is_empty> _Second>
+	struct mate<_First, _Second>{
+		using first_type = _First;
+		using second_type = _Second;
+		
+		[[no_unique_address]] first_type first;
+		[[no_unique_address]] second_type second;
+		
+	private:
+		friend constexpr auto operator<=>(const mate&, const mate&) = default;
+	};
+	
 	template<>
 	struct mate<void, void>{
 		using first_type = void;
@@ -86,8 +99,85 @@ namespace fake
 		friend constexpr auto operator<=>(const mate&, const mate&) = default;
 	};
 	
+	template<detail::flat::non_mezz _First, fake::adapt_c<std::is_empty> _Second>
+	struct mate<_First, _Second>{
+		using first_type = _First;
+		using second_type = _Second;
+		
+		first_type first;
+		[[no_unique_address]] second_type second;
+		
+	private:
+		friend constexpr auto operator<=>(const mate&, const mate&) = default;
+	};
+	
+	template<detail::flat::non_mezz_empty _First, typename _Second>
+	struct mate<_First, _Second>{
+		using first_type = _First;
+		using second_type = _Second;
+		
+		[[no_unique_address]] first_type first;
+		second_type second;
+		
+	private:
+		friend constexpr auto operator<=>(const mate&, const mate&) = default;
+	};
+	
+	template<detail::flat::non_mezz _First>
+	struct mate<_First, void>{
+		using first_type = _First;
+		using second_type = void;
+		
+		first_type first;
+		
+	private:
+		friend constexpr auto operator<=>(const mate&, const mate&) = default;
+	};
+	
+	template<typename _Second>
+	struct mate<void, _Second>{
+		using first_type = void;
+		using second_type = _Second;
+		
+		second_type second;
+		
+	private:
+		friend constexpr auto operator<=>(const mate&, const mate&) = default;
+	};
+	
+	template<detail::flat::non_mezz_empty _First>
+	struct mate<_First, void>{
+		using first_type = _First;
+		using second_type = void;
+		
+		[[no_unique_address]] first_type first;
+		
+	private:
+		friend constexpr auto operator<=>(const mate&, const mate&) = default;
+	};
+	
+	template<fake::adapt_c<std::is_empty> _Second>
+	struct mate<void, _Second>{
+		using first_type = void;
+		using second_type = _Second;
+		
+		[[no_unique_address]] second_type second;
+		
+	private:
+		friend constexpr auto operator<=>(const mate&, const mate&) = default;
+	};
+	
 	template<typename _Type>
 	concept mate_c = fake::trait_v<mate, std::remove_cvref_t<_Type>>;
+	
+	template<std::size_t _index>
+	inline constexpr decltype(auto) get(fake::mate_c auto &&_mate) noexcept
+	requires (_index < 0x2){
+		if constexpr(_index == 0 && !std::same_as<typename std::remove_cvref_t<decltype(_mate)>::first_type, void>)
+			return std::forward<decltype(_mate)>(_mate).first;
+		if constexpr(_index == 1 && !std::same_as<typename std::remove_cvref_t<decltype(_mate)>::second_type, void>)
+			return std::forward<decltype(_mate)>(_mate).second;
+	}
 	
 	namespace detail::flat
 	{
@@ -258,10 +348,14 @@ namespace fake
 	}
 	
 	template<typename _Type>
-	concept flat_based_c = (
+	concept flat_based_c = requires{requires (fake::tuple_c<_Type> == false);} &&
 		requires{typename fake::mimic_t<std::remove_cvref_t<_Type>, detail::flat::has_definitions>;} &&
-		std::derived_from<std::remove_cvref_t<_Type>, fake::mimic_t<std::remove_cvref_t<_Type>, fake::flat>>
-	);
+		requires{
+			requires std::derived_from<
+				std::remove_cvref_t<_Type>,
+				fake::mimic_t<std::remove_cvref_t<_Type>, fake::flat>
+			>;
+		};
 	
 	template<flat_based_c...>
 	struct flat_cat_result;
@@ -748,6 +842,14 @@ namespace fake
 	using query_roll_t = typename query_roll<_Query...>::type;
 	
 }
+
+template<fake::mate_c _Mate>
+struct std::tuple_size<_Mate> : public std::integral_constant<std::size_t, 0x2>{};
+
+template<std::size_t _index, fake::mate_c _Mate>
+requires (_index < 0x2)
+struct std::tuple_element<_index, _Mate> :
+	public fake::type_package<std::conditional_t<_index, typename _Mate::second_type, typename _Mate::first_type>>{};
 
 template<template<typename...> typename _Template, typename... _Args>
 requires fake::flat_based_c<_Template<_Args...>>

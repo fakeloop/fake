@@ -12,9 +12,18 @@
 
 #include "push.h"
 
-#include "flat.h"
 #include "utility.h"
+#include "enum_info.h"
 #include "type_stream.h"
+
+namespace fake::io
+{
+	
+	template<auto _o> struct ostreamer;
+	template<auto _i> struct istreamer;
+	template<auto _o, auto _i> struct streamer;
+	
+}
 
 namespace fake::custom
 {
@@ -28,6 +37,8 @@ namespace fake::custom
 		struct token_t final{using type = _ConfigToken;};
 		
 		struct key final{
+			struct wrap final{};
+			struct wrapper final{};
 			struct tab final{};
 			struct endl final{};
 			struct color final{};
@@ -37,6 +48,7 @@ namespace fake::custom
 			struct member final{};
 			struct json final{};
 			struct container final{};
+			struct streamer final{};
 			struct binary final{}; // TODO: binary flag for serialization, no impl yet. 
 			struct bracket final{};
 			struct name final{};
@@ -49,6 +61,13 @@ namespace fake::custom
 	private:
 		template<typename... _Type>
 		using adaptor = fake::tool::adaptor<_Type...>;
+		
+	private:
+		template<auto _o> friend struct fake::io::ostreamer;
+		template<auto _i> friend struct fake::io::istreamer;
+		template<auto _o, auto _i> friend struct fake::io::streamer;
+		
+		struct streamer{};
 		
 	public:
 		struct color final{
@@ -66,9 +85,26 @@ namespace fake::custom
 			struct visitor final{
 				template<auto _vest, typename _ConfigToken, typename _Matcher>
 				static consteval auto emplace(auto _visitor) noexcept{
-					for_each::config::emplace_visitor<[]{}, token_t<_ConfigToken>, adaptor<_Matcher>>(_visitor);
+					fake::custom::for_each::config::emplace_visitor<[]{}, token_t<_ConfigToken>, adaptor<_Matcher>>(
+						_visitor
+					);
 				}
 			};
+			
+			template<auto _vest, typename _ConfigToken, typename _Streamer> // TODO: _Streamer concept. 
+			requires (access<_ConfigToken>::template contains<_vest, key::streamer>() == false)
+			static consteval auto transform() noexcept{
+				return access<_ConfigToken>::template emplace<_vest, key::streamer, fake::meta::array<_Streamer>>();
+			}
+			
+			template<auto _vest, typename _ConfigToken, typename _Streamer> // TODO: _Streamer concept. 
+			requires (access<_ConfigToken>::template contains<_vest, key::streamer>())
+			static consteval auto transform() noexcept{
+				using array = fake::take_t<access<_ConfigToken>::template peep<_vest, key::streamer>()>;
+				using value = fake::meta::array_cat_t<array, fake::meta::array<_Streamer>>;
+				
+				return access<_ConfigToken>::template emplace<_vest, key::streamer, value>();
+			}
 			
 			struct style final{
 			private:
@@ -100,6 +136,16 @@ namespace fake::custom
 				}
 				
 			public:
+				template<auto _vest, typename _ConfigToken, auto _wrapper>
+				requires
+					fake::mate_c<decltype(_wrapper)> &&
+					fake::view_c<typename decltype(_wrapper)::first_type> &&
+					fake::view_c<typename decltype(_wrapper)::second_type> &&
+					requires{access<_ConfigToken>::template emplace<_vest, key::wrapper, fake::mezz_t<_wrapper>>();}
+				static consteval auto wrapper() noexcept{
+					return access<_ConfigToken>::template emplace<_vest, key::wrapper, fake::mezz_t<_wrapper>>();
+				}
+				
 				template<auto _vest, typename _ConfigToken, auto _tab>
 				requires
 					fake::view_c<decltype(_tab)> &&
@@ -115,6 +161,20 @@ namespace fake::custom
 					requires{access<_ConfigToken>::template emplace<_vest, key::endl, fake::mezz_t<_endl>>();}
 				static consteval auto endl() noexcept{
 					return access<_ConfigToken>::template emplace<_vest, key::endl, fake::mezz_t<_endl>>();
+				}
+			};
+			
+			struct wrap final{
+				template<auto _vest, typename _ConfigToken>
+				requires requires{access<_ConfigToken>::template emplace<_vest, key::wrap, fake::mezz_t<true>>();}
+				static consteval auto enable() noexcept{
+					return access<_ConfigToken>::template emplace<_vest, key::wrap, fake::mezz_t<true>>();
+				}
+				
+				template<auto _vest, typename _ConfigToken>
+				requires requires{access<_ConfigToken>::template emplace<_vest, key::wrap, fake::mezz_t<false>>();}
+				static consteval auto disable() noexcept{
+					return access<_ConfigToken>::template emplace<_vest, key::wrap, fake::mezz_t<false>>();
 				}
 			};
 			
@@ -204,6 +264,23 @@ namespace fake::custom
 				}
 			};
 			
+			struct trait final{
+				template<auto _vest, typename _ConfigToken, fake::mezz_c _Filter>
+				requires (access<_ConfigToken>::template contains<_vest, key::container>() == false)
+				static consteval auto register_container() noexcept{
+					return access<_ConfigToken>::template emplace<_vest, key::container, fake::meta::array<_Filter>>();
+				}
+				
+				template<auto _vest, typename _ConfigToken, fake::mezz_c _Filter>
+				requires (access<_ConfigToken>::template contains<_vest, key::container>())
+				static consteval auto register_container() noexcept{
+					using array = fake::take_t<access<_ConfigToken>::template peep<_vest, key::container>()>;
+					using value = fake::meta::array_cat_t<array, fake::meta::array<_Filter>>;
+					
+					return access<_ConfigToken>::template emplace<_vest, key::container, value>();
+				}
+			};
+			
 			struct binary final{
 				template<auto _vest, typename _ConfigToken>
 				requires requires{access<_ConfigToken>::template emplace<_vest, key::binary, fake::mezz_t<true>>();}
@@ -245,6 +322,24 @@ namespace fake::custom
 					return access<_ConfigToken>::template emplace<_vest, key::name, fake::mezz_t<false>>();
 				}
 			};
+			
+			struct aggregate final{
+				struct fields final{
+					template<auto _vest, typename _ConfigToken>
+					requires requires{access<_ConfigToken>::template emplace<_vest, key::name, fake::mezz_t<true>>();}
+					static consteval auto enable() noexcept{
+						using token = token_t<_ConfigToken>;
+						return fake::custom::for_each::config::aggregate::fields::enable<_vest, token>();
+					}
+					
+					template<auto _vest, typename _ConfigToken>
+					requires requires{access<_ConfigToken>::template emplace<_vest, key::name, fake::mezz_t<false>>();}
+					static consteval auto disable() noexcept{
+						using token = token_t<_ConfigToken>;
+						return fake::custom::for_each::config::aggregate::fields::disable<_vest, token>();
+					}
+				};
+			};
 		};
 		
 	private:
@@ -265,6 +360,15 @@ namespace fake::custom
 	private:
 		struct query final{
 			template<typename _ConfigToken>
+			static consteval auto wrapper() noexcept{
+				using wrapper_t = fake::take_t<access<_ConfigToken>::template query<[]{}, key::wrapper>()>;
+				if constexpr(std::same_as<wrapper_t, fake::null_t>)
+					return fake::mate<fake::view_t<"{">, fake::view_t<"}">>{};
+				else
+					return wrapper_t::value;
+			}
+			
+			template<typename _ConfigToken>
 			static consteval auto tab() noexcept{
 				using tab_t = fake::take_t<access<_ConfigToken>::template query<[]{}, key::tab>()>;
 				if constexpr(std::same_as<tab_t, fake::null_t>)
@@ -280,6 +384,15 @@ namespace fake::custom
 					return fake::view_v<"\n">;
 				else
 					return endl_t::value;
+			}
+			
+			template<typename _ConfigToken>
+			static consteval auto wrap() noexcept{
+				using wrap_t = fake::take_t<access<_ConfigToken>::template query<[]{}, key::wrap>()>;
+				if constexpr(std::same_as<wrap_t, fake::null_t>)
+					return false;
+				else
+					return wrap_t::value;
 			}
 			
 			template<typename _ConfigToken>
@@ -339,6 +452,15 @@ namespace fake::custom
 			template<typename _ConfigToken>
 			static consteval auto container() noexcept{
 				using selector_t = fake::take_t<access<_ConfigToken>::template query<[]{}, key::container>()>;
+				if constexpr(std::same_as<selector_t, fake::null_t>)
+					return fake::pack_v<fake::meta::array<>>;
+				else
+					return fake::pack_v<selector_t>;
+			}
+			
+			template<typename _ConfigToken>
+			static consteval auto streamer() noexcept{
+				using selector_t = fake::take_t<access<_ConfigToken>::template query<[]{}, key::streamer>()>;
 				if constexpr(std::same_as<selector_t, fake::null_t>)
 					return fake::pack_v<fake::meta::array<>>;
 				else
@@ -452,7 +574,7 @@ namespace fake::custom
 				if(_is.good() == false)
 					return _is;
 				
-				const auto pos = _is.tellg();
+				const auto pos = _is.rdbuf()->pubseekoff(0x0, std::ios_base::cur, std::ios_base::in);
 				
 				if constexpr(std::same_as<type, char>){
 					_s.ref = _is.get();
@@ -509,37 +631,80 @@ namespace fake::custom
 			return _key.template replace<"\\", "\\\\">().template replace<"\"", "\\\"">();
 		}
 		
-		inline static constexpr fake::null_t null{};
+		template<fake::holds<char8_t, const char8_t> _Type>
+		struct utf8_stream final{
+			using reference = std::add_lvalue_reference_t<_Type>;
+			
+			utf8_stream(_Type &_ref) noexcept: ref(_ref){}
+			
+		private:
+			friend std::basic_ostream<char>& operator<<(std::basic_ostream<char> &_os, utf8_stream _e){
+				auto array = fake::to_hex(_e.ref);
+				_os << '\'';
+				for(const char e : array)
+					_os << e;
+				_os << '\'';
+				
+				return _os;
+			}
+			
+			friend std::basic_istream<char>& operator>>(std::basic_istream<char> &_is, utf8_stream _e){
+				decltype(fake::to_hex(_e.ref)) array;
+				_is >> fake::ensure(fake::view_v<"\'">);
+				for(char &e : array)
+					_is >> e;
+				_is >> fake::ensure(fake::view_v<"\'">);
+				_e.ref = fake::from_hex(array);
+				
+				return _is;
+			}
+			
+		private:
+			reference &ref;
+		};
 		
-		template<fake::trait_c<token_t> _ConfigToken, auto _footprint, typename _Type, typename _Init = decltype(null)>
-		requires fake::meta::array_c<decltype(_footprint)> || std::same_as<decltype(_footprint), unsigned long long>
+		using info_t = fake::io::info<>;
+		
+		template<fake::query_c _Info>
+		using info_init_t = fake::take_t<fake::take_t<_Info::template type<fake::view_t<"init">>()>{}>;
+		
+		template<fake::query_c _Info>
+		static constexpr bool info_transform_v = fake::take_t<_Info::template type<fake::view_t<"transform">>()>::value;
+		
+		template<fake::trait_c<token_t> _ConfigToken, auto _footprint, typename _Type, fake::io::info_c _Info = info_t>
+		requires fake::like<decltype(_footprint), fake::signet_t>
 		struct stream final{
 			using type_t = fake::remove_rvalue_reference_t<_Type>;
-			using init_t = fake::remove_rvalue_reference_t<_Init>;
+			using init_t = fake::remove_rvalue_reference_t<info_init_t<_Info>>;
+			static constexpr bool transform_v = info_transform_v<_Info>;
 			
 		private:
 			static constexpr bool enable_type = query::type<typename _ConfigToken::type>();
 			static constexpr auto type_name = []{
 				if constexpr(enable_type)
-					return fake::type_name<typename _ConfigToken::type>;
+					return fake::type_name_w<[]{}, typename _ConfigToken::type>;
 				else
 					return [](const fake::pack_c auto){return fake::view_v<"">;};
 			}();
+			static constexpr auto for_each = fake::for_each_w<[]{}, _ConfigToken>;
+			static constexpr fake::mate_c auto wrapper = query::wrapper<typename _ConfigToken::type>();
 			static constexpr fake::view_c auto tab = query::tab<typename _ConfigToken::type>();
 			static constexpr fake::view_c auto endl = query::endl<typename _ConfigToken::type>();
+			static constexpr bool wrap = query::wrap<typename _ConfigToken::type>();
 			static constexpr bool color = query::color<typename _ConfigToken::type>();
 			static constexpr format::color map = query::map<typename _ConfigToken::type>();
 			using decorator = fake::take_t<query::decorator<typename _ConfigToken::type>()>;
 			static constexpr bool member = query::member<typename _ConfigToken::type>();
 			static constexpr bool json = query::json<typename _ConfigToken::type>();
 			using filters = fake::take_t<query::container<typename _ConfigToken::type>()>;
+			using streamers = fake::take_t<query::streamer<typename _ConfigToken::type>()>;
 			static constexpr bool binary = query::binary<typename _ConfigToken::type>();
 			static constexpr bool bracket = query::bracket<typename _ConfigToken::type>();
 			static constexpr bool name = query::name<typename _ConfigToken::type>();
 			
 		public:
 			constexpr stream(std::convertible_to<type_t> auto &&_data) noexcept:
-				data(std::forward<decltype(_data)>(_data)), init(null)
+				data(std::forward<decltype(_data)>(_data)), init(fake::null_t{})
 			{}
 			constexpr stream(
 				std::convertible_to<type_t> auto &&_data,
@@ -606,7 +771,7 @@ namespace fake::custom
 					}
 				}
 				else{
-					return _data;
+					return colorization::template color<fake::colors::undefine>(_data);
 				}
 			}
 			
@@ -629,7 +794,7 @@ namespace fake::custom
 					}
 				}
 				else{
-					return _data;
+					return colorization::template color<fake::colors::undefine>(_data);
 				}
 			}
 			
@@ -656,7 +821,7 @@ namespace fake::custom
 						return true;
 					}
 					else{
-						const auto pos = _is.tellg();
+						const auto pos = _is.rdbuf()->pubseekoff(0x0, std::ios_base::cur, std::ios_base::in);
 						
 						const bool match = [&_is]<std::size_t... _index>(std::index_sequence<_index...>){
 							return ((decorate_broker(_index).try_match(_is) && _is >> decorate_broker(_index)) && ...);
@@ -682,7 +847,7 @@ namespace fake::custom
 					if(_is.good() == false)
 						return false;
 					
-					const auto pos = _is.tellg();
+					const auto pos = _is.rdbuf()->pubseekoff(0x0, std::ios_base::cur, std::ios_base::in);
 					
 					const bool match = ((_streamers.try_match(_is) && _is >> _streamers) && ...);
 					
@@ -709,10 +874,48 @@ namespace fake::custom
 				return filter(_pack) || array_v;
 			}
 			
+			static consteval auto ostreamers() noexcept{
+				return []<std::size_t... _index>(std::index_sequence<_index...>) consteval{
+					constexpr auto make = []<typename _Op>(_Op _op){
+						static constexpr auto impl = []<typename... _Types>(_Types &&..._args)
+						requires requires{_Op::ostream(std::forward<_Types>(_args)...);}{
+							return _Op::ostream(std::forward<_Types>(_args)...);
+						};
+						return impl;
+					};
+					return fake::branch{make(fake::meta::array_element_t<_index, streamers>{})...};
+				}(std::make_index_sequence<fake::meta::array_size_v<streamers>>());
+			}
+			
+			static consteval auto istreamers() noexcept{
+				return []<std::size_t... _index>(std::index_sequence<_index...>) consteval{
+					constexpr auto make = []<typename _Op>(_Op _op){
+						static constexpr auto impl = []<typename... _Types>(_Types &&..._args)
+						requires requires{_Op::istream(std::forward<_Types>(_args)...);}{
+							return _Op::istream(std::forward<_Types>(_args)...);
+						};
+						return impl;
+					};
+					return fake::branch{make(fake::meta::array_element_t<_index, streamers>{})...};
+				}(std::make_index_sequence<fake::meta::array_size_v<streamers>>());
+			}
+			
+			static constexpr auto output = ostreamers();
+			static constexpr auto input = istreamers();
+			
+		private:
+			template<bool _index>
+			using variant_i = fake::query<fake::mate<fake::view_t<"transform">, fake::mezz_t<_index == false>>>;
+			
 		private:
 			static std::basic_ostream<char>& ostream(std::basic_ostream<char> &_os, const stream &_stream){
 				// recurring-lambda currying. 
-				auto impl = [&_os]<fake::view_c _View, std::size_t _layer, fake::meta::array_c _Status>(
+				auto impl = [&_os]<
+					fake::view_c _View,
+					std::size_t _layer,
+					fake::meta::array_c _Status,
+					fake::query_c _Substitute = fake::query<>
+				>(
 					auto &_self,
 					std::size_t &_i,
 					auto &&_e
@@ -722,17 +925,21 @@ namespace fake::custom
 					using status = _Status;
 					using parent = fake::meta::array_element_t<0, status>;
 					using current = fake::meta::array_cat_t<fake::meta::array<type>, status>;
+					using info = fake::query_roll_t<_Info, _Substitute>;
 					constexpr bool sole = _View::empty() || enable_type == false;
 					constexpr bool bare = _View::empty() && enable_type == false;
-					constexpr fake::view_c auto space = std::conditional_t<sole, fake::view<>, fake::view<' '>>{};
-					constexpr fake::view_c auto name = std::conditional_t<member, _View, fake::view<>>{};
+					constexpr fake::view_c auto space = fake::conditional_v<sole, ""_v, " "_v>;
+					constexpr fake::view_c auto tag = type_name(fake::pack_v<type>);
+					constexpr fake::view_c auto name = fake::conditional_v<member, _View{}, ""_v>;
+					constexpr fake::view_c auto comma = fake::conditional_v<endl.empty(), ", "_v, ","_v>;
 					constexpr bool contain = json && container(fake::pack_v<type>);
 					constexpr bool element = container(fake::pack_v<parent>);
+					constexpr bool transform = info_transform_v<info>;
 					
 					std::size_t i = 0;
 					auto scope = []<bool _comma, std::size_t _depth>(fake::mezz_t<_comma>, fake::mezz_t<_depth>){
 						if constexpr(_comma)
-							return decorate<map.comma>(","_v) + endl + indent<tab, _depth>();
+							return decorate<map.comma>(comma) + endl + indent<tab, _depth>();
 						else
 							return endl + indent<tab, _depth>();
 					};
@@ -742,32 +949,47 @@ namespace fake::custom
 					
 					constexpr fake::view_c auto quote = decorate<map.quote>("\""_v);
 					constexpr fake::view_c auto char_quote = decorate<map.quote>("'"_v);
-					constexpr fake::view_c auto json_quote = std::conditional_t<json, decltype(quote), fake::view<>>{};
+					constexpr fake::view_c auto json_quote = fake::conditional_v<json, quote, ""_v>;
 					
-					constexpr fake::view title = [](auto _name, auto _space, auto _json_quote, auto _ignore){
+					constexpr fake::view title = [](auto _tag, auto _name, auto _space, auto _json, auto _ignore){
+						constexpr bool bare = _tag.empty() && _name.empty() && _json.empty();
+						constexpr fake::view_c auto colon = fake::conditional_v<bare, ""_v, " : "_v>;
+						
 						if constexpr(json && _ignore.value)
 							return ""_v;
 						else
-							return _json_quote + decorate<map.type>(type_name(fake::pack_v<type>)) + _space +
-								decorate<map.member, context::index, _layer>(escape(_name)) + _json_quote +
-								decorate<map.colon>(" : "_v);
-					}(name, space, json_quote, fake::mezz_v<element || bare>);
+							return _json + decorate<map.type>(_tag) + _space +
+								decorate<map.member, context::index, _layer>(escape(_name)) + _json +
+								decorate<map.colon>(colon);
+					}(tag, name, space, json_quote, fake::mezz_v<element || bare>);
 					
-					constexpr fake::view_c auto l = std::conditional_t<contain, fake::view_t<"[">, fake::view_t<"{">>{};
-					constexpr fake::view_c auto r = std::conditional_t<contain, fake::view_t<"]">, fake::view_t<"}">>{};
+					constexpr fake::view_c auto l = fake::conditional_v<contain, "["_v, "{"_v>;
+					constexpr fake::view_c auto r = fake::conditional_v<contain, "]"_v, "}"_v>;
 					
 					using array_adaptor = std::conditional_t<fake::array_c<type>, type, std::nullptr_t[]>;
 					
-					if constexpr(requires{fake::for_each<_ConfigToken>(_e, []<fake::view_c>(auto &&_e){});}){
+					if constexpr(requires{for_each(_e, []<fake::view_c>(auto &&_e){});}){
 						_os << title + decorate<map.bracket, context::bracket, _layer>(l) +
 							scope(fake::mezz_v<false>, fake::mezz_v<_layer + 1>);
 						
-						fake::for_each<_ConfigToken>(
-							_e,
-							[&_self, &i]<fake::view_c _V>(auto &&_e){
-								_self.template operator()<_V, _layer + 1, current>(_self, i, _e);
-							}
-						);
+						if constexpr(fake::trait_c<type, std::variant>){
+							for_each(
+								_e,
+								[&_self, &i]<fake::view_c _V>(auto &&_e){
+									constexpr bool index = _V{} == "index"_v;
+									using substitute = variant_i<index>;
+									_self.template operator()<_V, _layer + 1, current, substitute>(_self, i, _e);
+								}
+							);
+						}
+						else{
+							for_each(
+								_e,
+								[&_self, &i]<fake::view_c _V>(auto &&_e){
+									_self.template operator()<_V, _layer + 1, current>(_self, i, _e);
+								}
+							);
+						}
 						
 						_os << scope(fake::mezz_v<false>, fake::mezz_v<_layer>) +
 							decorate<map.bracket, context::bracket, _layer>(r);
@@ -783,17 +1005,34 @@ namespace fake::custom
 							decorate<map.bracket, context::bracket, _layer>(r);
 					}
 					else if constexpr(std::is_enum_v<type>){
-						using underlying = std::underlying_type_t<type>;
-						if constexpr(std::same_as<underlying, char>)
-							_os << title + char_quote << escape(static_cast<char>(_e)) << char_quote;
+						if constexpr(transform && requires{_os << output(_e);}){
+							_os << title << decorate<map.value>(output(_e));
+						}
+						else{
+							using underlying = std::underlying_type_t<type>;
+							if constexpr(std::same_as<underlying, char>)
+								_os << title + char_quote << escape(static_cast<char>(_e)) << char_quote;
+							else
+								_os << title << decorate<map.value>(static_cast<underlying>(_e));
+						}
+					}
+					else if constexpr(transform && requires{_os << output(_e);}){
+						if constexpr(requires{std::quoted(_e);})
+							_os << title + quote << escape<fake::ensure(quote)>(output(_e)) << quote;
+						else if constexpr(std::same_as<type, char>)
+							_os << title + char_quote << escape(output(_e)) << char_quote;
 						else
-							_os << title << decorate<map.value>(static_cast<underlying>(_e));
+							_os << title << decorate<map.value>(output(_e));
 					}
 					else{
 						if constexpr(requires{std::quoted(_e);})
 							_os << title + quote << escape<fake::ensure(quote)>(_e) << quote;
 						else if constexpr(std::same_as<type, char>)
 							_os << title + char_quote << escape(_e) << char_quote;
+						else if constexpr(std::same_as<type, char8_t>)
+							_os << title << decorate<map.value>(utf8_stream{_e});
+						else if constexpr(std::is_floating_point_v<type>)
+							_os << title << decorate<map.value>(fake::cast(_e));
 						else
 							_os << title << decorate<map.value>(_e);
 					}
@@ -802,25 +1041,31 @@ namespace fake::custom
 				using type = std::remove_cvref_t<decltype(_stream.data)>;
 				constexpr bool object = json && (enable_type || container(fake::pack_v<type>) == false);
 				
+				if constexpr(wrap)
+					_os << wrapper.first;
 				if constexpr(object)
-					_os << decorate<map.bracket, context::bracket, 0x0>(fake::view_v<"{">) + endl + indent<tab, 0x1>();
+					_os << decorate<map.bracket, context::bracket, 0x0>(wrapper.first) + endl + indent<tab, 0x1>();
 				
 				std::size_t index = 0;
 				using status = fake::meta::array<fake::null_t>;
 				impl.template operator()<fake::view<>, std::size_t{object}, status>(impl, index, _stream.data);
 				
 				if constexpr(object)
-					_os << endl + decorate<map.bracket, context::bracket, 0x0>(fake::view_v<"}">);
+					_os << endl + decorate<map.bracket, context::bracket, 0x0>(wrapper.second);
+				if constexpr(wrap)
+					_os << wrapper.second;
 				
 				return _os;
 			}
 			
 			static std::basic_istream<char>& istream(std::basic_istream<char> &_is, const stream &_stream){
 				// recurring-lambda currying. 
-				auto impl = [
-					&_is,
-					&init = _stream.init
-				]<fake::view_c _View, std::size_t _layer, fake::meta::array_c _Status>(
+				auto impl = [&_is, &init = _stream.init]<
+					fake::view_c _View,
+					std::size_t _layer,
+					fake::meta::array_c _Status,
+					fake::query_c _Substitute = fake::query<>
+				>(
 					auto &_self,
 					std::size_t &_i,
 					auto &&_e
@@ -830,18 +1075,23 @@ namespace fake::custom
 					using status = _Status;
 					using parent = fake::meta::array_element_t<0, status>;
 					using current = fake::meta::array_cat_t<fake::meta::array<type>, status>;
+					using info = fake::query_roll_t<_Info, _Substitute>;
 					constexpr bool sole = _View::empty() || enable_type == false;
 					constexpr bool bare = _View::empty() && enable_type == false;
-					constexpr fake::view_c auto space = std::conditional_t<sole, fake::view<>, fake::view<' '>>{};
-					constexpr fake::view_c auto name = std::conditional_t<member, _View, fake::view<>>{};
+					constexpr fake::view_c auto space = fake::conditional_v<sole, ""_v, " "_v>;
+					constexpr fake::view_c auto tag = type_name(fake::pack_v<type>);
+					constexpr fake::view_c auto name = fake::conditional_v<member, _View{}, ""_v>;
+					constexpr fake::view_c auto comma = fake::conditional_v<endl.empty(), ", "_v, ","_v>;
+					constexpr bool dynamic = container(fake::pack_v<type>);
 					constexpr bool contain = json && container(fake::pack_v<type>);
 					constexpr bool element = container(fake::pack_v<parent>);
+					constexpr bool transform = info_transform_v<info>;
 					
 					std::size_t i = 0;
 					auto scope = []<bool _comma, std::size_t _depth>(fake::mezz_t<_comma>, fake::mezz_t<_depth>){
 						if constexpr(_comma)
 							return scoper<
-								fake::ensure(decorate<map.comma>(","_v)),
+								fake::ensure(decorate<map.comma>(comma)),
 								fake::ensure(endl),
 								indenter<tab, _depth>{}
 							>{};
@@ -854,34 +1104,36 @@ namespace fake::custom
 					
 					constexpr fake::view_c auto quote = decorate<map.quote>("\""_v);
 					constexpr fake::view_c auto char_quote = decorate<map.quote>("'"_v);
-					constexpr fake::view_c auto json_quote = std::conditional_t<json, decltype(quote), fake::view<>>{};
+					constexpr fake::view_c auto json_quote = fake::conditional_v<json, quote, ""_v>;
 					
-					constexpr auto title = [](auto _name, auto _space, auto _json_quote, auto _ignore, auto _type){
-						using type = fake::take_t<decltype(_type){}>;
+					constexpr auto title = [](auto _tag, auto _name, auto _space, auto _json, auto _ignore){
+						constexpr bool bare = _tag.empty() && _name.empty() && _json.empty();
+						constexpr fake::view_c auto colon = fake::conditional_v<bare, ""_v, ":"_v>;
+						
 						if constexpr(json && _ignore.value)
 							return fake::ensure(""_v);
-						else if constexpr(_json_quote.empty())
+						else if constexpr(_json.empty())
 							return scoper<
-								fake::ensure(decorate<map.type>(type_name(fake::pack_v<type>))),
+								fake::ensure(decorate<map.type>(_tag)),
 								fake::ensure(decorate<map.member, context::index, _layer>(escape(_name))),
-								fake::ensure(decorate<map.colon>(":"_v))
+								fake::ensure(decorate<map.colon>(colon))
 							>{};
 						else
 							return scoper<
 								fake::ensure(
-									_json_quote + decorate<map.type>(type_name(fake::pack_v<type>)) + _space +
-										decorate<map.member, context::index, _layer>(escape(_name)) + _json_quote
+									_json + decorate<map.type>(_tag) + _space +
+										decorate<map.member, context::index, _layer>(escape(_name)) + _json
 								),
 								fake::ensure(decorate<map.colon>(":"_v))
 							>{};
-					}(name, space, json_quote, fake::mezz_v<element || bare>, fake::pack_v<type>);
+					}(tag, name, space, json_quote, fake::mezz_v<element || bare>);
 					
-					constexpr fake::view_c auto l = std::conditional_t<contain, fake::view_t<"[">, fake::view_t<"{">>{};
-					constexpr fake::view_c auto r = std::conditional_t<contain, fake::view_t<"]">, fake::view_t<"}">>{};
+					constexpr fake::view_c auto l = fake::conditional_v<contain, "["_v, "{"_v>;
+					constexpr fake::view_c auto r = fake::conditional_v<contain, "]"_v, "}"_v>;
 					
 					using array_adaptor = std::conditional_t<fake::array_c<type>, type, std::nullptr_t[]>;
 					
-					if constexpr(requires{fake::for_each<_ConfigToken>(_e, []<fake::view_c>(auto &&_e){});}){
+					if constexpr(requires{for_each(_e, []<fake::view_c>(auto &&_e){});}){
 						_is >> title >> fake::ensure(decorate<map.bracket, context::bracket, _layer>(l))
 							>> scope(fake::mezz_v<false>, fake::mezz_v<_layer + 1>);
 						
@@ -890,7 +1142,7 @@ namespace fake::custom
 							scope(fake::mezz_v<false>, fake::mezz_v<_layer>)
 						);
 						
-						if constexpr(fake::std_container_c<type> || fake::std_array_c<type>){
+						if constexpr(fake::std_container_c<type> || fake::std_array_c<type> || dynamic){
 							constexpr auto value_type_v = []{
 								if constexpr(requires{typename type::key_type; typename type::mapped_type;})
 									return fake::pack_v<std::pair<typename type::key_type, typename type::mapped_type>>;
@@ -941,7 +1193,7 @@ namespace fake::custom
 								else if(fake::trait_c<type, std::optional>)
 									_e.emplace();
 								
-								fake::for_each<_ConfigToken>(
+								for_each(
 									_e,
 									[&_self, &i]<fake::view_c _V>(auto &&_e){
 										_self.template operator()<_V, _layer + 1, current>(_self, i, _e);
@@ -950,11 +1202,13 @@ namespace fake::custom
 							}
 						}
 						else if constexpr(fake::trait_c<type, std::variant>){
-							fake::for_each<_ConfigToken>(
+							for_each(
 								_e,
 								[&_self, &i, &_e, &init]<fake::view_c _V>(auto &&_d){
-									_self.template operator()<_V, _layer + 1, current>(_self, i, _d);
-									if constexpr(_V{} == "index"_v){
+									constexpr bool index = _V{} == "index"_v;
+									using substitute = variant_i<index>;
+									_self.template operator()<_V, _layer + 1, current, substitute>(_self, i, _d);
+									if constexpr(index){
 										if(_d == std::variant_npos)
 											return;
 										[&_e, &init]<std::size_t... _index>(
@@ -988,7 +1242,7 @@ namespace fake::custom
 							);
 						}
 						else{
-							fake::for_each<_ConfigToken>(
+							for_each(
 								_e,
 								[&_self, &i]<fake::view_c _V>(auto &&_e){
 									_self.template operator()<_V, _layer + 1, current>(_self, i, _e);
@@ -1009,14 +1263,28 @@ namespace fake::custom
 							>> fake::ensure(decorate<map.bracket, context::bracket, _layer>(r));
 					}
 					else if constexpr(std::is_enum_v<type>){
-						using underlying = std::underlying_type_t<type>;
-						
-						underlying under;
-						if constexpr(std::same_as<underlying, char>)
-							_is >> title >> fake::ensure(char_quote) >> escape(under) >> fake::ensure(char_quote);
+						if constexpr(transform && requires{_is >> input(_e);}){
+							_is >> title >> decorate<map.value>(input(_e));
+						}
+						else{
+							using underlying = std::underlying_type_t<type>;
+							
+							underlying under;
+							if constexpr(std::same_as<underlying, char>)
+								_is >> title >> fake::ensure(char_quote) >> escape(under) >> fake::ensure(char_quote);
+							else
+								_is >> title >> decorate<map.value>(under);
+							_e = static_cast<type>(under);
+						}
+					}
+					else if constexpr(transform && requires{_is >> input(_e);}){
+						if constexpr(requires{std::quoted(_e);})
+							_is >> title >> fake::ensure(quote) >> escape<fake::ensure(quote)>(input(_e))
+								>> fake::ensure(quote);
+						else if constexpr(std::same_as<type, char>)
+							_is >> title >> fake::ensure(char_quote) >> escape(input(_e)) >> fake::ensure(char_quote);
 						else
-							_is >> title >> decorate<map.value>(under);
-						_e = static_cast<type>(under);
+							_is >> title >> decorate<map.value>(input(_e));
 					}
 					else{
 						if constexpr(requires{std::quoted(_e);})
@@ -1024,6 +1292,8 @@ namespace fake::custom
 								>> fake::ensure(quote);
 						else if constexpr(std::same_as<type, char>)
 							_is >> title >> fake::ensure(char_quote) >> escape(_e) >> fake::ensure(char_quote);
+						else if constexpr(std::same_as<type, char8_t>)
+							_is >> title >> decorate<map.value>(utf8_stream{_e});
 						else
 							_is >> title >> decorate<map.value>(_e);
 					}
@@ -1032,8 +1302,10 @@ namespace fake::custom
 				using type = std::remove_cvref_t<decltype(_stream.data)>;
 				constexpr bool object = json && (enable_type || container(fake::pack_v<type>) == false);
 				
+				if constexpr(wrap)
+					_is >> fake::ensure(wrapper.first);
 				if constexpr(object)
-					_is >> fake::ensure(decorate<map.bracket, context::bracket, 0x0>(fake::view_v<"{">))
+					_is >> fake::ensure(decorate<map.bracket, context::bracket, 0x0>(wrapper.first))
 						>> fake::ensure(endl) >> indenter<tab, 0x1>{};
 				
 				std::size_t index = 0;
@@ -1042,7 +1314,9 @@ namespace fake::custom
 				
 				if constexpr(object)
 					_is >> fake::ensure(endl)
-						>> fake::ensure(decorate<map.bracket, context::bracket, 0x0>(fake::view_v<"}">));
+						>> fake::ensure(decorate<map.bracket, context::bracket, 0x0>(wrapper.second));
+				if constexpr(wrap)
+					_is >> fake::ensure(wrapper.second);
 				
 				return _is;
 			}
@@ -1097,6 +1371,14 @@ namespace fake::custom
 						_f.template operator()<fake::view_t<"first">>(_e.first);
 					if constexpr(!fake::mezz_c<second> && !fake::view_c<second> && !std::same_as<second, void>)
 						_f.template operator()<fake::view_t<"second">>(_e.second);
+				},
+				[](auto &&_e){
+					using type = std::remove_cvref_t<decltype(_e)>;
+					using first = typename type::first_type;
+					using second = typename type::second_type;
+					
+					return std::size_t(!fake::mezz_c<first> && !fake::view_c<first> && !std::same_as<first, void>) +
+						std::size_t(!fake::mezz_c<second> && !fake::view_c<second> && !std::same_as<second, void>);
 				}
 			);
 			
@@ -1276,9 +1558,119 @@ namespace fake::io
 	{
 		
 		struct plain final{};
+		struct fancy final{};
 		struct pretty final{};
 		struct json final{};
 		struct html final{};
+		struct brief final{};
+		
+	}
+	
+	namespace as
+	{
+		
+		namespace transform
+		{
+			
+			namespace concepts
+			{
+				
+				template<typename _Type>
+				concept enum_c = std::is_enum_v<_Type> && requires{_Type::enum_size;};
+				
+			}
+			
+			struct enum_output_t final
+			{
+				template<concepts::enum_c _Type>
+				void operator()(std::basic_ostream<char> &_os, const _Type &_e) const{
+					static constexpr fake::enum_info info = fake::enum_info_for_v<_Type::enum_size>;
+					
+					_os << '"' << info[_e] << '"';
+				}
+			};
+			
+			struct enum_input_t final
+			{
+				template<concepts::enum_c _Type>
+				void operator()(std::basic_istream<char> &_is, _Type &_e) const{
+					using namespace fake::literals;
+					
+					static constexpr fake::enum_info info = fake::enum_info_for_v<_Type::enum_size>;
+					static constexpr fake::view_c auto report = fake::type_view(fake::pack_v<_Type>);
+					
+					std::string name;
+					
+					_is >> fake::ensure(fake::view_v<"\"">);
+					for(char e = '\0'; _is.good() && (e = _is.peek(), e != '"'); _is.ignore())
+						name += e;
+					_is >> fake::ensure(fake::view_v<"\"">);
+					
+					if(const fake::optional_c auto opt = info[name])
+						_e = opt.value();
+					else
+						throw fake::exception::mismatch::make("parse error: \'"_v + report + "\'"_v, _is);
+				}
+			};
+			
+			inline constexpr enum_output_t enum_output;
+			inline constexpr enum_input_t enum_input;
+			
+			template<auto _enum>
+			requires std::is_enum_v<std::remove_cvref_t<decltype(_enum)>>
+			struct custom_enum_output_t final{
+				using enum_type = std::remove_cvref_t<decltype(_enum)>;
+				
+				void operator()(std::basic_ostream<char> &_os, const enum_type &_e) const{
+					static constexpr fake::enum_info info = fake::enum_info_for_v<_enum>;
+					
+					_os << '"' << info[_e] << '"';
+				}
+			};
+			
+			template<auto _enum>
+			requires std::is_enum_v<std::remove_cvref_t<decltype(_enum)>>
+			struct custom_enum_input_t final{
+				using enum_type = std::remove_cvref_t<decltype(_enum)>;
+				
+				void operator()(std::basic_istream<char> &_is, enum_type &_e) const{
+					using namespace fake::literals;
+					
+					static constexpr fake::enum_info info = fake::enum_info_for_v<_enum>;
+					static constexpr fake::view_c auto report = fake::type_view(fake::pack_v<enum_type>);
+					
+					std::string name;
+					
+					_is >> fake::ensure(fake::view_v<"\"">);
+					for(char e = '\0'; _is.good() && (e = _is.peek(), e != '"'); _is.ignore())
+						name += e;
+					_is >> fake::ensure(fake::view_v<"\"">);
+					
+					if(const fake::optional_c auto opt = info[name])
+						_e = opt.value();
+					else
+						throw fake::exception::mismatch::make("parse error: \'"_v + report + "\'"_v, _is);
+				}
+			};
+			
+			template<auto _enum>
+			requires std::is_enum_v<std::remove_cvref_t<decltype(_enum)>>
+			inline constexpr custom_enum_output_t<_enum> custom_enum_output;
+			
+			template<auto _enum>
+			requires std::is_enum_v<std::remove_cvref_t<decltype(_enum)>>
+			inline constexpr custom_enum_input_t<_enum> custom_enum_input;
+			
+		}
+		
+		using enumerate = fake::io::streamer<transform::enum_output, transform::enum_input>;
+		
+		template<auto _enum>
+		requires std::is_enum_v<std::remove_cvref_t<decltype(_enum)>>
+		using custom_enumerate = fake::io::streamer<
+			transform::custom_enum_output<_enum>,
+			transform::custom_enum_input<_enum>
+		>;
 		
 	}
 	
@@ -1308,11 +1700,10 @@ namespace fake::io
 					
 					constexpr std::size_t index = static_cast<std::underlying_type_t<fake::colors>>(_front);
 					
-					return fake::view_v<"<font color=\""> + fake::meta::array_element_t<index, table>{} +
-						fake::view_v<"\">">;
+					return "<span style=\"color:"_v + fake::meta::array_element_t<index, table>{} + "\">"_v;
 				}
 				
-				consteval auto clear() noexcept{return fake::view_v<"</font>">;}
+				consteval auto clear() noexcept{return fake::view_v<"</span>">;}
 				
 				template<typename _Type, fake::colors _front, fake::colors _back>
 				struct stream final
@@ -1348,7 +1739,7 @@ namespace fake::io
 			
 		}
 		
-		// register meta-implementations for token-based-cpo 'fake::type_name' at compile-time. 
+		// register meta-implementations for token-based-cpo 'fake::custom::format' at compile-time. 
 		struct preset_formatter{
 		private:
 			struct colorization final{
@@ -1370,6 +1761,15 @@ namespace fake::io
 				fake::custom::format::config::style::tab<[]{}, token::plain, fake::view_v<"    ">>();
 			}
 			
+			static consteval void inject_fancy() noexcept{
+				fake::custom::format::config::aggregate::fields::enable<[]{}, token::fancy>();
+				fake::custom::format::config::color::enable<[]{}, token::fancy>();
+				fake::custom::format::config::bracket_pair_colorization::enable<[]{}, token::fancy>();
+				fake::custom::format::config::member_name_colorization::enable<[]{}, token::fancy>();
+				fake::custom::format::config::style::tab<[]{}, token::fancy, fake::view_v<"|   ">>();
+				fake::custom::format::config::transform<[]{}, fake::io::token::fancy, fake::io::as::enumerate>();
+			}
+			
 			static consteval void inject_pretty() noexcept{
 				fake::custom::format::config::color::enable<[]{}, token::pretty>();
 				fake::custom::format::config::bracket_pair_colorization::enable<[]{}, token::pretty>();
@@ -1383,24 +1783,94 @@ namespace fake::io
 			}
 			
 			static consteval void inject_html() noexcept{
-				fake::custom::format::config::json::enable<[]{}, token::html>();
+				using wrapper = fake::mate<
+					fake::view_t<"<pre style=\"background-color:#333; font-weight: bold; padding:1em;\">">,
+					fake::view_t<"</pre>">
+				>;
+				fake::custom::format::config::wrap::enable<[]{}, token::html>();
+				fake::custom::format::config::style::wrapper<[]{}, token::html, wrapper{}>();
 				fake::custom::format::config::color::enable<[]{}, token::html>();
 				fake::custom::format::config::style::endl<[]{}, token::html, fake::view_v<"</br>">>();
 				fake::custom::format::config::color::decorator<[]{}, token::html, colorization>();
 				fake::custom::format::config::bracket_pair_colorization::enable<[]{}, token::html>();
 				fake::custom::format::config::member_name_colorization::enable<[]{}, token::html>();
-				fake::custom::format::config::style::tab<[]{}, token::html, fake::view_v<"&nbsp; &nbsp; ">>();
+				fake::custom::format::config::style::tab<[]{}, token::html, fake::view_v<"    ">>();
 				using bracket = std::pair<fake::mezz_t<fake::view_v<"&lt;">>, fake::mezz_t<fake::view_v<"&gt;">>>;
 				fake::custom::type_name::config::set_templace_bracket<[]{}, token::html, bracket>();
+			}
+			
+			static consteval void inject_brief() noexcept{
+				fake::custom::format::config::type::disable<[]{}, token::brief>();
+				fake::custom::format::config::style::tab<[]{}, token::brief, fake::view_v<"">>();
+				fake::custom::format::config::style::endl<[]{}, token::brief, fake::view_v<"">>();
 			}
 		};
 		
 	}
 	
+	namespace detail::streamer
+	{
+		
+		template<auto _lambda, typename _Ref>
+		requires requires(std::basic_ostream<char> &_os, _Ref _e){{_lambda(_os, _e)} -> std::same_as<void>;}
+		struct ostreamer final{
+			_Ref ref;
+			
+		private:
+			friend std::basic_ostream<char>& operator<<(std::basic_ostream<char> &_os, const ostreamer &_stream){
+				return _lambda(_os, _stream.ref), _os;
+			}
+		};
+		
+		template<auto _lambda, typename _Ref>
+		requires requires(std::basic_istream<char> &_is, _Ref _e){{_lambda(_is, _e)} -> std::same_as<void>;}
+		struct istreamer final{
+			_Ref ref;
+			
+		private:
+			friend std::basic_istream<char>& operator>>(std::basic_istream<char> &_is, const istreamer &_stream){
+				return _lambda(_is, _stream.ref), _is;
+			}
+		};
+		
+	}
+	
+	template<auto _o>
+	struct ostreamer final : fake::custom::format::streamer{
+		static constexpr auto ostream = []<typename _Type>(const _Type &_e)
+		requires requires{detail::streamer::ostreamer<_o, _Type>{_e};}{
+			return detail::streamer::ostreamer<_o, std::add_lvalue_reference_t<std::add_const_t<_Type>>>{_e};
+		};
+	};
+	
+	template<auto _i>
+	struct istreamer final : fake::custom::format::streamer{
+		static constexpr auto istream = []<typename _Type>(_Type &_e)
+		requires requires{detail::streamer::istreamer<_i, _Type>{_e};}{
+			return detail::streamer::istreamer<_i, std::add_lvalue_reference_t<_Type>>{_e};
+		};
+	};
+	
+	template<auto _o, auto _i>
+	struct streamer final : fake::custom::format::streamer{
+		static constexpr auto ostream = []<typename _Type>(const _Type &_e)
+		requires requires{detail::streamer::ostreamer<_o, _Type>{_e};}{
+			return detail::streamer::ostreamer<_o, std::add_lvalue_reference_t<std::add_const_t<_Type>>>{_e};
+		};
+		static constexpr auto istream = []<typename _Type>(_Type &_e)
+		requires requires{detail::streamer::istreamer<_i, _Type>{_e};}{
+			return detail::streamer::istreamer<_i, std::add_lvalue_reference_t<_Type>>{_e};
+		};
+	};
+	
 	// preset CPOs. 
 	template<auto _footprint = custom::type_stream::config::footprint<fake::cpo::format<token::plain>>([]{})>
 	requires fake::meta::array_c<decltype(_footprint)>
 	inline constexpr auto plain = fake::format<token::plain, _footprint>;
+	
+	template<auto _footprint = custom::type_stream::config::footprint<fake::cpo::format<token::fancy>>([]{})>
+	requires fake::meta::array_c<decltype(_footprint)>
+	inline constexpr auto fancy = fake::format<token::fancy, _footprint>;
 	
 	template<auto _footprint = custom::type_stream::config::footprint<fake::cpo::format<token::pretty>>([]{})>
 	requires fake::meta::array_c<decltype(_footprint)>
@@ -1414,10 +1884,18 @@ namespace fake::io
 	requires fake::meta::array_c<decltype(_footprint)>
 	inline constexpr auto html = fake::format<token::html, _footprint>;
 	
+	template<auto _footprint = custom::type_stream::config::footprint<fake::cpo::format<token::brief>>([]{})>
+	requires fake::meta::array_c<decltype(_footprint)>
+	inline constexpr auto brief = fake::format<token::brief, _footprint>;
+	
 	// gcc bug workaround utility. 
 	template<auto _vest, auto _fp = custom::type_stream::config::footprint<fake::cpo::format<token::plain>>(_vest)>
 	requires fake::meta::array_c<decltype(_fp)>
 	inline constexpr auto plain_w = fake::format<token::plain, _fp>;
+	
+	template<auto _vest, auto _fp = custom::type_stream::config::footprint<fake::cpo::format<token::fancy>>(_vest)>
+	requires fake::meta::array_c<decltype(_fp)>
+	inline constexpr auto fancy_w = fake::format<token::fancy, _fp>;
 	
 	template<auto _vest, auto _fp = custom::type_stream::config::footprint<fake::cpo::format<token::pretty>>(_vest)>
 	requires fake::meta::array_c<decltype(_fp)>
@@ -1430,6 +1908,84 @@ namespace fake::io
 	template<auto _vest, auto _fp = custom::type_stream::config::footprint<fake::cpo::format<token::html>>(_vest)>
 	requires fake::meta::array_c<decltype(_fp)>
 	inline constexpr auto html_w = fake::format<token::html, _fp>;
+	
+	template<auto _vest, auto _fp = custom::type_stream::config::footprint<fake::cpo::format<token::brief>>(_vest)>
+	requires fake::meta::array_c<decltype(_fp)>
+	inline constexpr auto brief_w = fake::format<token::brief, _fp>;
+	
+	namespace as
+	{
+		
+		namespace transform
+		{
+			
+			struct hex_output_t final
+			{
+				void operator()(std::basic_ostream<char> &_os, const std::unsigned_integral auto &_e) const{
+					auto array = fake::to_hex(_e);
+					_os << "0x";
+					for(const char e : array)
+						_os << e;
+				}
+			};
+			
+			struct hex_input_t final
+			{
+				void operator()(std::basic_istream<char> &_is, std::unsigned_integral auto &_e) const{
+					std::array<char, sizeof(_e) * 2> array;
+					_is >> fake::ensure(fake::view_v<"0x">);
+					for(char &e : array)
+						_is >> e;
+					_e = fake::from_hex(array);
+				}
+			};
+			
+			inline constexpr hex_output_t hex_output;
+			inline constexpr hex_input_t hex_input;
+			
+		}
+		
+		using hex = fake::io::streamer<transform::hex_output, transform::hex_input>;
+		
+	}
+	
+	namespace with
+	{
+		
+		namespace transform
+		{
+			
+			struct hex_output_t final
+			{
+				void operator()(std::basic_ostream<char> &_os, const std::unsigned_integral auto &_e) const{
+					_os << fake::io::brief_w<[]{}>.origin(_e) << " (";
+					fake::io::as::transform::hex_output(_os, _e);
+					_os << ")";
+				}
+			};
+			
+			struct hex_input_t final
+			{
+				void operator()(std::basic_istream<char> &_is, std::unsigned_integral auto &_e) const{
+					auto value = _e, hex = _e;
+					_is >> fake::io::brief_w<[]{}>.origin(value) >> fake::ensure(fake::view_v<"(">);
+					fake::io::as::transform::hex_input(_is, hex);
+					_is >> fake::ensure(fake::view_v<")">);
+					
+					if(value != hex)
+						throw fake::exception::mismatch::make(fake::view_v<"parse error: \'value != hex\'">, _is);
+					_e = value;
+				}
+			};
+			
+			inline constexpr hex_output_t hex_output;
+			inline constexpr hex_input_t hex_input;
+			
+		}
+		
+		using hex = fake::io::streamer<transform::hex_output, transform::hex_input>;
+		
+	}
 	
 }
 

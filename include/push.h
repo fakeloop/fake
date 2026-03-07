@@ -6,4 +6,5 @@
 #elif defined __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnon-template-friend"
+#pragma GCC diagnostic ignored "-Wchanges-meaning"
 #endif

@@ -33,3 +33,6 @@
 
 # Local Fetch
 fetch.sh
+
+# Monitor Root Tag
+.monitor-root

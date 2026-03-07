@@ -51,6 +51,27 @@ namespace fake
 	template<bool _Condition>
 	concept to_trait_c = _Condition;
 	
+	namespace detail::is_valid
+	{
+		
+		template<typename _Type, template<typename> typename _Template>
+		struct trait_adaptor final : fake::trait<_Template, _Type>{};
+		
+		template<typename _Type, template<typename> typename _Template>
+		requires requires(_Template<_Type> &_e){as_const(_e), move(_e);} &&
+			std::is_empty_v<_Template<_Type>> &&
+			(std::is_same_v<_Template<_Type>, std::integral_constant<bool, true>> == false) &&
+			(std::is_same_v<_Template<_Type>, std::integral_constant<bool, false>> == false) && (
+				std::derived_from<_Template<_Type>, std::integral_constant<bool, true>> ||
+				std::derived_from<_Template<_Type>, std::integral_constant<bool, false>>
+			) && _Template<_Type>::value // ensure '_Template<_Type>' is in std namespace. 
+		struct trait_adaptor<_Type, _Template> final : _Template<_Type>{};
+		
+	}
+	
+	template<typename _Type, template<typename> typename _Template>
+	concept adapt_c = fake::detail::is_valid::trait_adaptor<_Type, _Template>::value;
+	
 	template<typename _Type>
 	struct type_package
 	{
@@ -68,12 +89,6 @@ namespace fake
 	
 	template<auto _value>
 	constexpr type_package<decltype(_value)> wrap_v{};
-	
-	template<pack_c auto _pack>
-	using take_t = typename std::remove_cvref_t<decltype(_pack)>::type;
-	
-	template<pack_c auto _pack>
-	constexpr take_t<_pack> take_v{};
 	
 	template<auto _value>
 	requires std::is_integral_v<std::remove_cvref_t<decltype(_value)>>
@@ -96,7 +111,7 @@ namespace fake
 	concept mezz_c = trait_auto_v<value_mezzanine, std::remove_cvref_t<_Type>>;
 	
 	template<typename _Type>
-	struct package_mezzanine : value_mezzanine<fake::type_package<_Type>{}>{};
+	struct package_mezzanine : fake::type_package<_Type>, value_mezzanine<fake::type_package<_Type>{}>{};
 	
 	template<typename _Type>
 	using pazz_t = package_mezzanine<_Type>;
@@ -106,6 +121,23 @@ namespace fake
 	
 	template<typename _Type>
 	concept pazz_c = trait_v<package_mezzanine, std::remove_cvref_t<_Type>>;
+	
+	template<auto>
+	struct take;
+	
+	template<pack_c auto _pack>
+	struct take<_pack> final{using type = typename std::remove_cvref_t<decltype(_pack)>::type;};
+	
+	template<pazz_c auto _pazz>
+	struct take<_pazz> final{using type = typename std::remove_cvref_t<decltype(_pazz.value)>::type;};
+	
+	template<auto _arg>
+	requires requires{typename take<_arg>::type;}
+	using take_t = typename take<_arg>::type;
+	
+	template<auto _arg>
+	requires requires{typename take<_arg>::type;}
+	constexpr take_t<_arg> take_v{};
 	
 	template<template<typename...> typename _Template>
 	struct generic

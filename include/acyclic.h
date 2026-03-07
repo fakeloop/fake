@@ -22,7 +22,7 @@
 #include "functor_info.h"
 
 namespace fake{template<typename _Token = fake::null_t> constexpr auto pass(auto&&...);}
-namespace fake::custom::tool::acyclic{struct executor_t;}
+namespace fake::custom::util::acyclic{struct executor_t;}
 
 namespace fake::acyclic::concepts
 {
@@ -70,13 +70,13 @@ namespace fake::acyclic::concepts
 			requires(_Expr &_e){
 				requires _Token::scheduler_inject;
 				requires awaitable_c<
-					decltype(_p.await_transform(fake::pass<fake::custom::tool::acyclic::executor_t>(_e)))
+					decltype(_p.await_transform(fake::pass<fake::custom::util::acyclic::executor_t>(_e)))
 				>;
 			} ||
 			requires(_Expr &&_e){
 				requires _Token::scheduler_inject;
 				requires awaitable_c<
-					decltype(_p.await_transform(fake::pass<fake::custom::tool::acyclic::executor_t>(_e)))
+					decltype(_p.await_transform(fake::pass<fake::custom::util::acyclic::executor_t>(_e)))
 				>;
 			};
 	};
@@ -131,6 +131,47 @@ namespace fake::acyclic::concepts
 		{_t.unhandled_exception()};
 	};
 	
+	namespace tags
+	{
+		
+		struct delegate{};
+		
+	}
+	
+}
+
+namespace fake
+{
+	
+	template<typename _Type>
+	concept acyclic_c = std::derived_from<_Type, fake::acyclic::concepts::tags::delegate>;
+	
+}
+
+namespace fake::acyclic::token::detail
+{
+	
+	template<typename _Scheduler, typename _Base>
+	concept awaitable_base_c = requires(_Base &_base, std::coroutine_handle<> &&_handle, _Scheduler &_scheduler){
+		{_base.await_ready()} -> std::convertible_to<bool>;
+		requires
+			requires{{_base.await_suspend(_handle)} -> std::convertible_to<bool>;} ||
+			requires{{_base.await_suspend(_handle)} -> std::convertible_to<std::coroutine_handle<>>;} ||
+			requires{{_base.await_suspend(_handle)} -> std::same_as<void>;} ||
+			requires{{_base.await_inject(_handle, _scheduler)} -> std::convertible_to<bool>;} ||
+			requires{{_base.await_inject(_handle, _scheduler)} -> std::convertible_to<std::coroutine_handle<>>;} ||
+			requires{{_base.await_inject(_handle, _scheduler)} -> std::same_as<void>;};
+		_base.await_resume();
+	};
+	
+	template<typename _Base, bool _reference = true>
+	requires std::same_as<_Base, std::remove_cvref_t<_Base>>
+	struct crtp;
+	
+	template<typename _Base, bool _reference = true>
+	requires std::same_as<_Base, std::remove_cvref_t<_Base>>
+	struct await_promise;
+	
 }
 
 namespace fake::acyclic::token
@@ -160,12 +201,17 @@ namespace fake::acyclic::token
 	// alternatively, one's results shall be distributed to subsequent nodes. 
 	struct dupli{};
 	
-	// one shall suspend the 'pc' and its 'awaitable' shall be parsed into 'awaiter' via '_Promise'. 
+	// one shall suspend the 'pc' and its 'awaitable' shall be transformed into 'awaiter' via '_Promise'. 
 	template<concepts::promise_c _Promise, bool _Inject = false>
 	struct adapt : fake::acyclic::token::await{
 		using promise_type = _Promise;
 		static constexpr bool scheduler_inject = _Inject;
 	};
+	
+	// one shall suspend the 'pc' and its 'return value' or 'return fake::pass(...)' shall be constructed into '_Base'. 
+	template<typename _Base, bool _reference = true>
+	requires std::same_as<_Base, std::remove_cvref_t<_Base>>
+	struct share : public adapt<fake::acyclic::token::detail::await_promise<_Base, _reference>, true>{};
 	
 	// special token demonstrates a default exception handler which may process a associated unhandled exception. 
 	// the unhandled exception is associated to the 'lambda' binds with the token '_Token'. 
@@ -217,7 +263,8 @@ namespace fake
 		constexpr decltype(auto) operator()(_Args &&..._args){return value(std::forward<_Args>(_args)...);}
 		
 	private:
-		template<typename, typename, typename, typename>
+		template<typename _TokenType, typename, typename, typename>
+		requires std::is_class_v<_TokenType>
 		friend struct pass_t;
 		
 		value_t value;
@@ -269,6 +316,156 @@ namespace fake
 		else{
 			return pass<_Token>(std::forward<decltype(_pass)>(_pass).get());
 		}
+	}
+	
+	namespace acyclic::token::detail
+	{
+		
+		template<typename _Base, bool _reference>
+		requires std::same_as<_Base, std::remove_cvref_t<_Base>>
+		struct crtp{
+			template<typename _Args, fake::acyclic::token::detail::awaitable_base_c<_Base> _Scheduler>
+			requires std::same_as<_Args, std::remove_cvref_t<_Args>> &&
+				std::same_as<_Scheduler, std::remove_cvref_t<_Scheduler>>
+			struct awaitable : _Base{
+			private:
+				using args_type = _Args;
+				using base_type = _Base;
+				static constexpr bool args_void = std::same_as<args_type, void>;
+				static constexpr bool args_value = args_void == false;
+				static constexpr bool scheduler_reference = _reference;
+				static constexpr bool scheduler_instance = _reference == false;
+				
+			public:
+				using scheduler_type = _Scheduler;
+				
+			private:
+				using scheduler_storage = std::conditional_t<
+					scheduler_reference,
+					std::optional<std::reference_wrapper<scheduler_type>>,
+					scheduler_type
+				>;
+				using args_storage = std::conditional_t<std::is_same_v<args_type, void>, fake::null_t, args_type>;
+				
+			public:
+				awaitable(fake::like<scheduler_type> auto &&_sched)
+				requires scheduler_instance && args_void:
+					scheduler(_sched){}
+				
+				awaitable(fake::like<scheduler_type> auto &&_sched)
+				requires scheduler_reference && args_void
+					{scheduler.emplace(_sched);}
+				
+				awaitable(fake::like<args_type> auto &&_args, fake::like<scheduler_type> auto &&_sched)
+				requires scheduler_instance && args_value && (fake::tuple_c<args_type> == false):
+					base_type(std::forward<decltype(_args)>(_args)), scheduler(_sched){}
+				
+				awaitable(fake::like<args_type> auto &&_args, fake::like<scheduler_type> auto &&_sched)
+				requires scheduler_reference && args_value && (fake::tuple_c<args_type> == false):
+					base_type(std::forward<decltype(_args)>(_args)){scheduler.emplace(_sched);}
+				
+				awaitable(fake::like<args_type> auto &&_args, fake::like<scheduler_type> auto &&_sched)
+				requires scheduler_instance && args_value && fake::tuple_c<args_type>:
+					awaitable(
+						std::make_index_sequence<std::tuple_size_v<args_type>>(),
+						std::forward<decltype(_args)>(_args),
+						std::forward<decltype(_sched)>(_sched)
+					){}
+				
+				awaitable(fake::like<args_type> auto &&_args, fake::like<scheduler_type> auto &&_sched)
+				requires scheduler_reference && args_value && fake::tuple_c<args_type>:
+					awaitable(
+						std::make_index_sequence<std::tuple_size_v<args_type>>(),
+						std::forward<decltype(_args)>(_args),
+						std::forward<decltype(_sched)>(_sched)
+					){}
+				
+			private:
+				template<std::size_t... _index>
+				awaitable(
+					std::index_sequence<_index...>,
+					fake::like<args_type> auto &&_args,
+					fake::like<scheduler_type> auto &&_sched
+				)
+				requires scheduler_instance && args_value && fake::tuple_c<args_type>:
+					base_type(std::get<_index>(std::forward<decltype(_args)>(_args))...), scheduler(_sched){}
+				
+				template<std::size_t... _index>
+				awaitable(
+					std::index_sequence<_index...>,
+					fake::like<args_type> auto &&_args,
+					fake::like<scheduler_type> auto &&_sched
+				)
+				requires scheduler_reference && args_value && fake::tuple_c<args_type>:
+					base_type(std::get<_index>(std::forward<decltype(_args)>(_args))...){scheduler.emplace(_sched);}
+				
+			public:
+				bool await_ready() const{return base_type::await_ready();}
+				void await_suspend(std::coroutine_handle<> _handle) requires scheduler_reference{
+					if constexpr(requires{base_type::await_inject(std::move(_handle), scheduler->get());})
+						base_type::await_inject(std::move(_handle), scheduler->get());
+					else
+						base_type::await_suspend(std::move(_handle));
+				}
+				void await_suspend(std::coroutine_handle<> _handle) requires scheduler_instance{
+					if constexpr(requires{base_type::await_inject(std::move(_handle), scheduler);})
+						base_type::await_inject(std::move(_handle), scheduler);
+					else
+						base_type::await_suspend(std::move(_handle));
+				}
+				decltype(auto) await_resume() {return base_type::await_resume();}
+				
+			private:
+				scheduler_storage scheduler;
+			};
+		};
+		
+		template<typename _Base, bool _reference>
+		requires std::same_as<_Base, std::remove_cvref_t<_Base>>
+		struct await_promise final{
+		private:
+			template<fake::pass_c _Pass>
+			struct wrapper final{
+				using pass_t = _Pass;
+				using token_t = std::remove_cvref_t<typename pass_t::token_t>;
+				using scheduler_t = std::remove_cvref_t<token_t>;
+				static constexpr bool is_tuple = pass_t::is_tuple;
+				using value_t = std::remove_cvref_t<typename pass_t::value_t>;
+				using args_t = std::conditional_t<is_tuple && std::is_same_v<value_t, std::tuple<>>, void, value_t>;
+				using await_t = typename crtp<_Base, _reference>::awaitable<args_t, scheduler_t>;
+				
+			public:
+				wrapper(const pass_t &_pass): pass(_pass){}
+				wrapper(pass_t &&_pass): pass(std::move(_pass)){}
+				
+			public:
+				void await_inject(auto &&_scheduler){
+					if constexpr(std::is_same_v<args_t, void>)
+						await.emplace(std::forward<decltype(_scheduler)>(_scheduler));
+					else
+						await.emplace(std::move(pass).get(), std::forward<decltype(_scheduler)>(_scheduler));
+				}
+				
+			public:
+				bool await_ready() const{return await->await_ready();}
+				void await_suspend(std::coroutine_handle<> _handle){return await->await_suspend(_handle);}
+				decltype(auto) await_resume(){return await->await_resume();}
+				
+			private:
+				pass_t pass;
+				std::optional<await_t> await;
+			};
+			
+		public:
+			auto await_transform(fake::pass_c auto &&_pass) const -> wrapper<std::remove_cvref_t<decltype(_pass)>>{
+				return std::forward<decltype(_pass)>(_pass);
+			}
+			
+			std::suspend_never initial_suspend() const noexcept{return {};}
+			std::suspend_never final_suspend() const noexcept{return {};}
+			void unhandled_exception() const noexcept{}
+		};
+		
 	}
 	
 	namespace custom
@@ -478,7 +675,7 @@ namespace fake
 		template<execution::topology::info_c, execution::topology::info_c, template<typename...> typename, bool>
 		struct acyclic;
 		
-		namespace tool::acyclic
+		namespace util::acyclic
 		{
 			
 			namespace detail
@@ -709,7 +906,7 @@ namespace fake
 					if(aspect.delegate.consume() == fake::atomic::ultimatum::signal::overflow)
 						throw fake::exception::acyclic{fake::exception::acyclic::invoke_interface::await_aspect};
 					aspect.handle = _handle;
-					aspect.handle = [](auto _handle, auto &_use, auto _self)->tool::acyclic::coroutine<void>
+					aspect.handle = [](auto _handle, auto &_use, auto _self) -> util::acyclic::coroutine<void>
 					{
 						_use.produce();
 						
@@ -737,7 +934,7 @@ namespace fake
 						auto &_aspcet,
 						auto &_use,
 						auto _self
-					)->tool::acyclic::coroutine<void>
+					) -> util::acyclic::coroutine<void>
 					{
 						_use.produce();
 						
@@ -772,7 +969,7 @@ namespace fake
 					
 					return [&vars = callee.vars]<typename... _Vars>(
 						fake::type_package<std::tuple<_Vars...>>
-					)->decltype(auto)
+					) -> decltype(auto)
 					{
 						return std::make_tuple(std::move(std::get<_Vars>(vars).storage.value())...);
 					}(fake::pack_v<resume_t>);
@@ -799,7 +996,7 @@ namespace fake
 			static constexpr bool sfinae_friendly = _sfinae_friendly;
 			
 			template<pack_c _Callee, pack_c _Aspect>
-			struct delegate final{
+			struct delegate final : fake::acyclic::concepts::tags::delegate{
 			private:
 				template<typename... _Types>
 				using coroutine_t = _Coroutine<_Types...>;
@@ -1135,7 +1332,7 @@ namespace fake
 										return fake::pack_v<
 											decltype(
 												std::declval<promise_t>().await_transform(
-													fake::pass<tool::acyclic::executor_t>(std::declval<expr_t>())
+													fake::pass<util::acyclic::executor_t>(std::declval<expr_t>())
 												)
 											)
 										>;
@@ -1179,7 +1376,7 @@ namespace fake
 					if constexpr(requires{typename _Token::promise_type;} && requires{_Token::scheduler_inject;})
 						if constexpr(_Token::scheduler_inject)
 							static_assert(
-								requires(awaiter_t &_awaiter, tool::acyclic::executor_t &_executor){
+								requires(awaiter_t &_awaiter, util::acyclic::executor_t &_executor){
 									_awaiter.await_inject(_executor);
 								},
 								"\e[33;48merror<fake::acyclic>: 'scheduler_inject' token, awaiter without method.\e[0m"
@@ -1271,7 +1468,7 @@ namespace fake
 						using pass_t = fake::tuple::find_if_t<typename aspect_t::storage_t, query_pass>;
 						using lambda_t = typename pass_t::value_t;
 						
-						constexpr auto broker = []<typename _Arg>(_Arg &&_arg)->decltype(auto)
+						constexpr auto broker = []<typename _Arg>(_Arg &&_arg) -> decltype(auto)
 						{
 							return transform<node_t>(std::forward<_Arg>(_arg));
 						};
@@ -1312,7 +1509,7 @@ namespace fake
 							};
 							using func_t = fake::take_t<tier(fake::pack_v<args_t>)>;
 							
-							return fake::pack_v<std::tuple<tool::acyclic::functor<meta_t, fake::functor_info<func_t>>>>;
+							return fake::pack_v<std::tuple<util::acyclic::functor<meta_t, fake::functor_info<func_t>>>>;
 						}
 						else{
 							return fake::pack_v<std::tuple<>>;
@@ -1340,7 +1537,7 @@ namespace fake
 					fake::type_package<std::tuple<_Functors...>>,
 					fake::type_package<execution::topology::meta<_Token, _Results, execution::topology::args<_Args...>>>
 				) noexcept{
-					// self meta for pack a new 'tool::acyclic::functor<meta, info, aspects>' if 'info' deducible. 
+					// self meta for pack a new 'util::acyclic::functor<meta, info, aspects>' if 'info' deducible. 
 					using meta_t = execution::topology::meta<_Token, _Results, execution::topology::args<_Args...>>;
 					
 					// query info of each args passes. 
@@ -1362,7 +1559,7 @@ namespace fake
 					if constexpr(deducible){
 						using query_t = raw_t;
 						
-						constexpr auto result = tool::acyclic::for_each<raw_t>(
+						constexpr auto result = util::acyclic::for_each<raw_t>(
 							[]<typename _Func>(fake::type_package<_Func>){
 								// extract every return type from each args. 
 								using node_t = _Token;
@@ -1446,7 +1643,7 @@ namespace fake
 								// then deduce the invoke result of current pass. 
 								using lambda_t = typename pass_t::value_t;
 								
-								constexpr auto broker = []<typename _Arg>(_Arg &&_arg)->decltype(auto)
+								constexpr auto broker = []<typename _Arg>(_Arg &&_arg) -> decltype(auto)
 								{
 									return transform<node_t>(std::forward<_Arg>(_arg));
 								};
@@ -1504,13 +1701,13 @@ namespace fake
 						using delegate_t = typename fake::take_t<result>::first_type::type;
 						using aspect_t = typename fake::take_t<result>::second_type;
 						
-						// record the deduced 'tool::acyclic::functor<meta, info, aspects>'. 
+						// record the deduced 'util::acyclic::functor<meta, info, aspects>'. 
 						if constexpr(std::is_same_v<delegate_t, fake::null_t>)
 							return fake::pack_v<std::tuple<>>;
 						else
 							return fake::pack_v<
 								fake::tuple::concat_t<
-									std::tuple<tool::acyclic::functor<meta_t, fake::functor_info<delegate_t>>>,
+									std::tuple<util::acyclic::functor<meta_t, fake::functor_info<delegate_t>>>,
 									aspect_t
 								>
 							>;
@@ -1520,7 +1717,7 @@ namespace fake
 					}
 				}
 				
-				// deduce 'tool::acyclic::functor<meta, fake::functor_info, std::tuple>' from init status. 
+				// deduce 'util::acyclic::functor<meta, fake::functor_info, std::tuple>' from init status. 
 				template<fake::tuple_c _Graph, typename... _Functors, typename... _Observers>
 				static consteval auto deduce_functor(
 					fake::type_package<std::tuple<_Functors...>> _collect,
@@ -1617,7 +1814,7 @@ namespace fake
 							"lambda functor of entry node is NOT deducible.\e[0m"
 						);
 						
-						return fake::pack_v<tool::acyclic::functor<meta_t, fake::functor_info<functor_t>>>;
+						return fake::pack_v<util::acyclic::functor<meta_t, fake::functor_info<functor_t>>>;
 					};
 					
 					return fake::tuple::transform_v<std::tuple<_Tokens...>, init>;
@@ -1643,7 +1840,7 @@ namespace fake
 						constexpr auto pick = []<
 							execution::topology::meta_c _Meta,
 							typename _Info
-						>(fake::type_package<tool::acyclic::functor<_Meta, _Info>>){
+						>(fake::type_package<util::acyclic::functor<_Meta, _Info>>){
 							using node_t = typename _Meta::token;
 							using result_t = typename _Info::retn;
 							
@@ -1659,14 +1856,14 @@ namespace fake
 									using type_t = fake::remove_rvalue_reference_t<origin_t>;
 									
 									return fake::pack_v<
-										std::tuple<tool::acyclic::relay<node_t, type_t, sizeof...(_Arg)>>
+										std::tuple<util::acyclic::relay<node_t, type_t, sizeof...(_Arg)>>
 									>;
 								}
 								else{
 									using type_t = fake::remove_rvalue_reference_t<result_t>;
 									
 									return fake::pack_v<
-										std::tuple<tool::acyclic::relay<node_t, type_t, sizeof...(_Arg)>>
+										std::tuple<util::acyclic::relay<node_t, type_t, sizeof...(_Arg)>>
 									>;
 								}
 							}
@@ -1699,7 +1896,7 @@ namespace fake
 					>,
 					fake::type_package<std::tuple<_Inlines...>>
 				) noexcept{
-					// self meta for pack a new 'tool::acyclic::functor<meta, info>' if 'info' deducible. 
+					// self meta for pack a new 'util::acyclic::functor<meta, info>' if 'info' deducible. 
 					using meta_t = execution::topology::meta<
 						_Token,
 						execution::topology::results<_Results...>,
@@ -1783,7 +1980,7 @@ namespace fake
 						return deduce_rely<_Graph>(pack, fake::pack_v<inline_t>);
 				}
 				
-				// deduce 'tool::acyclic::functor<meta, fake::functor_info>' from init status. 
+				// deduce 'util::acyclic::functor<meta, fake::functor_info>' from init status. 
 				template<fake::tuple_c _Graph, typename... _Inlines>
 				static consteval auto deduce_depend(fake::type_package<std::tuple<_Inlines...>>) noexcept{
 					using inline_t = std::tuple<_Inlines...>;
@@ -1859,8 +2056,8 @@ namespace fake
 				}
 				
 				static consteval bool strict_nodes_match() noexcept{
-					constexpr auto match = [](auto _pack){
-						using analysis_t = fake::take_t<_pack>;
+					constexpr auto match = []<typename _Analysis>(fake::type_package<_Analysis> _pack){
+						using analysis_t = _Analysis;
 						constexpr auto unpaired_args = []<execution::topology::meta_c _Meta>(fake::type_package<_Meta>){
 							constexpr auto miss = []<typename _Arg>(fake::type_package<_Arg>){
 								constexpr auto query = []<execution::topology::meta_c _Query>(
@@ -1940,8 +2137,13 @@ namespace fake
 									return fake::pack_v<fake::null_t>;
 								}
 								else{
-									constexpr auto remain_v = fake::tuple::erase_front_v<iterate_t>;
-									using meta_t = fake::take_t<_self(_self, _origin, remain_v)>;
+									static constexpr auto remain_v = fake::tuple::erase_front_v<iterate_t>;
+									
+									// compiler work around
+									static constexpr auto self = decltype(_self){};
+									static constexpr auto origin = decltype(_origin){};
+									
+									using meta_t = fake::take_t<self(self, origin, remain_v)>;
 									
 									if constexpr(std::is_same_v<meta_t, fake::null_t>){
 										return fake::pack_v<fake::null_t>;
@@ -1977,9 +2179,6 @@ namespace fake
 												// regular node. 
 												constexpr auto state_v = fake::pack_v<std::tuple<meta_t, open_t>>;
 												
-												// do NOT use 'fake::take_t<_self(...)>', '_self' is NOT 'constexpr'. 
-												// or it may cause an ICE of gcc. 
-												constexpr auto self = decltype(_self){};
 												using meta_t = fake::take_t<self(self, state_v, recur_v)>;
 												
 												if constexpr(std::is_same_v<meta_t, fake::null_t>)
@@ -2102,7 +2301,7 @@ namespace fake
 							using meta_t = fake::tuple::find_if_t<tuple_dec, query>;
 							if constexpr(meta_t::mode == execution::topology::meta_e::meta_obs)
 								return fake::pack_v<
-									tool::acyclic::functor<
+									util::acyclic::functor<
 										execution::topology::meta<
 											node_t,
 											typename meta_t::results,
@@ -2112,7 +2311,7 @@ namespace fake
 									>
 								>;
 							else
-								return fake::pack_v<tool::acyclic::functor<meta_t, info_t>>;
+								return fake::pack_v<util::acyclic::functor<meta_t, info_t>>;
 						};
 						
 						constexpr auto trans = []<typename _DeduceFunctor>(fake::type_package<_DeduceFunctor>){
@@ -2138,17 +2337,17 @@ namespace fake
 						using resume_t = typename std::remove_cvref_t<decltype(resume)>::type;
 						
 						return fake::pack_v<
-							tool::acyclic::aspection<
+							util::acyclic::aspection<
 								meta_t,
-								tool::acyclic::deduction<depend_t, relay_t, functors_t, entries_t, resume_t>
+								util::acyclic::deduction<depend_t, relay_t, functors_t, entries_t, resume_t>
 							>
 						>;
 					};
 					using aspections = fake::tuple::transform_t<fake::take_t<functors.second>, iterate>;
 					
 					return fake::pack_v<
-						tool::acyclic::deduce<
-							tool::acyclic::deduction<depend_t, relay_t, functors_t, entries_t, resume_t>,
+						util::acyclic::deduce<
+							util::acyclic::deduction<depend_t, relay_t, functors_t, entries_t, resume_t>,
 							aspections
 						>
 					>;
@@ -2259,7 +2458,7 @@ namespace fake
 				using deduce_t = typename fake::take_t<deduce_wrapper_t::deduce_v>::deducer;
 				
 			public:
-				using result_type = typename tool::acyclic::instance_t<
+				using result_type = typename util::acyclic::instance_t<
 					typename deduce_t::relay_t,
 					typename deduce_t::resume_t
 				>::result_type;
@@ -2314,7 +2513,7 @@ namespace fake
 						auto &&_value,
 						auto &_broker,
 						fake::type_package<_Arg>
-					)->decltype(auto)
+					) -> decltype(auto)
 					{
 						constexpr auto functor = []<typename _Functor>(fake::type_package<_Functor>){
 							return std::is_same_v<typename _Functor::meta::token, _Arg>;
@@ -2348,7 +2547,7 @@ namespace fake
 						constexpr auto observe = []<typename _Prev = _Arg>(
 							auto &&_value,
 							auto &_broker
-						)->decltype(auto)
+						) -> decltype(auto)
 						{
 							if constexpr(std::is_same_v<tuple_top, _Graph>){
 								using broker_t = std::remove_cvref_t<decltype(_broker)>;
@@ -2410,7 +2609,7 @@ namespace fake
 												_broker.aspect,
 												_broker,
 												std::get<_Aspections>(_broker.aspects).vars,
-												fake::pass<fake::acyclic::token::sched<void>>(tool::acyclic::executor),
+												fake::pass<fake::acyclic::token::sched<void>>(util::acyclic::executor),
 												_broker.handle,
 												_broker.work,
 												_broker.atomic,
@@ -2478,7 +2677,7 @@ namespace fake
 											_broker.aspect,
 											_broker,
 											std::get<_Aspections>(_broker.aspects).vars,
-											fake::pass<fake::acyclic::token::sched<void>>(tool::acyclic::executor),
+											fake::pass<fake::acyclic::token::sched<void>>(util::acyclic::executor),
 											_broker.handle,
 											_broker.work,
 											_broker.atomic,
@@ -2690,7 +2889,7 @@ namespace fake
 					namespace concepts = fake::acyclic::concepts;
 					using scheduler_t = _Scheduler;
 					
-					constexpr auto awaitable = []<typename _Ex>(_Ex &&_ex)->decltype(auto)
+					constexpr auto awaitable = []<typename _Ex>(_Ex &&_ex) -> decltype(auto)
 					{
 						using token_t = _Token;
 						using expr_t = _Ex;
@@ -2720,7 +2919,7 @@ namespace fake
 						}
 					};
 					
-					constexpr auto awaiter = []<concepts::awaitable_c _Aw>(_Aw &&_aw)->decltype(auto)
+					constexpr auto awaiter = []<concepts::awaitable_c _Aw>(_Aw &&_aw) -> decltype(auto)
 					{
 						using awaitable_t = _Aw;
 						
@@ -2744,7 +2943,7 @@ namespace fake
 					namespace concepts = fake::acyclic::concepts;
 					using token_t = std::remove_cvref_t<decltype(_expr)>::token_t;
 					
-					constexpr auto scheduler = []<typename _Ex>(_Ex &&_ex)->decltype(auto)
+					constexpr auto scheduler = []<typename _Ex>(_Ex &&_ex) -> decltype(auto)
 					{
 						using expr_t = _Ex;
 						
@@ -2807,14 +3006,13 @@ namespace fake
 					constexpr bool suspend_bool = std::convertible_to<suspend_t, bool>;
 					constexpr bool suspend_coro = std::convertible_to<suspend_t, std::coroutine_handle<>>;
 					
+					if constexpr(requires{typename _Node::promise_type;} && requires{requires _Node::scheduler_inject;})
+						_awaiter.await_inject(std::forward<decltype(_sched)>(_sched));
+					
 					if(_awaiter.await_ready()){
 						_coro();
 					}
 					else{
-						if constexpr(requires{typename _Node::promise_type;} && requires{_Node::scheduler_inject;})
-							if constexpr(_Node::scheduler_inject)
-								_awaiter.await_inject(std::forward<decltype(_sched)>(_sched));
-						
 						if constexpr(suspend_void){
 							_awaiter.await_suspend(_coro);
 						}
@@ -2825,6 +3023,44 @@ namespace fake
 						else if constexpr(suspend_coro){
 							_awaiter.await_suspend(_coro).resume();
 						}
+					}
+				}
+				
+				template<typename _Rec, typename _Group, typename _Deduce>
+				static constexpr auto recur_var(
+					fake::type_package<_Rec>,
+					fake::type_package<_Group>,
+					fake::type_package<_Deduce>
+				){
+					constexpr auto find_var = []<typename _Var>(fake::type_package<_Var>){
+						return std::is_same_v<typename _Var::token_t, _Rec>;
+					};
+					
+					using recur_t = fake::tuple::find_if_t<typename _Deduce::relay_t, find_var>;
+					
+					if constexpr(std::is_same_v<recur_t, fake::null_t>){
+						constexpr auto pick = []<execution::topology::meta_c _Meta>(
+							fake::type_package<_Meta>
+						){
+							return std::is_same_v<typename _Meta::token, _Rec>;
+						};
+						
+						using results_t = typename fake::tuple::find_if_t<_Group, pick>::results;
+						
+						static_assert(
+							fake::element_size_v<results_t> == 1,
+							"\e[33;48merror<fake::acyclic>: "
+							"logic error, unexpected inlined results number.\e[0m"
+						);
+						
+						return recur_var(
+							fake::pack_v<fake::element_index_t<0, results_t>>,
+							fake::pack_v<_Group>,
+							fake::pack_v<_Deduce>
+						);
+					}
+					else{
+						return fake::pack_v<recur_t>;
 					}
 				}
 				
@@ -2842,36 +3078,9 @@ namespace fake
 					using arg_t = std::remove_cvref_t<decltype(_arg)>;
 					using inline_t = typename arg_t::token_t;
 					
-					constexpr auto recur_var = []<typename _Rec>(auto _self, fake::type_package<_Rec>){
-						constexpr auto find_var = []<typename _Var>(fake::type_package<_Var>){
-							return std::is_same_v<typename _Var::token_t, _Rec>;
-						};
-						
-						using recur_t = fake::tuple::find_if_t<typename _Deduce::relay_t, find_var>;
-						
-						if constexpr(std::is_same_v<recur_t, fake::null_t>){
-							constexpr auto pick = []<execution::topology::meta_c _Meta>(
-								fake::type_package<_Meta>
-							){
-								return std::is_same_v<typename _Meta::token, _Rec>;
-							};
-							
-							using results_t = typename fake::tuple::find_if_t<_Group, pick>::results;
-							
-							static_assert(
-								fake::element_size_v<results_t> == 1,
-								"\e[33;48merror<fake::acyclic>: "
-								"logic error, unexpected inlined results number.\e[0m"
-							);
-							
-							return _self(_self, fake::pack_v<fake::element_index_t<0, results_t>>);
-						}
-						else{
-							return fake::pack_v<recur_t>;
-						}
-					};
-					
-					using var_t = fake::take_t<recur_var(recur_var, fake::pack_v<inline_t>)>;
+					using var_t = fake::take_t<
+						recur_var(fake::pack_v<inline_t>, fake::pack_v<_Group>, fake::pack_v<_Deduce>)
+					>;
 					using node_t = typename var_t::token_t;
 					
 					constexpr bool has_exception_handler = std::is_same_v<
@@ -2916,9 +3125,9 @@ namespace fake
 									auto _handle,
 									auto &_work,
 									auto &_atomic
-								)->coroutine_t<ref_t>
+								) -> coroutine_t<ref_t>
 								{
-									tool::acyclic::guard_t guard{_handle, _work, _atomic};
+									util::acyclic::guard_t guard{_handle, _work, _atomic};
 									
 									co_yield std::ref(_await);
 									
@@ -2985,9 +3194,9 @@ namespace fake
 									auto _handle,
 									auto &_work,
 									auto &_atomic
-								)->coroutine_t<ref_t>
+								) -> coroutine_t<ref_t>
 								{
-									tool::acyclic::guard_t guard{_handle, _work, _atomic};
+									util::acyclic::guard_t guard{_handle, _work, _atomic};
 									
 									co_yield std::ref(_await);
 									
@@ -3069,7 +3278,7 @@ namespace fake
 									[
 										&storage = _deli.storage,
 										callback = std::move(callback),
-										guard = tool::acyclic::guard_t{_handle, _work, _atomic}
+										guard = util::acyclic::guard_t{_handle, _work, _atomic}
 									]() mutable{
 										try{callback();}
 										catch(const fake::exception::detail::acyclic::recur&){}
@@ -3085,7 +3294,7 @@ namespace fake
 							expr_to_scheduler(_sched).template execute<node_t>(
 								[
 									callback = std::move(callback),
-									guard = tool::acyclic::guard_t{_handle, _work, _atomic}
+									guard = util::acyclic::guard_t{_handle, _work, _atomic}
 								]() mutable{
 									try{callback();}
 									catch(const fake::exception::detail::acyclic::recur&){}
@@ -3100,7 +3309,7 @@ namespace fake
 									[
 										&storage = _deli.storage,
 										callback = std::move(callback),
-										guard = tool::acyclic::guard_t{_handle, _work, _atomic}
+										guard = util::acyclic::guard_t{_handle, _work, _atomic}
 									]() mutable{
 										try{callback();}
 										catch(const fake::exception::detail::acyclic::recur&){}
@@ -3116,7 +3325,7 @@ namespace fake
 							expr_to_scheduler(_sched).execute(
 								[
 									callback = std::move(callback),
-									guard = tool::acyclic::guard_t{_handle, _work, _atomic}
+									guard = util::acyclic::guard_t{_handle, _work, _atomic}
 								]() mutable{
 									try{callback();}
 									catch(const fake::exception::detail::acyclic::recur&){}
@@ -3188,7 +3397,9 @@ namespace fake
 							using raw_t = typename fake::tuple::find_if_t<typename _Deduce::depend_t, find_node>::args;
 							using var_t = fake::tuple::find_if_t<typename _Deduce::relay_t, find_var>;
 							
-							constexpr auto arg_tuple = []<typename... _Args>(execution::topology::args<_Args...>){
+							static constexpr auto arg_tuple = []<typename... _Args>(
+								execution::topology::args<_Args...>
+							){
 								return fake::pack_v<std::tuple<_Args...>>;
 							};
 							
@@ -3196,11 +3407,11 @@ namespace fake
 							// gcc would only be unhappy when acyclic deduction occurred in the second compile phase. 
 							// some version may delay the deduction of 'raw_t' until 'arg_tuple()' invocation occurs. 
 							// so a work around is to force the deduction to happen by forming an instance here. 
-							constexpr auto raw_v = raw_t{};
+							static constexpr auto raw_v = raw_t{};
 							
 							using raw_tuple = fake::take_t<arg_tuple(raw_v)>;
 							
-							constexpr auto remove = []<typename _Arg>(fake::type_package<_Arg>){
+							static constexpr auto remove = []<typename _Arg>(fake::type_package<_Arg>){
 								constexpr auto find_relay = []<typename _Relay>(fake::type_package<_Relay>){
 									return std::is_same_v<typename _Relay::token_t, _Arg>;
 								};
@@ -3252,16 +3463,13 @@ namespace fake
 								handle = _handle,
 								&work = _work,
 								&atomic = _atomic
-							]<typename _ArgsType = args_t, typename _VoidsType = voids_t>() mutable{
-								// pass the type 'args_t' through the gcc type scope state machine to make it happy. 
-								using args_t = _ArgsType;
-								
+							]<typename _VoidsType = voids_t>() mutable{
 								constexpr auto invoke = []<typename... _Args, fake::tuple_c _Voids = _VoidsType>(
 									auto &_storage,
 									auto &_aspect,
 									auto &_vars,
 									fake::type_package<std::tuple<_Args...>>
-								)->decltype(auto)
+								) -> decltype(auto)
 								{
 									return recur_inline_invoke<_Graph, _Deduce, node_t, invoke_e::propagate, _Voids>(
 										_storage,
@@ -3297,9 +3505,9 @@ namespace fake
 											auto _handle,
 											auto &_work,
 											auto &_atomic
-										)->coroutine_t<ref_t>
+										) -> coroutine_t<ref_t>
 										{
-											tool::acyclic::guard_t guard{_handle, _work, _atomic};
+											util::acyclic::guard_t guard{_handle, _work, _atomic};
 											
 											co_yield std::ref(_await);
 											
@@ -3362,9 +3570,9 @@ namespace fake
 											auto _handle,
 											auto &_work,
 											auto &_atomic
-										)->coroutine_t<ref_t>
+										) -> coroutine_t<ref_t>
 										{
-											tool::acyclic::guard_t guard{_handle, _work, _atomic};
+											util::acyclic::guard_t guard{_handle, _work, _atomic};
 											
 											co_yield std::ref(_await);
 											
@@ -3437,7 +3645,7 @@ namespace fake
 												[
 													&storage = _deli.storage,
 													callback = std::move(callback),
-													guard = tool::acyclic::guard_t{_handle, _work, _atomic}
+													guard = util::acyclic::guard_t{_handle, _work, _atomic}
 												]() mutable{
 													try{callback();}
 													catch(const fake::exception::detail::acyclic::recur&){}
@@ -3453,7 +3661,7 @@ namespace fake
 										expr_to_scheduler(_sched).template execute<node_t>(
 											[
 												callback = std::move(callback),
-												guard = tool::acyclic::guard_t{_handle, _work, _atomic}
+												guard = util::acyclic::guard_t{_handle, _work, _atomic}
 											]() mutable{
 												try{callback();}
 												catch(const fake::exception::detail::acyclic::recur&){}
@@ -3468,7 +3676,7 @@ namespace fake
 												[
 													&storage = _deli.storage,
 													callback = std::move(callback),
-													guard = tool::acyclic::guard_t{_handle, _work, _atomic}
+													guard = util::acyclic::guard_t{_handle, _work, _atomic}
 												]() mutable{
 													try{callback();}
 													catch(const fake::exception::detail::acyclic::recur&){}
@@ -3484,7 +3692,7 @@ namespace fake
 										expr_to_scheduler(_sched).execute(
 											[
 												callback = std::move(callback),
-												guard = tool::acyclic::guard_t{_handle, _work, _atomic}
+												guard = util::acyclic::guard_t{_handle, _work, _atomic}
 											]() mutable{
 												try{callback();}
 												catch(const fake::exception::detail::acyclic::recur&){}
@@ -3517,16 +3725,16 @@ namespace fake
 					using relay_t = typename deduce_t::relay_t;
 					using resume_t = typename deduce_t::resume_t;
 					
-					coroutine_t<tool::acyclic::instance_t<relay_t, resume_t>> coro = []<pass_c... _Args>(
+					coroutine_t<util::acyclic::instance_t<relay_t, resume_t>> coro = []<pass_c... _Args>(
 						auto &&_callee,
 						auto &&_aspect,
 						_Args ..._args
-					)->coroutine_t<tool::acyclic::instance_t<relay_t, resume_t>>
+					) -> coroutine_t<util::acyclic::instance_t<relay_t, resume_t>>
 					{
 						invoker_t callee = {std::forward<decltype(_callee)>(_callee)};
 						broker_t aspect = {std::forward<decltype(_aspect)>(_aspect)};
 						
-						tool::acyclic::instance_t<relay_t, resume_t> yield{
+						util::acyclic::instance_t<relay_t, resume_t> yield{
 							callee.vars,
 							callee.handle,
 							callee.self,
@@ -3554,8 +3762,8 @@ namespace fake
 								aspect.handle();
 						
 						{
-							tool::acyclic::guard_t guard_callee{callee.handle, callee.work, callee.invoke_await_resume};
-							tool::acyclic::guard_t guard_aspect{aspect.handle, aspect.work, aspect.atomic};
+							util::acyclic::guard_t guard_callee{callee.handle, callee.work, callee.invoke_await_resume};
+							util::acyclic::guard_t guard_aspect{aspect.handle, aspect.work, aspect.atomic};
 							
 							(
 								invoke_params<tuple_top, deduce_t>(
@@ -3578,7 +3786,7 @@ namespace fake
 						std::forward<_Params>(_params)...
 					);
 					
-					tool::acyclic::instance_t<relay_t, resume_t> instance = coro.get();
+					util::acyclic::instance_t<relay_t, resume_t> instance = coro.get();
 					instance.callee.self = coro;
 					
 					return instance;
@@ -3767,7 +3975,7 @@ namespace fake
 	template<
 		execution::topology::info_c _Topology,
 		execution::topology::info_c _Decorate = fake::top::info<>,
-		template<typename...> typename _Coroutine = custom::tool::acyclic::coroutine
+		template<typename...> typename _Coroutine = custom::util::acyclic::coroutine
 	>
 	auto bind(auto &&_e){
 		using acyclic_t = custom::acyclic<_Topology, _Decorate, _Coroutine, true>;
@@ -3777,7 +3985,7 @@ namespace fake
 	template<
 		execution::topology::info_c _Topology,
 		execution::topology::info_c _Decorate = fake::top::info<>,
-		template<typename...> typename _Coroutine = custom::tool::acyclic::coroutine
+		template<typename...> typename _Coroutine = custom::util::acyclic::coroutine
 	>
 	auto bind(auto &&_e, auto &&_f){
 		using acyclic_t = custom::acyclic<_Topology, _Decorate, _Coroutine, true>;
@@ -3788,7 +3996,7 @@ namespace fake
 		fake::debug_c _Label,
 		execution::topology::info_c _Topology,
 		execution::topology::info_c _Decorate = fake::top::info<>,
-		template<typename...> typename _Coroutine = custom::tool::acyclic::coroutine
+		template<typename...> typename _Coroutine = custom::util::acyclic::coroutine
 	>
 	auto bind(auto &&_e){
 		using acyclic_t = custom::acyclic<_Topology, _Decorate, _Coroutine, false>;
@@ -3799,7 +4007,7 @@ namespace fake
 		fake::debug_c _Label,
 		execution::topology::info_c _Topology,
 		execution::topology::info_c _Decorate = fake::top::info<>,
-		template<typename...> typename _Coroutine = custom::tool::acyclic::coroutine
+		template<typename...> typename _Coroutine = custom::util::acyclic::coroutine
 	>
 	auto bind(auto &&_e, auto &&_f){
 		using acyclic_t = custom::acyclic<_Topology, _Decorate, _Coroutine, false>;
