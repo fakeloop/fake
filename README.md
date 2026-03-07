@@ -138,7 +138,7 @@ The library is header‑only; no linking required except for threading support (
     The demo prints a colored representation of a complex object and demonstrates round‑trip parsing.
     该演示会打印一个复杂对象的彩色表示，并展示往返解析。
 
-    [![output terminal](https://raw.githubusercontent.com/fakeloop/fake/master/demo/io/output.png)](demo/io/output.png)
+    [![output terminal](demo/io/output.png?raw=true)](demo/io/output.png)
 
 4. **Use in your project** / **在你的项目中使用**
     Just include the headers and start using the features. All configuration is done at compile time.
