@@ -136,9 +136,9 @@ The library is header‑only; no linking required except for threading support (
     **windows:**
 
     ```bat
-    cd fake/demo/io
+    cd fake\demo\io
     make.bat
-    build/demo.exe
+    build\demo.exe
     ```
 
     **fake/demo/io/io.cpp:**
