@@ -145,6 +145,7 @@ The library is header‑only; no linking required except for threading support (
 
     ```c++
     #include <iostream>
+    #include <sstream>
     #include <vector>
     #include <unordered_set>
     #include <unordered_map>
@@ -161,14 +162,12 @@ The library is header‑only; no linking required except for threading support (
     template<typename _Type>
     struct bar{
         std::tuple<foo, std::string, std::string> t;
-        std::vector<std::string_view> v;
+        std::vector<std::string> v;
         _Type z;
         _Type w;
         char s[2] = "S";
         char n[2] = "N";
-        char e[0];
         char m[3] = "NN";
-        char l[0];
     };
 
     struct foobar{
@@ -178,7 +177,7 @@ The library is header‑only; no linking required except for threading support (
         
     private:
         int password = 114514;
-        std::string secret = "embarrassing fact";
+        std::string secret = "hidden fact";
         bar<std::string> cookie;
     };
 
@@ -186,7 +185,7 @@ The library is header‑only; no linking required except for threading support (
     template<>
     struct fake::tool::steal<[]{}, fake::tool::adaptor<foobar>, &foobar::password, &foobar::secret, &foobar::cookie>{
         // register meta-implementations for token-based-cpo 'fake::for_each<fake::cpo::format<...>>' at compile-time. 
-        using token = fake::cpo::format<fake::io::token::pretty>;
+        using token = fake::cpo::format<fake::io::token::fancy>;
         static_assert(fake::custom::for_each::config::emplace_visitor<[]{}, token, steal>());
     };
 
@@ -194,7 +193,7 @@ The library is header‑only; no linking required except for threading support (
     {
         using namespace std::string_literals;
         
-        bar<std::string> var{
+        const bar<std::string> var{
             {{114, 514.0, {1919, 893}, {{"ya", 8}, {"ju", 10}}}, "MGR", "YUH"},
             {"SZ", "JOKER"},
             "DIYUSI"s,
@@ -202,9 +201,20 @@ The library is header‑only; no linking required except for threading support (
         };
         
         foobar lost_owner{std::move(var)};
+        std::stringstream ss;
+        const std::string_view substitute = "hidden";
         
-        std::cout << fake::io::pretty<>(lost_owner) << std::endl;
+        ss << fake::io::fancy<>(lost_owner);
+        
+        ss.str(ss.str().replace(ss.str().find(substitute), substitute.size(), "embarrassing"));
+        
+        foobar result{std::move(var)};
+        
+        ss >> fake::io::fancy<>(result);
+        
+        std::cout << fake::io::fancy<>(result) << std::endl;
     }
+
     ```
 
     >The demo prints a colored representation of a complex object and demonstrates round‑trip parsing.
