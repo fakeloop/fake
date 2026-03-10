@@ -873,27 +873,6 @@ int main() {
 }
 ```
 
-#### `fake::trivial_d`
-
-- **简介**: 检测包装的类型是否为平凡类型。
-- **语法**:
-
-```c++
-inline constexpr fake::detect::traits::trivial_d trivial_d;
-```
-
-- **示例**:
-
-```c++
-#include <vector>
-#include "detect.h"
-struct foo{int bar; double* yoo;};
-int main() {
-    static_assert(fake::trivial_d(fake::pack_v<foo>));
-    static_assert(!fake::trivial_d(fake::pack_v<std::vector<int>>));
-}
-```
-
 #### `fake::trivially_copyable_d`
 
 - **简介**: 检测包装的类型是否为可平凡复制。

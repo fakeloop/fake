@@ -873,27 +873,6 @@ int main() {
 }
 ```
 
-#### `fake::trivial_d`
-
-- **Brief**: Detects if the wrapped type is trivial.
-- **Syntax**:
-
-```c++
-inline constexpr fake::detect::traits::trivial_d trivial_d;
-```
-
-- **Example**:
-
-```c++
-#include <vector>
-#include "detect.h"
-struct foo{int bar; double* yoo;};
-int main() {
-    static_assert(fake::trivial_d(fake::pack_v<foo>));
-    static_assert(!fake::trivial_d(fake::pack_v<std::vector<int>>));
-}
-```
-
 #### `fake::trivially_copyable_d`
 
 - **Brief**: Detects if the wrapped type is trivially copyable.

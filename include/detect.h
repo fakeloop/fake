@@ -312,8 +312,6 @@ namespace fake::detect
 			= tool::constraint<std::is_const>;
 		inline constexpr auto volatile_v
 			= tool::constraint<std::is_volatile>;
-		inline constexpr auto trivial_v
-			= tool::constraint<std::is_trivial>;
 		inline constexpr auto trivially_copyable_v
 			= tool::constraint<std::is_trivially_copyable>;
 		inline constexpr auto standard_layout_v
@@ -716,8 +714,6 @@ namespace fake::detect
 			= op::just<adaptor::const_v>;
 		using volatile_d
 			= op::just<adaptor::volatile_v>;
-		using trivial_d
-			= op::just<adaptor::trivial_v>;
 		using trivially_copyable_d
 			= op::just<adaptor::trivially_copyable_v>;
 		using standard_layout_d
@@ -1118,8 +1114,6 @@ namespace fake
 		const_d;
 	inline constexpr fake::detect::traits::volatile_d
 		volatile_d;
-	inline constexpr fake::detect::traits::trivial_d
-		trivial_d;
 	inline constexpr fake::detect::traits::trivially_copyable_d
 		trivially_copyable_d;
 	inline constexpr fake::detect::traits::standard_layout_d
