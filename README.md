@@ -200,7 +200,7 @@ The library is header‑only; no linking required except for threading support (
             "NEL"s
         };
         
-        foobar lost_owner{std::move(var)};
+        foobar lost_owner{var};
         std::stringstream ss;
         const std::string_view substitute = "hidden";
         
@@ -208,7 +208,7 @@ The library is header‑only; no linking required except for threading support (
         
         ss.str(ss.str().replace(ss.str().find(substitute), substitute.size(), "embarrassing"));
         
-        foobar result{std::move(var)};
+        foobar result{var};
         
         ss >> fake::io::fancy<>(result);
         

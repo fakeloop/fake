@@ -54,7 +54,7 @@ int main(int _argc, char* _argv[])
         "NEL"s
     };
     
-    foobar lost_owner{std::move(var)};
+    foobar lost_owner{var};
     std::stringstream ss;
     const std::string_view substitute = "hidden";
     
@@ -62,7 +62,7 @@ int main(int _argc, char* _argv[])
     
     ss.str(ss.str().replace(ss.str().find(substitute), substitute.size(), "embarrassing"));
     
-    foobar result{std::move(var)};
+    foobar result{var};
     
     ss >> fake::io::fancy<>(result);
     
