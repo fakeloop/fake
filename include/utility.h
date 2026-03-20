@@ -533,9 +533,9 @@ namespace fake
 		
 	}
 	
-	struct signet_t final : std::array<std::size_t, std::tuple_size_v<decltype(detail::signet::salt)>>
+	struct signet_t final : std::array<unsigned long long, std::tuple_size_v<decltype(detail::signet::salt)>>
 	{
-		using array_type = std::array<std::size_t, std::tuple_size_v<decltype(detail::signet::salt)>>;
+		using array_type = std::array<unsigned long long, std::tuple_size_v<decltype(detail::signet::salt)>>;
 		static constexpr std::size_t size_value = std::tuple_size_v<decltype(detail::signet::salt)>;
 	};
 	
@@ -600,7 +600,7 @@ template<>
 struct std::hash<fake::signet_t>{
 	std::size_t operator()(const fake::signet_t &_e) const noexcept{
 		return [&_e]<std::size_t... _index>(std::index_sequence<_index...>){
-			return (0x0 ^ ... ^ std::rotl(_e[_index], _index));
+			return ((unsigned long long){} ^ ... ^ std::rotl(_e[_index], _index));
 		}(std::make_index_sequence<fake::signet_t::size_value>());
 	}
 };
