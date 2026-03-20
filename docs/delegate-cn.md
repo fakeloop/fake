@@ -957,6 +957,45 @@ store.erase("key"_v);
 ## 重要说明
 
 - `Aspect` 机制通过注入一个携带类型信息的 `struct message` 来工作。`Aspect` 模板会为每个不同的操作和签名被实例化。它可以用于积累编译期数据或生成静态断言。
+
 - `operator=` 返回的 `std::size_t` 和 `delegate_handle delegate::id` 是顺序 ID；它们不能保证跨二进制边界唯一性。
+
 - 对于运行时多态委托，参数类型使用 `std::remove_cvref_t` 进行比较。引用和 cv 限定符会被剥离；因此 `std::string` 和 `const std::string&` 在匹配时被视为相同。
+
 - 当策略定义了 `object_type` 时，那些将该对象的引用作为其**第一个**参数的可调用对象将自动获得存储的引用。如果没有存储对象（例如在没有宿主的基类委托中），调用此类可调用对象将抛出 `std::runtime_error`，并携带“pure proto type”消息。
+
+- 运行时多态委托的类型签名会被映射为一个 `256-bit` 的哈希值 `fake::signet_t`，实现中在对运行效率与哈希碰撞安全性进行权衡后选择没有进行哈希碰撞检测。因此有极小概率可能发生哈希碰撞导致类型匹配错误，虽然通常不会发生，当这一事件不幸发生时会引发一个 `std::bad_any_cast` 异常。
+
+- 由于签名哈希由类型名称计算出，因此当使用 lambda 作为委托可调用对象的参数或返回值时可能发生类型名称碰撞，引发 `std::bad_any_cast` 异常。
+
+### 示例
+
+```c++
+#include <print>
+#include "delegate.h"
+
+namespace ns{
+    inline constexpr auto x = []{std::println("ns::x");};
+    inline constexpr auto y = []{std::println("ns::y");};
+}
+
+int main(){
+    static_assert(!std::same_as<decltype(ns::x), decltype(ns::y)>);
+    static_assert(fake::type_view(ns::x) == fake::type_view(ns::y));
+    std::println("type<x> = {}, type<y> = {}", fake::type_view(ns::x).data(), fake::type_view(ns::y).data());
+    
+    fake::delegate<void> dele;
+    dele = [](decltype(ns::x) _e){_e();};
+    dele = [](decltype(ns::y) _e){_e();};
+    
+    try{dele(ns::x);}catch(const std::bad_any_cast &_e){std::println("{}", _e.what());}
+}
+```
+
+**输出：**
+
+```plain
+type<x> = ns::<lambda()>, type<y> = ns::<lambda()>
+ns::x
+bad any_cast
+```

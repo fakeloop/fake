@@ -968,3 +968,39 @@ store.erase("key"_v);
 
 - When a policy defines `object_type`, callables that take a reference to that object as their **first** parameter will receive the stored reference automatically.
   If no object is stored (e.g., in a base delegate without a host), invoking such a callable throws `std::runtime_error` with a “pure proto type” message.
+
+- The type signature of a runtime-polymorphic delegate is mapped to a `256-bit` hash value aka `fake::signet_t`. In the implementation, a trade-off between runtime efficiency and hash collision safety was made, so no hash collision detection is performed. Therefore, there is an extremely small chance of a hash collision causing a type mismatch. Although this usually does not happen, when it does, a `std::bad_any_cast` exception will be triggered.
+
+- A type name collision may occur when using a lambda as a parameter or return value of a delegate callable, causing a `std::bad_any_cast` exception, since the signature hash is calculated from the type name.
+
+### example
+
+```c++
+#include <print>
+#include "delegate.h"
+
+namespace ns{
+    inline constexpr auto x = []{std::println("ns::x");};
+    inline constexpr auto y = []{std::println("ns::y");};
+}
+
+int main(){
+    static_assert(!std::same_as<decltype(ns::x), decltype(ns::y)>);
+    static_assert(fake::type_view(ns::x) == fake::type_view(ns::y));
+    std::println("type<x> = {}, type<y> = {}", fake::type_view(ns::x).data(), fake::type_view(ns::y).data());
+    
+    fake::delegate<void> dele;
+    dele = [](decltype(ns::x) _e){_e();};
+    dele = [](decltype(ns::y) _e){_e();};
+    
+    try{dele(ns::x);}catch(const std::bad_any_cast &_e){std::println("{}", _e.what());}
+}
+```
+
+**output:**
+
+```plain
+type<x> = ns::<lambda()>, type<y> = ns::<lambda()>
+ns::x
+bad any_cast
+```
