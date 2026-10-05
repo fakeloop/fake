@@ -539,10 +539,12 @@ namespace fake
 		static constexpr std::size_t size_value = std::tuple_size_v<decltype(detail::signet::salt)>;
 	};
 	
-	consteval signet_t signet(fake::view_c auto _view) noexcept{
-		return [&_view]<std::size_t... _index>(std::index_sequence<_index...>){
+	constexpr signet_t signet(fake::view_c auto _view) noexcept{
+		static constexpr fake::view_c auto view = decltype(_view){};
+		return []<std::size_t... _index>(std::index_sequence<_index...>){
 			using namespace fake::literals;
-			return signet_t{(std::get<_index>(detail::signet::salt) + "@"_v + _view).hash()...};
+			static constexpr signet_t result{(std::get<_index>(detail::signet::salt) + "@"_v + view).hash()...};
+			return result;
 		}(std::make_index_sequence<signet_t::size_value>());
 	}
 	
