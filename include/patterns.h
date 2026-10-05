@@ -205,10 +205,13 @@ namespace fake::patterns
 	template<>
 	struct intact<fake::patterns::intact_e::moveonly> final{
 		intact() = default;
+		
 		constexpr intact(const intact &_copy) = delete;
-		constexpr inline intact(intact &&_move) noexcept{_move.valid_v = false;}
 		intact& operator=(const intact &_copy) = delete;
-		intact& operator=(intact &&_move) noexcept{_move.valid_v = false; return *this;}
+		
+		constexpr intact(intact &&_move) noexcept{*this = std::move(_move);}
+		intact& operator=(intact &&_move) noexcept{valid_v = std::exchange(_move.valid_v, false); return *this;}
+		
 		constexpr operator bool() const noexcept{return valid_v;}
 		
 	private:
@@ -218,10 +221,18 @@ namespace fake::patterns
 	template<>
 	struct intact<fake::patterns::intact_e::neither> final{
 		intact() = default;
-		constexpr intact(const intact &_copy) noexcept{valid_v = _copy.valid_v = false;}
-		constexpr inline intact(intact &&_move) noexcept{_move.valid_v = false;}
-		intact& operator=(const intact &_copy) noexcept{valid_v = _copy.valid_v = false; return *this;}
-		intact& operator=(intact &&_move) noexcept{_move.valid_v = false; return *this;}
+		
+		constexpr intact(const intact &_copy) noexcept{*this = _copy;}
+		intact& operator=(const intact &_copy) noexcept{
+			if(this == std::addressof(_copy))
+				return *this;
+			valid_v = _copy.valid_v = false;
+			return *this;
+		}
+		
+		constexpr intact(intact &&_move) noexcept{*this = std::move(_move);}
+		intact& operator=(intact &&_move) noexcept{valid_v = std::exchange(_move.valid_v, false); return *this;}
+		
 		constexpr operator bool() const noexcept{return valid_v;}
 		
 	private:
@@ -232,17 +243,19 @@ namespace fake::patterns
 	requires (_policy != fake::patterns::intact_e::neither)
 	struct intact<_policy> final{
 		intact() = default;
-		constexpr intact(const intact &_copy) noexcept{
-			valid_v = _policy != fake::patterns::intact_e::origin;
-			_copy.valid_v = _policy != fake::patterns::intact_e::duplicate;
-		}
-		constexpr inline intact(intact &&_move) noexcept{_move.valid_v = false;}
+		
+		constexpr intact(const intact &_copy) noexcept{*this = _copy;}
 		intact& operator=(const intact &_copy) noexcept{
-			valid_v = _policy != fake::patterns::intact_e::origin;
-			_copy.valid_v = _policy != fake::patterns::intact_e::duplicate;
+			if(this == std::addressof(_copy))
+				return *this;
+			valid_v = _copy.valid_v && _policy != fake::patterns::intact_e::origin;
+			_copy.valid_v &= _policy != fake::patterns::intact_e::duplicate;
 			 return *this;
 		}
-		intact& operator=(intact &&_move) noexcept{_move.valid_v = false; return *this;}
+		
+		constexpr intact(intact &&_move) noexcept{*this = std::move(_move);}
+		intact& operator=(intact &&_move) noexcept{valid_v = std::exchange(_move.valid_v, false); return *this;}
+		
 		constexpr operator bool() const noexcept{return valid_v;}
 		
 	private:
@@ -785,7 +798,7 @@ namespace fake::patterns
 		}
 		
 		[[nodiscard]] constexpr auto&& move(fake::view_c auto _key) noexcept{
-			using type = decltype((detail::builder::select<decltype(_key){}>(*this).value));
+			using type = decltype(std::move(detail::builder::select<decltype(_key){}>(*this).value));
 			
 			return std::forward<type>(detail::builder::select<decltype(_key){}>(*this).value);
 		}
@@ -801,15 +814,21 @@ namespace fake::patterns
 				return std::forward<type>(detail::builder::select<decltype(_key){}>(*this).value);
 		}
 		
-		[[nodiscard]] constexpr auto forward(fake::view_c auto _key) && noexcept
+		[[nodiscard]] constexpr auto forward(fake::view_c auto _key) noexcept
 		requires detail::builder::tie_type<builder, decltype(_key){}>::delay{
 			using type = decltype((detail::builder::select<decltype(_key){}>(*this).value));
 			
 			return detail::builder::select<decltype(_key){}>(*this).spawn();
 		}
 		
-		[[nodiscard]] constexpr auto&& forward(fake::view_c auto _key) && noexcept{
+		[[nodiscard]] constexpr auto& forward(fake::view_c auto _key) & noexcept{
 			using type = decltype((detail::builder::select<decltype(_key){}>(*this).value));
+			
+			return std::forward<type>(detail::builder::select<decltype(_key){}>(*this).value);
+		}
+		
+		[[nodiscard]] constexpr auto&& forward(fake::view_c auto _key) && noexcept{
+			using type = decltype(std::move(detail::builder::select<decltype(_key){}>(*this).value));
 			
 			return std::forward<type>(detail::builder::select<decltype(_key){}>(*this).value);
 		}
