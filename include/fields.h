@@ -1885,6 +1885,16 @@ namespace fake::aggregate
 		return detail::references<_size>(std::forward<decltype(_e)>(_e));
 	};
 	
+	template<typename _T>
+	requires std::is_aggregate_v<_T>
+	inline constexpr std::size_t size = detail::aggregate_size(fake::pazz_v<_T>);
+	
+	template<std::size_t _index, typename _T>
+	requires std::is_aggregate_v<_T>
+	using type = std::remove_reference_t<
+		fake::take_t<decltype(fake::aggregate::references(std::declval<_T>()))::type(fake::index_v<_index>)>
+	>;
+	
 }
 
 #include "pop.h"
