@@ -525,6 +525,9 @@ namespace fake::detect
 			using element = typename std::remove_cvref_t<_Type>::element_type;
 			
 			template<typename _Type>
+			using value = typename std::remove_cvref_t<_Type>::value_type;
+			
+			template<typename _Type>
 			using type = typename std::remove_cvref_t<_Type>::type;
 			
 			template<typename _Type, std::size_t _index>
@@ -579,6 +582,8 @@ namespace fake::detect
 			= tool::transform<transformer::second>;
 		inline constexpr auto element_v
 			= tool::transform<transformer::element>;
+		inline constexpr auto value_v
+			= tool::transform<transformer::value>;
 		inline constexpr auto type_v
 			= tool::transform<transformer::type>;
 		template<std::size_t _index> inline constexpr auto index_v
@@ -645,6 +650,9 @@ namespace fake::detect
 			= tool::transform<transformer::try_take_t>;
 		inline constexpr auto take_all_v
 			= tool::transform<transformer::take_all_t>;
+		template<template<typename> typename _Template>
+		inline constexpr auto transform_v
+			= tool::transform<_Template>;
 		template<template<typename...> typename _Target, typename... _Appends> inline constexpr auto apply_v
 			= tool::transform<_Target, _Appends...>;
 		inline constexpr auto keep_v
@@ -952,6 +960,8 @@ namespace fake::detect
 			= fake::detect::op::rein<adaptor::second_v>;
 		using element_p
 			= fake::detect::op::rein<adaptor::element_v>;
+		using value_p
+			= fake::detect::op::rein<adaptor::value_v>;
 		using type_p
 			= fake::detect::op::rein<adaptor::type_v>;
 		template<std::size_t _index> using index_p
@@ -1018,6 +1028,9 @@ namespace fake::detect
 			= fake::detect::op::rein<adaptor::try_take_v>;
 		using take_all_p
 			= fake::detect::op::rein<adaptor::take_all_v>;
+		template<template<typename> typename _Template>
+		using transform_p
+			= fake::detect::op::rein<adaptor::transform_v<_Template>>;
 		template<template<typename...> typename _Target, typename... _Appends> using apply_p
 			= fake::detect::op::rein<adaptor::apply_v<_Target, _Appends...>>;
 		using keep_p
@@ -1323,6 +1336,8 @@ namespace fake
 	
 	inline constexpr fake::detect::traits::element_p element_p;
 	
+	inline constexpr fake::detect::traits::value_p value_p;
+	
 	inline constexpr fake::detect::traits::type_p type_p;
 	
 	template<std::size_t _index> inline constexpr fake::detect::traits::index_p<_index> index_p;
@@ -1388,6 +1403,9 @@ namespace fake
 	inline constexpr fake::detect::traits::try_take_p try_take_p;
 	
 	inline constexpr fake::detect::traits::take_all_p take_all_p;
+	
+	template<template<typename> typename _Template>
+	inline constexpr fake::detect::traits::transform_p<_Template> transform_p;
 	
 	template<template<typename...> typename _Target, typename... _Appends>
 	inline constexpr fake::detect::traits::apply_p<_Target, _Appends...> apply_p;

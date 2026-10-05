@@ -2766,6 +2766,25 @@ int main() {
 }
 ```
 
+#### `fake::value_p`
+
+- **简介**: 将类似 `stl` 容器的类型转换为其 `value_type`。
+- **语法**:
+
+```c++
+inline constexpr fake::detect::traits::value_p value_p;
+```
+
+- **示例**:
+
+```c++
+#include "detect.h"
+int main() {
+    static_assert((fake::value_p <<= fake::same_d<int>)(fake::pack_v<std::array<int, 5>>));
+    static_assert((fake::value_p <<= fake::same_d<double>)(fake::pack_v<double>) == false);
+}
+```
+
 #### `fake::type_p`
 
 - **简介**: 将具有嵌套 `type` 别名（例如 `std::remove_const<const int>`）的类型转换为其 `type`。
@@ -3429,6 +3448,26 @@ int main() {
     static_assert((fake::take_all_p <<= fake::same_d<int>)(fake::pack_v<fake::pack_t<fake::pazz_t<int>>>));
     static_assert((fake::take_all_p <<= fake::same_d<int>)(fake::pack_v<int>));
     static_assert(!(fake::take_all_p <<= fake::same_d<int>)(fake::pack_v<double>));
+}
+```
+
+#### `fake::transform_p<Template>`
+
+- **Brief**: 将类型通过模板 `Template` 所指定的类型别名进行转换。
+- **Syntax**:
+
+```c++
+inline constexpr fake::detect::traits::transform_p transform_p;
+```
+
+- **Example**:
+
+```c++
+#include "detect.h"
+template<typename _Type> using storage = typename _Type::storage_type;
+int main() {
+    struct object{using storage_type = int;};
+    static_assert((fake::transform_p<storage> <<= fake::same_d<int>)(fake::pack_v<object>));
 }
 ```
 

@@ -2766,6 +2766,25 @@ int main() {
 }
 ```
 
+#### `fake::value_p`
+
+- **Brief**: Transforms a `stl` container like type to its `value_type`.
+- **Syntax**:
+
+```c++
+inline constexpr fake::detect::traits::value_p value_p;
+```
+
+- **Example**:
+
+```c++
+#include "detect.h"
+int main() {
+    static_assert((fake::value_p <<= fake::same_d<int>)(fake::pack_v<std::array<int, 5>>));
+    static_assert((fake::value_p <<= fake::same_d<double>)(fake::pack_v<double>) == false);
+}
+```
+
 #### `fake::type_p`
 
 - **Brief**: Transforms a type with a nested `type` alias (e.g., `std::remove_const<const int>`) to that `type`.
@@ -3432,9 +3451,29 @@ int main() {
 }
 ```
 
+#### `fake::transform_p<Template>`
+
+- **Brief**: Transforms a type with the alias specified by the template `Template`.
+- **Syntax**:
+
+```c++
+inline constexpr fake::detect::traits::transform_p transform_p;
+```
+
+- **Example**:
+
+```c++
+#include "detect.h"
+template<typename _Type> using storage = typename _Type::storage_type;
+int main() {
+    struct object{using storage_type = int;};
+    static_assert((fake::transform_p<storage> <<= fake::same_d<int>)(fake::pack_v<object>));
+}
+```
+
 #### `fake::apply_p<Target, Appends...>`
 
-- **Brief**: Transform a type `T` into `Target<T, Appends...>`.
+- **Brief**: Transforms a type `T` into `Target<T, Appends...>`.
 - **Syntax**:
 
 ```c++
@@ -3472,7 +3511,7 @@ int main() {
 
 #### `fake::replace_p<Just>`
 
-- **Brief**: Transform a type into `Just`.
+- **Brief**: Transforms a type into `Just`.
 - **Syntax**:
 
 ```c++
